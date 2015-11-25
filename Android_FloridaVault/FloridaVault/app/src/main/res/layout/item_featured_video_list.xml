@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+<!--<com.daimajia.swipe.SwipeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipe"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">-->
+
+   <!-- <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:background="#80797979"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:tag="Bottom2"
+        android:padding="15dp">
+        <org.vault.app.utils.CircleImageView
+            android:id="@+id/facebookShare"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/facebook_new"
+            app:border_width="0.5dp"
+            app:border_color="#CC0000"/>
+        <org.vault.app.utils.CircleImageView
+            android:id="@+id/twitterShare"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/twitter"
+            android:layout_marginTop="10dp"
+            app:border_width="0.5dp"
+            app:border_color="#CC0000"/>
+
+    </LinearLayout>-->
+
+    <FrameLayout
+        android:id="@+id/frame_video_item"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <!--  <com.android.volley.toolbox.NetworkImageView
+             android:id="@+id/imgVideoThumbNail"
+             android:layout_width="match_parent"
+             android:layout_height="match_parent"
+             android:scaleType="centerCrop" >
+         </com.android.volley.toolbox.NetworkImageView> -->
+
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+			android:indeterminateDuration="1100"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/imgVideoThumbNail"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"/>
+
+        <RelativeLayout
+            android:id="@+id/rl_video_detail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:background="#80000000"
+            android:gravity="bottom"
+            android:paddingBottom="5dp"
+            android:paddingTop="5dp">
+
+            <TextView
+                android:id="@+id/tv_video_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:layout_marginLeft="5dp"
+                android:layout_marginStart="5dp"
+                android:layout_toLeftOf="@+id/tv_video_length"
+                android:layout_toStartOf="@+id/tv_video_length"
+                android:textColor="@color/WhiteSmoke"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_video_length"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_marginEnd="5dp"
+                android:layout_marginRight="13dp"
+                android:layout_toLeftOf="@+id/toggle_favourite"
+                android:layout_toStartOf="@+id/toggle_favourite"
+                android:textColor="@color/WhiteSmoke"
+                android:textSize="14sp" />
+
+            <ToggleButton
+                android:id="@+id/toggle_favourite"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="7dp"
+                android:layout_marginRight="7dp"
+                android:alpha="1"
+                android:background="@drawable/selector_startoggle"
+                android:enabled="true"
+                android:focusable="false"
+                android:textOff=""
+                android:textOn=""
+                android:visibility="visible" />
+        </RelativeLayout>
+
+    </FrameLayout>
+<!--
+</com.daimajia.swipe.SwipeLayout>-->
+</RelativeLayout>

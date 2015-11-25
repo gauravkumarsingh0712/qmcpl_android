@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:shimmer="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/darker_gray"
+    tools:context=".ui.activities.SplashActivity">
+
+
+    <org.vault.app.shimmer.ShimmerFrameLayout
+        android:id="@+id/shimmer_view_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        shimmer:duration="1500"
+        shimmer:repeat_count="2">
+
+        <ImageView
+            android:id="@+id/companyImageView"
+            android:layout_width="250dp"
+            android:layout_height="250dp"
+            android:layout_gravity="center"
+            android:src="@drawable/vault_in_app_logo" />
+    </org.vault.app.shimmer.ShimmerFrameLayout>
+
+    <include
+        android:id="@+id/llToast"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        layout="@layout/toast_layout"/>
+
+</RelativeLayout>

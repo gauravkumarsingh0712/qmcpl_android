@@ -1,0 +1,5 @@
+<resources>
+
+    <dimen name="space_checkbox">5dp</dimen>
+    
+</resources>

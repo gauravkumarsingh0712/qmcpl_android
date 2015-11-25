@@ -1,0 +1,84 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rl_ofview"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/selecter_relatedlistviewbg"
+    android:descendantFocusability="blocksDescendants"
+    android:paddingTop="3dp"
+    android:paddingBottom="3dp">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <RelativeLayout
+            android:id="@+id/rl_image_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@color/Metallicsilver">
+            <ProgressBar
+                android:id="@+id/progress_bar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+				android:indeterminateDuration="1100"
+                android:visibility="gone" />
+            <ImageView
+                android:id="@+id/imgVideoThumbNail"
+                android:layout_width="130dp"
+                android:layout_height="90dp"
+                android:adjustViewBounds="true"
+                android:scaleType="centerCrop" />
+
+        </RelativeLayout>
+
+        <TextView
+            android:id="@+id/tv_video_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_toRightOf="@id/rl_image_view"
+            android:layout_toEndOf="@id/rl_image_view"
+            android:ellipsize="end"
+            android:gravity="start|top"
+            android:maxLines="1"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:textColor="@color/app_textcolor"
+            android:textSize="@dimen/video_title_size"
+            android:textStyle="bold" >
+        </TextView>
+
+        <TextView
+            android:id="@+id/tv_video_description"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_alignBottom="@id/rl_image_view"
+            android:layout_below="@id/tv_video_name"
+            android:layout_toRightOf="@id/rl_image_view"
+            android:layout_toEndOf="@id/rl_image_view"
+            android:ellipsize="end"
+            android:gravity="start"
+            android:textSize="@dimen/video_short_description_size"
+            android:maxLines="2"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:textColor="@color/app_textcolor" />
+        
+        <TextView
+            android:id="@+id/tv_video_length"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignBottom="@+id/rl_image_view"
+            android:ellipsize="end"
+            android:gravity="start"
+            android:textColor="@color/app_textcolor"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:textSize="@dimen/video_short_description_size" >
+        </TextView>
+    </RelativeLayout>
+
+</RelativeLayout>

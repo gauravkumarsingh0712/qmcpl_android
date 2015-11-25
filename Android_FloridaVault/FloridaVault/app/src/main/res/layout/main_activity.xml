@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rl_main_view"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/VLightGray"
+    android:clipToPadding="false"
+    android:orientation="vertical">
+
+    <com.viewpagerindicator.TitlePageIndicator
+        android:id="@+id/indicator"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/PageIndicatorColor"
+        android:paddingTop="20dip"
+        android:textSize="15dp"
+        app:footerColor="@color/apptheme_color"
+        app:selectedBold="true" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <android.support.v4.view.ViewPager
+            android:id="@+id/pager"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_below="@id/indicator" />
+
+        <include
+            android:id="@+id/llToast"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            layout="@layout/toast_layout"/>
+
+        <include
+            android:id="@+id/rl_pull_option"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            layout="@layout/pull_option_layout"/>
+    </FrameLayout>
+
+
+</LinearLayout>

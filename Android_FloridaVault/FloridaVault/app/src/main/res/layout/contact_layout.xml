@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical"
+    android:weightSum="10">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:layout_weight="1.5"
+        android:background="#666666"
+        android:paddingTop="10dp">
+        <TextView
+            android:id="@+id/tv_support_header"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:text="Support"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
+            android:layout_centerHorizontal="true"
+            android:layout_alignParentBottom="true" />
+
+        <TextView
+            android:id="@+id/tv_submit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:textColor="@drawable/text_selector"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginRight="8dp"
+            android:text="Send" />
+
+        <TextView
+            android:id="@+id/tv_close"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:textColor="@drawable/text_selector"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginLeft="8dp"
+            android:text="Cancel" />
+    </RelativeLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:background="@color/apptheme_color" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="8.5"
+        android:background="#F1F1F1">
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:weightSum="10"
+                android:background="#F1F1F1">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="2"
+                    android:orientation="vertical"
+                    android:background="#D4D4D4"
+                    android:padding="10dp">
+                    <TextView
+                        android:id="@+id/tv_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="left"
+                        android:layout_marginTop="5dp"
+                        android:textStyle="bold"
+                        android:text="@string/clip_request_title"
+                        android:textColor="#666666"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:id="@+id/tv_sub_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="left"
+                        android:layout_marginTop="5dp"
+                        android:text="@string/clip_request_sub_title"
+                        android:textColor="#666666"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/tv_guest_text"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:textColor="#666666"
+                        android:textSize="18sp"
+                        android:layout_gravity="left"
+                        android:textStyle="bold"
+                        android:text="Since you are not logged in,\nwe need to know how to get in touch with you."
+                        android:visibility="gone"/>
+                </LinearLayout>
+
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="8"
+                    android:padding="10dp"
+                    android:background="#F1F1F1"
+                    android:orientation="vertical">
+
+                    <EditText
+                        android:id="@+id/ed_name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="name"
+                        android:padding="15dp"
+                        android:textColor="#666666"
+                        android:textColorHint="#666666"
+                        android:textSize="20sp"
+                        android:visibility="gone"/>
+
+                    <EditText
+                        android:id="@+id/ed_email"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="email"
+                        android:padding="15dp"
+                        android:textColor="#666666"
+                        android:textColorHint="#666666"
+                        android:textSize="20sp"
+                        android:inputType="textEmailAddress"
+                        android:visibility="gone"/>
+
+                    <EditText
+                        android:id="@+id/ed_message"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@null"
+                        android:gravity="top"
+                        android:layout_marginTop="10dp"
+                        android:hint="Enter your message here"
+                        android:inputType="textMultiLine|textCapSentences"
+                        android:maxLines="10"
+                        android:minLines="10"
+                        android:padding="3dp"
+                        android:scrollbars="vertical"
+                        android:maxLength="300"
+                        android:textColor="#4A90E2"
+                        android:textColorHint="#4A90E2"
+                        android:textSize="20sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+        <include
+            android:id="@+id/llToast"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            layout="@layout/toast_layout"/>
+    </FrameLayout>
+
+</LinearLayout>

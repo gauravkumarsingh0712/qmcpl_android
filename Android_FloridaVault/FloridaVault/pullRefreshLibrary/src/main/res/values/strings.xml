@@ -1,0 +1,9 @@
+<resources>
+
+    <integer-array name="google_colors">
+        <item>@color/orange</item>
+        <item>@color/dark_grey</item>
+        <item>@color/dark_orange</item>
+        <item>@color/grey</item>
+    </integer-array>
+</resources>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/pull_option_background"
+    android:padding="10dp">
+
+    <ImageView
+        android:id="@+id/img_down_arrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_marginLeft="8dp"
+        android:background="@drawable/down_arrow"/>
+
+    <TextView
+        android:id="@+id/tv_toast_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:text="Check for updates by pulling to refresh"
+        android:textColor="@color/white"
+        android:textStyle="normal"
+        android:layout_toRightOf="@+id/img_down_arrow"
+        android:layout_toLeftOf="@+id/btn_got_it"
+        android:layout_marginLeft="30dp"
+        android:layout_marginRight="15dp"
+        android:textSize="18sp"/>
+
+    <Button
+        android:id="@+id/btn_got_it"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Got It"
+        android:textStyle="normal"
+        android:textColor="@color/white"
+        android:layout_alignParentRight="true"
+        android:textAllCaps="false"
+        android:layout_centerVertical="true"
+        android:textSize="18sp"
+        android:background="@drawable/button_selector"/>
+</RelativeLayout>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="android:Theme.Material.Light">
+
+        <item name="android:background">@color/transparent</item>
+        <item name="android:actionBarStyle">@style/MyActionBar</item>
+        <item name="android:fastScrollTextColor">#FFFFFF</item>
+        <item name="android:colorPrimary">@color/app_dark_grey</item>
+        <item name="android:colorPrimaryDark">@color/app_light_grey</item>
+        <item name="android:colorAccent">@color/apptheme_color</item>
+        <item name="android:fastScrollThumbDrawable">@drawable/apptheme_fastscroll_thumb_holo</item>
+        <item name="android:typeface">monospace</item>
+        <item name="android:textColorPrimaryInverse">#EAEAEA</item>
+    </style>
+
+    <style name="MyActionBar" parent="@android:style/Widget.Holo.Light.ActionBar">
+        <item name="android:titleTextStyle">@style/MyActionBarTitleText</item>
+    </style>
+
+    <style name="MyActionBarTitleText" parent="@android:style/TextAppearance.Holo.Widget.ActionBar.Title">
+        <item name="android:textColor">@color/actionbar_textcolor</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="MediaPlayer">
+        <item name="android:textColor">#ffffff</item>
+    </style>
+</resources>

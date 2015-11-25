@@ -1,0 +1,45 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/action_search"
+        android:actionLayout="@xml/searchable"
+        android:actionViewClass="android.widget.SearchView"
+        android:showAsAction="always"
+        android:title="Search"/>
+
+    <item
+        android:id="@+id/action_contact"
+        android:showAsAction="never"
+        android:title="Support">
+        <menu></menu>
+    </item>
+
+    <!--<item
+        android:id="@+id/action_support"
+        android:showAsAction="never"
+        android:title="Support"/>
+    <item
+        android:id="@+id/action_cliprequest"
+        android:showAsAction="never"
+        android:title="Clip Request"/>
+    <item
+        android:id="@+id/action_feedback"
+        android:showAsAction="never"
+        android:title="Feedback"/>-->
+    <!--<item
+        android:id="@+id/action_sync_now"
+        android:showAsAction="never"
+        android:title="Sync Now"/>-->
+    <item
+        android:id="@+id/action_toggle_notifications"
+        android:showAsAction="never"
+        android:icon="@android:drawable/ic_menu_preferences"
+        android:title="@string/notifications"/>
+
+    <item
+        android:id="@+id/action_profile"
+        android:showAsAction="never"
+        android:icon="@android:drawable/ic_menu_preferences"
+        android:title="@string/profile"/>
+
+</menu>

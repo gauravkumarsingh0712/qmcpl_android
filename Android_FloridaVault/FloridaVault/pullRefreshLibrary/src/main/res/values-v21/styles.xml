@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="android:Theme.Material.Light">
+        <item name="android:actionBarStyle">@style/MyActionBar</item>
+        <item name="android:fastScrollTextColor">#FFFFFF</item>
+        <item name="android:colorPrimary">#797979</item>
+        <item name="android:colorPrimaryDark">#A9A9A9</item>
+        <item name="android:colorAccent">@color/orange</item>
+    </style>
+
+    <style name="MyActionBar" parent="@android:style/Widget.Holo.Light.ActionBar">
+        <item name="android:titleTextStyle">@style/MyActionBarTitleText</item>
+    </style>
+
+    <style name="MyActionBarTitleText" parent="@android:style/TextAppearance.Holo.Widget.ActionBar.Title">
+        <item name="android:textColor">@color/orange</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+</resources>

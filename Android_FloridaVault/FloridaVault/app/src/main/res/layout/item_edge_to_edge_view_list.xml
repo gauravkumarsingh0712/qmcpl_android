@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rl_ofview"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="2dp">
+
+    <FrameLayout
+        android:id="@+id/frame_video_item"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+			android:indeterminateDuration="1100"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/imgVideoThumbNail"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"/>
+
+        <RelativeLayout
+            android:id="@+id/rl_video_detail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:background="#80000000"
+            android:gravity="bottom"
+            android:paddingLeft="7dp"
+            android:paddingRight="7dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp">
+
+            <TextView
+                android:id="@+id/tv_video_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:layout_marginRight="5dp"
+                android:layout_toLeftOf="@+id/tv_video_length"
+                android:layout_toStartOf="@+id/tv_video_length"
+                android:textColor="@color/WhiteSmoke"
+                android:singleLine="true"
+                android:textSize="@dimen/video_title_size"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_video_length"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_marginRight="10dp"
+                android:layout_toLeftOf="@+id/imgToggleButton"
+                android:textColor="@color/WhiteSmoke"
+                android:textSize="@dimen/video_title_size"
+                android:text="bhfj"/>
+
+            <ImageView
+                android:id="@+id/imgToggleButton"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:background="@drawable/stargreyicon"
+                android:adjustViewBounds="true"
+                android:scaleType="centerCrop"
+                android:visibility="visible" />
+        </RelativeLayout>
+
+    </FrameLayout>
+</RelativeLayout>

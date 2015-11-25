@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/app_light_grey"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical"
+    android:weightSum="10">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@color/app_dark_grey"
+        android:paddingBottom="10dp"
+        android:layout_weight="1.5">
+
+        <TextView
+            android:id="@+id/tv_username_header"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:text="Profile"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="24sp" />
+
+        <TextView
+            android:id="@+id/tv_close"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+            android:text="Back"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:layout_marginLeft="8dp"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/tv_edit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentRight="true"
+            android:text="Edit"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:layout_marginRight="8dp"
+            android:textSize="20sp" />
+    </RelativeLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:background="@color/apptheme_color"/>
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="8.5">
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <org.vault.app.customviews.VerticalScrollview
+                android:id="@+id/scroll_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_above="@+id/ll_logout"
+                android:background="@color/app_light_grey">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="top|bottom"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center_horizontal"
+                        android:descendantFocusability="beforeDescendants"
+                        android:focusableInTouchMode="true">
+
+                        <FrameLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="20dp">
+                            <ProgressBar
+                                android:id="@+id/progressbar"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+								android:indeterminateDuration="1100"
+                                android:visibility="gone"/>
+                            <org.vault.app.utils.CircularImageView
+                                android:id="@+id/imgUserProfile"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                app:siBorderWidth="5dp"
+                                app:siBorderColor="@color/apptheme_color"
+                                android:alpha="1" />
+
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:gravity="center_horizontal"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/tvFirstName"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="#454546"
+                                android:layout_marginTop="10dp"
+                                android:gravity="center_horizontal"
+                                android:textSize="24sp" />
+
+                            <TextView
+                                android:id="@+id/tvLastName"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="#454546"
+                                android:layout_marginLeft="5dp"
+                                android:layout_marginTop="10dp"
+                                android:gravity="center_horizontal"
+                                android:textSize="24sp" />
+
+                            <EditText
+                                android:id="@+id/ed_first_name"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:hint="First Name"
+                                android:textColor="#454546"
+                                android:textColorHint="#80454546"
+                                android:textSize="20sp"
+                                android:maxLength="20"
+                                android:inputType="textCapWords"
+                                android:singleLine="true"
+                                android:background="@null"
+                                android:imeOptions="actionNext"
+                                android:visibility="gone" />
+
+                            <EditText
+                                android:id="@+id/ed_last_name"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:hint="Last Name"
+                                android:layout_marginLeft="15dp"
+                                android:textColor="#454546"
+                                android:textColorHint="#80454546"
+                                android:textSize="20sp"
+                                android:maxLength="20"
+                                android:inputType="textCapWords"
+                                android:singleLine="true"
+                                android:background="@null"
+                                android:imeOptions="actionNext"
+                                android:visibility="gone" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvBioText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="#FFFFFF"
+                            android:text="bio"
+                            android:layout_marginTop="10dp"
+                            android:gravity="center_horizontal"
+                            android:textSize="18sp" />
+
+                        <EditText
+                            android:id="@+id/ed_bio"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="bio"
+                            android:textColor="#FFFFFF"
+                            android:textColorHint="#FFFFFF"
+                            android:textSize="18sp"
+                            android:layout_marginTop="10dp"
+                            android:layout_marginLeft="15dp"
+                            android:layout_marginRight="15dp"
+                            android:inputType="textMultiLine|textCapSentences|textNoSuggestions"
+                            android:gravity="top|left"
+                            android:minLines="1"
+                            android:maxLines="2"
+                            android:maxLength="140"
+                            android:background="@null"
+                            android:singleLine="false"
+                            android:scrollbarStyle="insideInset"
+                            android:scrollbars="vertical"
+                            android:overScrollMode="always"
+                            android:visibility="gone" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/ll_facebook_status"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
+                        android:background="#3B5998"
+                        android:layout_marginTop="10dp"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:id="@+id/tv_facebook_status"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Link Facebook Account"
+                            android:padding="15dp"
+                            android:gravity="center_horizontal"
+                            android:layout_gravity="center_vertical"
+                            android:textColor="@drawable/logout_text_selector"
+                            android:layout_marginLeft="10dp"
+                            android:textSize="18sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/ll_twitter_status"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
+                        android:background="#4099FF"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tv_twitter_status"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Link Twitter Account"
+                            android:gravity="center_horizontal"
+                            android:padding="15dp"
+                            android:layout_gravity="center_vertical"
+                            android:textColor="@drawable/logout_text_selector"
+                            android:layout_marginLeft="10dp"
+                            android:textSize="18sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tv_change_password"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom"
+                        android:gravity="center_horizontal"
+                        android:text="Change Password"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:padding="20dp"
+                        android:textColor="@drawable/text_selector"/>
+
+                    <!--<Button
+                        android:id="@+id/btn_logout"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:padding="10dp"
+                        android:text="Log Out"
+                        android:textColor="#FFFFFF"
+                        android:textAllCaps="false"
+                        android:layout_margin="20dp"
+                        android:textSize="16sp"
+                        android:background="@drawable/button_selector" />-->
+                </LinearLayout>
+            </org.vault.app.customviews.VerticalScrollview>
+
+
+                <LinearLayout
+                    android:id="@+id/ll_logout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/app_dark_grey"
+                    android:layout_alignParentBottom="true"
+                    android:gravity="center_horizontal">
+                    <TextView
+                        android:id="@+id/tv_logout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Log Out"
+                        android:padding="15dp"
+                        android:gravity="center_horizontal"
+                        android:textSize="20sp"
+                        android:textColor="@drawable/logout_text_selector"
+                        android:textStyle="bold"/>
+                </LinearLayout>
+
+
+        </RelativeLayout>
+        <include
+            android:id="@+id/llToast"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            layout="@layout/toast_layout"/>
+    </FrameLayout>
+
+    <com.twitter.sdk.android.core.identity.TwitterLoginButton
+        android:id="@+id/twitter_login_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:visibility="gone" />
+
+</LinearLayout>

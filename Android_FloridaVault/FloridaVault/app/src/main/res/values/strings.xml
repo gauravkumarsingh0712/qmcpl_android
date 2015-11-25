@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_id">1510709295909401</string>
+    <string name="facebook_test_app_id">1676383499243366</string>
+
+    <string name="app_name">Florida Vault</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="featured">Featured</string>
+    <string name="opponents">Opponents</string>
+    <string name="players">Players</string>
+    <string name="coaches_era">Coaches Era</string>
+    <string name="favorites">Favorites</string>
+    <string name="email_support_feedback">support@floridavault.com</string>
+    <string name="email_support_subject">App support</string>
+    <string name="email_support_text">I need support with my FLORIDA VAULT, here is what\'s going on&#8230; </string>
+    <string name="email_cliprequest">production@floridavault.com</string>
+    <string name="email_cliprequest_text">I wanted to request this clip for FLORIDA VAULT&#8230; </string>
+    <string name="email_cliprequest_subject">Clip Request</string>
+    <string name="email_feedback_text">I have this really cool request or feature idea for THE FLORIDA VAULT&#8230;</string>
+    <string name="email_feedback_subject">Feedback</string>
+    <string name="key_video_name">video_name</string>
+    <string name="key_video_category">video_category</string>
+
+    <string name="support_title">SOMETHING WENT WRONG</string>
+    <string name="support_sub_title">Briefly describe what happened.</string>
+    <string name="feedback_title">GENERAL FEEDBACK</string>
+    <string name="feedback_sub_title">We\'re always open to feedback. What\'s on your mind?</string>
+    <string name="clip_request_title">I HAVE A CLIP REQUEST</string>
+    <string name="clip_request_sub_title">What kind of clip/content are you looking for?</string>
+    
+    <string name="wait">Please wait...</string>
+	<string name="sync">Syncing with server...</string>
+	<string name="notifications">Notifications</string>
+    <string name="notification_message">FLORIDA Vault would like to send you notifications</string>
+    <string name="notification_question">Do you want Florida Vault to receive notifications?</string>
+    <string name="profile">Profile</string>
+    <string name="description">Media Controls</string>
+    <string name="title_activity_login">LoginActivity</string>
+    <string name="facebookstring">This is the login page for Facebook</string>
+
+    <string name="title_activity_test">TestActivity</string>
+    <string name="title_activity_webview_test">WebviewTestActivity</string>
+
+    <string-array name="pull_colors">
+        <item>@color/apptheme_color</item>
+        <item>@color/app_dark_grey</item>
+        <item>#FFFFFF</item>
+        <item>@color/apptheme_color</item>
+    </string-array>
+    <string name="title_activity_base">BaseActivity</string>
+</resources>
