@@ -20,7 +20,6 @@ import com.ncsavault.floridavault.R;
 import org.json.JSONObject;
 import org.vault.app.appcontroller.AppController;
 import org.vault.app.globalconstants.GlobalConstants;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -122,7 +121,7 @@ public class ContactActivity extends BaseActivity {
                     InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                     inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
                 }
-                if(edMessage.getText().toString().isEmpty()){
+                if(!edMessage.getText().toString().isEmpty()){
                     showConfirmationDialog();
                 }else {
                     onBackPressed();
@@ -240,7 +239,7 @@ public class ContactActivity extends BaseActivity {
         @Override
         protected Void doInBackground(String... params) {
             try {
-                String taskType = "";
+                /*String taskType = "";
                 if(tagId.equalsIgnoreCase(GlobalConstants.FEEDBACK_TAG_ID))
                     taskType = "feedback";
                 else if(tagId.equalsIgnoreCase(GlobalConstants.CLIP_REQUEST_TAG_ID))
@@ -248,9 +247,9 @@ public class ContactActivity extends BaseActivity {
                 else if(tagId.equalsIgnoreCase(GlobalConstants.SUPPORT_TAG_ID))
                     taskType = "support";
                 else if(tagId.equalsIgnoreCase(GlobalConstants.NO_LOGIN_TAG_ID))
-                    taskType = "no_login";
+                    taskType = "no_login";*/
 
-                String result = AppController.getInstance().getServiceManager().getVaultService().createTaskOnAsana(params[0], params[1], taskType);
+                String result = AppController.getInstance().getServiceManager().getVaultService().createTaskOnAsana(params[0], params[1], tagId);
 
                 if (result != null) {
                     if (!result.isEmpty()) {

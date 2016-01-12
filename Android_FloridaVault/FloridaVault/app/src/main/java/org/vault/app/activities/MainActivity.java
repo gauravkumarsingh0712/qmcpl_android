@@ -39,6 +39,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.SearchView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.facebook.AccessToken;
 import com.facebook.CallbackManager;
@@ -55,6 +56,8 @@ import com.facebook.share.Sharer;
 import com.facebook.share.model.ShareLinkContent;
 import com.facebook.share.widget.ShareDialog;
 import com.flurry.android.FlurryAgent;
+import com.ncsavault.floridavault.LoginEmailActivity;
+import com.ncsavault.floridavault.R;
 import com.nostra13.universalimageloader.cache.disc.impl.UnlimitedDiscCache;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
@@ -69,8 +72,6 @@ import com.twitter.sdk.android.core.TwitterSession;
 import com.twitter.sdk.android.core.identity.TwitterLoginButton;
 import com.twitter.sdk.android.tweetcomposer.TweetComposer;
 import com.twitter.sdk.android.tweetui.TweetUi;
-import com.ncsavault.floridavault.LoginEmailActivity;
-import com.ncsavault.floridavault.R;
 import com.viewpagerindicator.TitlePageIndicator;
 
 import net.hockeyapp.android.CrashManager;
@@ -79,6 +80,7 @@ import org.vault.app.adapters.PagerAdapter;
 import org.vault.app.adapters.TabsFragmentPagerAdapter;
 import org.vault.app.appcontroller.AppController;
 import org.vault.app.database.VaultDatabaseHelper;
+import org.vault.app.dto.TabBannerDTO;
 import org.vault.app.fragments.CoachesEraFragment;
 import org.vault.app.fragments.FavoritesFragment;
 import org.vault.app.fragments.FeaturedFragment;
@@ -92,7 +94,10 @@ import org.vault.app.utils.Utils;
 import java.io.File;
 import java.io.Serializable;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Vector;
 
@@ -101,8 +106,8 @@ import io.fabric.sdk.android.Fabric;
 @SuppressWarnings("serial")
 public class MainActivity extends FragmentActivity implements Serializable {
 
-    private static final String[] CONTENT = { "FeaturedFragment",
-            "PlayerFragment","OpponentsFragment", "CoachesEraFragment",
+    private static final String[] CONTENT = {"FeaturedFragment",
+            "PlayerFragment", "OpponentsFragment", "CoachesEraFragment",
             "FavoritesFragment"};
 
     public static TabsFragmentPagerAdapter mAdapter;
@@ -138,6 +143,8 @@ public class MainActivity extends FragmentActivity implements Serializable {
 
     ProfileTracker profileTracker;
 
+
+
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     @Override
     protected void onCreate(Bundle arg0) {
@@ -148,9 +155,8 @@ public class MainActivity extends FragmentActivity implements Serializable {
 
         CrashManager.initialize(this, GlobalConstants.HOCKEY_APP_ID, null);
 
-        if(VaultDatabaseHelper.getInstance(getApplicationContext()).getVideoCount() == 0 && !VideoDataService.isServiceRunning){
-//            Toast.makeText(this, "No videos in local database, starting background service", Toast.LENGTH_LONG).show();
-            VaultDatabaseHelper.getInstance(getApplicationContext()).removeAllRecords();
+        if (VaultDatabaseHelper.getInstance(getApplicationContext()).getVideoCount() == 0 && !VideoDataService.isServiceRunning) {
+            Toast.makeText(this, "No videos in local database, starting background service", Toast.LENGTH_LONG).show();
             startService(new Intent(this, VideoDataService.class));
         }
 
@@ -164,7 +170,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
         ImageLoader.getInstance().init(config);
 
 		/*ImageLoader.getInstance().init(ImageLoaderConfiguration
-				.createDefault(getBaseContext()));*/
+                .createDefault(getBaseContext()));*/
 
         aController = (AppController) getApplicationContext();
 
@@ -194,11 +200,11 @@ public class MainActivity extends FragmentActivity implements Serializable {
         initViews();
 
         //get Wifi strength
-        int numberOfLevels=5;
-        WifiManager wifiManager =  (WifiManager)context.getSystemService(Context.WIFI_SERVICE);
+        int numberOfLevels = 5;
+        WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-        int level= WifiManager.calculateSignalLevel(wifiInfo.getRssi(), numberOfLevels);
-        System.out.println("Wifi strength : "+level);
+        int level = WifiManager.calculateSignalLevel(wifiInfo.getRssi(), numberOfLevels);
+        System.out.println("Wifi strength : " + level);
 
         //get cellular internet connectivity strength
         /*TelephonyManager telephonyManager =        (TelephonyManager)this.getSystemService(Context.TELEPHONY_SERVICE);
@@ -219,6 +225,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
 
         // -------- initializing adapter and indicator-----------------
         initialisePaging();
+
         /*mAdapter = new TabsFragmentPagerAdapter(getSupportFragmentManager(),
                 context);
         mPager.setAdapter(mAdapter);*/
@@ -262,7 +269,6 @@ public class MainActivity extends FragmentActivity implements Serializable {
                 new FacebookCallback<LoginResult>() {
                     @Override
                     public void onSuccess(final LoginResult loginResult) {
-
                         System.out.println("Facebook login successful");
                     }
 
@@ -290,27 +296,28 @@ public class MainActivity extends FragmentActivity implements Serializable {
             @Override
             protected void onCurrentProfileChanged(Profile oldProfile, Profile currentProfile) {
                 if (currentProfile != null && GlobalConstants.IS_SHARING_ON_FACEBOOK) {
-                    shareVideoUrl(videourl,imageurl,description,name,context);
+                    shareVideoUrl(videourl, imageurl, description, name, context);
                 }
             }
         };
 
     }
 
-    private boolean checkIfFacebookAppInstalled(String uri)
-    {
+    /**
+     * Method used for facebook install or not
+     * @param uri
+     * @return
+     */
+    private boolean checkIfFacebookAppInstalled(String uri) {
         PackageManager pm = getPackageManager();
         boolean app_installed = false;
-        try
-        {
+        try {
             pm.getPackageInfo(uri, PackageManager.GET_ACTIVITIES);
             app_installed = true;
-        }
-        catch (PackageManager.NameNotFoundException e)
-        {
+        } catch (PackageManager.NameNotFoundException e) {
             app_installed = false;
         }
-        return app_installed ;
+        return app_installed;
     }
 
     /**
@@ -331,18 +338,40 @@ public class MainActivity extends FragmentActivity implements Serializable {
             }
             fragments.add(Fragment.instantiate(this, VideoListFragment.class.getName(), bundle));
         }*/
-        fragments.add(Fragment.instantiate(this, FeaturedFragment.class.getName()));
-        fragments.add(Fragment.instantiate(this, GamesFragment.class.getName()));
-        fragments.add(Fragment.instantiate(this, PlayerFragment.class.getName()));
-        fragments.add(Fragment.instantiate(this, OpponentsFragment.class.getName()));
-        fragments.add(Fragment.instantiate(this, CoachesEraFragment.class.getName()));
+        ArrayList<TabBannerDTO> lstTabBannerData = VaultDatabaseHelper.getInstance(getApplicationContext()).getAllLocalTabBannerData();
+        Collections.sort(lstTabBannerData, new Comparator<TabBannerDTO>() {
+
+            @Override
+            public int compare(TabBannerDTO lhs, TabBannerDTO rhs) {
+                // TODO Auto-generated method stub
+                return Long.valueOf(lhs.getTabIndexPosition())
+                        .compareTo(Long.valueOf(rhs.getTabIndexPosition()));
+            }
+        });
+        for (TabBannerDTO tabBannerDTO : lstTabBannerData) {
+            Bundle bundle = new Bundle();
+            bundle.putString("tabId", String.valueOf(tabBannerDTO.getTabId()));
+            bundle.putString("tabName", tabBannerDTO.getTabName());
+
+            if (tabBannerDTO.getTabName().toLowerCase().contains("featured")) {
+                fragments.add(Fragment.instantiate(this, FeaturedFragment.class.getName(), bundle));
+            } else if (tabBannerDTO.getTabName().toLowerCase().contains("games"))
+                fragments.add(Fragment.instantiate(this, GamesFragment.class.getName(), bundle));
+            else if (tabBannerDTO.getTabName().toLowerCase().contains("players"))
+                fragments.add(Fragment.instantiate(this, PlayerFragment.class.getName(), bundle));
+            else if (tabBannerDTO.getTabName().toLowerCase().contains("coach"))
+                fragments.add(Fragment.instantiate(this, CoachesEraFragment.class.getName(), bundle));
+            else if (tabBannerDTO.getTabName().toLowerCase().contains("opponent"))
+                fragments.add(Fragment.instantiate(this, OpponentsFragment.class.getName(), bundle));
+        }
         fragments.add(Fragment.instantiate(this, FavoritesFragment.class.getName()));
 
-        this.mPagerAdapter  = new PagerAdapter(super.getSupportFragmentManager(), fragments);
+        this.mPagerAdapter = new PagerAdapter(super.getSupportFragmentManager(), fragments);
         this.mPager.setAdapter(this.mPagerAdapter);
+
     }
 
-    public void setUpPullOptionHeader(){
+    public void setUpPullOptionHeader() {
         final View pullView = findViewById(R.id.rl_pull_option);
 
         final SharedPreferences prefs = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
@@ -361,7 +390,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
             }
         });
 
-        if(isPullHeaderSeen){
+        if (isPullHeaderSeen) {
             pullView.setVisibility(View.GONE);
         }
     }
@@ -377,6 +406,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
                     public void onClick(DialogInterface arg0, int arg1) {
 
                         stopService(new Intent(MainActivity.this, VideoDataService.class));
+//                        VideoDataFetchingService.isServiceRunning = false;
 
                         VaultDatabaseHelper.getInstance(getApplicationContext()).removeAllRecords();
 
@@ -405,8 +435,8 @@ public class MainActivity extends FragmentActivity implements Serializable {
         alertDialog.show();
     }
 
-    public void makeShareDialog(final String videoUrl, final String videoShortUrl, final String imageUrl, final String description, final String name, final Activity context){
-        View view = context.getLayoutInflater().inflate(R.layout.share_dialog,null);
+    public void makeShareDialog(final String videoUrl, final String videoShortUrl, final String imageUrl, final String description, final String name, final Activity context) {
+        View view = context.getLayoutInflater().inflate(R.layout.share_dialog, null);
         int Measuredwidth = 0;
         try {
             Point size = new Point();
@@ -420,13 +450,13 @@ public class MainActivity extends FragmentActivity implements Serializable {
                 Display d = w.getDefaultDisplay();
                 Measuredwidth = d.getWidth();
             }
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         Button flatButtonFacebook = (Button) view.findViewById(R.id.facebookShare);
         Button flatButtonTwitter = (Button) view.findViewById(R.id.twitterShare);
 
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int)(Measuredwidth*0.40), LinearLayout.LayoutParams.WRAP_CONTENT);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int) (Measuredwidth * 0.40), LinearLayout.LayoutParams.WRAP_CONTENT);
         flatButtonFacebook.setLayoutParams(lp);
         flatButtonTwitter.setLayoutParams(lp);
 
@@ -446,15 +476,14 @@ public class MainActivity extends FragmentActivity implements Serializable {
                             .image(Uri.parse(imageUrl));
 
                     builder.show();*/
-                    if(name != null && description != null) {
+                    if (name != null && description != null) {
                         Intent intent = new TweetComposer.Builder(MainActivity.this)
                                 .text(name + "\n" + description + "\n\n")
                                 .url(new URL(videoShortUrl))
                                 .createIntent();
 
                         startActivityForResult(intent, 100);
-                    }
-                    else if(name != null){
+                    } else if (name != null) {
                         Intent intent = new TweetComposer.Builder(MainActivity.this)
                                 .text(name + "\n\n")
                                 .url(new URL(videoShortUrl))
@@ -464,7 +493,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
                     }
 
 
-                }catch (Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -483,8 +512,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
                 progressDialog.dismiss();
                 if (AppController.getInstance().getUserId() == GlobalConstants.DEFAULT_USER_ID) {
                     showConfirmLoginDialog(GlobalConstants.SHARE_MESSAGE);
-                }
-                else if(Utils.isInternetAvailable(MainActivity.this)) {
+                } else if (Utils.isInternetAvailable(MainActivity.this)) {
                     if (videoShortUrl != null) {
                         if (videoShortUrl.length() == 0) {
                             //Toast.makeText(context, "Video Information Not Available To Share", Toast.LENGTH_SHORT).show();
@@ -496,7 +524,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
 //                    Toast.makeText(context, "Video Information Not Available To Share", Toast.LENGTH_SHORT).show();
                         showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
                     }
-                }else{
+                } else {
                     showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
                 }
             }
@@ -508,8 +536,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
                 progressDialog.dismiss();
                 if (AppController.getInstance().getUserId() == GlobalConstants.DEFAULT_USER_ID) {
                     showConfirmLoginDialog(GlobalConstants.SHARE_MESSAGE);
-                }
-                else if(Utils.isInternetAvailable(MainActivity.this)) {
+                } else if (Utils.isInternetAvailable(MainActivity.this)) {
                     if (videoShortUrl != null) {
                         if (videoShortUrl.length() == 0) {
 //                        Toast.makeText(context, "Video Information Not Available To Share", Toast.LENGTH_SHORT).show();
@@ -556,7 +583,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
 //                    Toast.makeText(context, "Video Information Not Available To Share", Toast.LENGTH_SHORT).show();
                         showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
                     }
-                }else{
+                } else {
                     showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
                 }
 
@@ -581,7 +608,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
 //        Toast.makeText(MainActivity.this,"Request Code : "+requestCode,Toast.LENGTH_SHORT).show();
     }
 
-    public void shareVideoUrl(String videourl,String imageurl,String description,String name, final Activity context){
+    public void shareVideoUrl(String videourl, String imageurl, String description, String name, final Activity context) {
         try {
             final FacebookCallback<Sharer.Result> shareCallback = new FacebookCallback<Sharer.Result>() {
                 @Override
@@ -604,10 +631,10 @@ public class MainActivity extends FragmentActivity implements Serializable {
                 @Override
                 public void onSuccess(Sharer.Result result) {
                     //Log.d("HelloFacebook", "Success!");
-                    boolean installed  =   checkIfFacebookAppInstalled("com.facebook.android");
-                    if(!installed)
+                    boolean installed = checkIfFacebookAppInstalled("com.facebook.android");
+                    if (!installed)
                         installed = checkIfFacebookAppInstalled("com.facebook.katana");
-                    if(!installed)
+                    if (!installed)
                         showToastMessage(GlobalConstants.FACEBOOK_POST_SUCCESS_MESSAGE);
                     GlobalConstants.IS_SHARING_ON_FACEBOOK = false;
                 /*if (result.getPostId() != null) {
@@ -658,7 +685,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
             } else {
                 ((MainActivity) context).loginWithFacebook(videourl, imageurl, description, name, context);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -680,7 +707,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
     protected void onPause() {
         super.onPause();
         AppEventsLogger.deactivateApp(this);
-        if(progressDialog != null)
+        if (progressDialog != null)
             progressDialog.dismiss();
     }
 
@@ -693,8 +720,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
     }
 
 
-
-    public void loginWithFacebook(String vidurl,String imgurl,String desc,String n, Activity ctx){
+    public void loginWithFacebook(String vidurl, String imgurl, String desc, String n, Activity ctx) {
         videourl = vidurl;
         imageurl = imgurl;
         description = desc;
@@ -742,10 +768,10 @@ public class MainActivity extends FragmentActivity implements Serializable {
 
         SharedPreferences pref = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
         boolean isSkipLogin = pref.getBoolean(GlobalConstants.PREF_VAULT_SKIP_LOGIN, false);
-        if (isSkipLogin || AppController.getInstance().getUserId() == GlobalConstants.DEFAULT_USER_ID)  {
+        if (isSkipLogin || AppController.getInstance().getUserId() == GlobalConstants.DEFAULT_USER_ID) {
             // try to see if already exists
             MenuItem item = menu.findItem(R.id.action_profile);
-            if(item != null){
+            if (item != null) {
                 menu.removeItem(R.id.action_profile);
             }
 
@@ -754,9 +780,9 @@ public class MainActivity extends FragmentActivity implements Serializable {
                 menu.add(0, 1001, 0,
                         "Log In");
             }
-        }else if(AppController.getInstance().getUserId() > 0 || Profile.getCurrentProfile() != null){
+        } else if (AppController.getInstance().getUserId() > 0 || Profile.getCurrentProfile() != null) {
             MenuItem item = menu.findItem(1001);
-            if(item != null)
+            if (item != null)
                 menu.removeItem(1001);
         }
 
@@ -806,42 +832,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
     public boolean onOptionsItemSelected(MenuItem item) {
         // TODO Auto-generated method stub
         switch (item.getItemId()) {
-            case R.id.action_support:
-                // ----------- send mail for support------------
-                Intent supportIntent = new Intent(this, ContactActivity.class);
-                supportIntent.putExtra("text", GlobalConstants.SUPPORT_TEXT);
-                startActivity(supportIntent);
-                return true;
-                /*Utils.sendEmail(
-                        getResources().getString(R.string.email_support_feedback),
-                        getResources().getString(R.string.email_support_subject),
-                        getResources().getString(R.string.email_support_text),
-                        context);*/
-                //break;
-            case R.id.action_cliprequest:
-                // ----------- send mail for cliprequest-----------
-                Intent requestIntent = new Intent(this, ContactActivity.class);
-                requestIntent.putExtra("text", GlobalConstants.CLIP_REQUEST_TEXT);
-                startActivity(requestIntent);
-                return true;
-                /*Utils.sendEmail(getResources()
-                                .getString(R.string.email_cliprequest), getResources()
-                                .getString(R.string.email_cliprequest_subject),
-                        getResources().getString(R.string.email_cliprequest_text),
-                        context);
-                break;*/
-            case R.id.action_feedback:
-                // ----------- send mail for feedback-----------
-                Intent feedbackIntent = new Intent(this, ContactActivity.class);
-                feedbackIntent.putExtra("text", GlobalConstants.FEEDBACK_TEXT);
-                startActivity(feedbackIntent);
-                return true;
-                /*Utils.sendEmail(
-                        getResources().getString(R.string.email_support_feedback),
-                        getResources().getString(R.string.email_feedback_subject),
-                        getResources().getString(R.string.email_feedback_text),
-                        context);
-                break;*/
+
             case R.id.action_toggle_notifications:
                 Utils.getInstance().showNotificationToggleSetting(MainActivity.this);
                 break;
@@ -851,12 +842,12 @@ public class MainActivity extends FragmentActivity implements Serializable {
                 return true;
             case R.id.action_contact:
                 long userId = AppController.getInstance().getUserId();
-                if(userId == GlobalConstants.DEFAULT_USER_ID){
+                if (userId == GlobalConstants.DEFAULT_USER_ID) {
                     Intent intent = new Intent(MainActivity.this, ContactActivity.class);
                     //add no login TagId
                     intent.putExtra("tagId", GlobalConstants.NO_LOGIN_TAG_ID);
                     startActivity(intent);
-                }else {
+                } else {
                     CharSequence supportOptions[] = new CharSequence[]{"Somethings Wrong", "I have a suggestion", "Clip Request"};
 
                     TextView title = new TextView(this);
@@ -903,6 +894,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
             case 1001:
 
                 stopService(new Intent(MainActivity.this, VideoDataService.class));
+//                VideoDataFetchingService.isServiceRunning = false;
 
                 VaultDatabaseHelper.getInstance(getApplicationContext()).removeAllRecords();
 
@@ -920,7 +912,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
         return false;
     }
 
-    public void showToastMessage(String message){
+    public void showToastMessage(String message) {
         View includedLayout = findViewById(R.id.llToast);
 
         final TextView text = (TextView) includedLayout.findViewById(R.id.tv_toast_message);
@@ -933,9 +925,9 @@ public class MainActivity extends FragmentActivity implements Serializable {
         text.setVisibility(View.VISIBLE);
 
         Handler handler = new Handler();
-        handler.postDelayed(new Runnable(){
+        handler.postDelayed(new Runnable() {
             @Override
-            public void run(){
+            public void run() {
                 animation = AnimationUtils.loadAnimation(MainActivity.this,
                         R.anim.abc_fade_out);
 

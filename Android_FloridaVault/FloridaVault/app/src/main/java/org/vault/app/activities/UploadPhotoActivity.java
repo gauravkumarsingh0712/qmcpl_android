@@ -29,6 +29,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.facebook.Profile;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.ncsavault.floridavault.BaseActivity;
@@ -175,8 +176,8 @@ public class UploadPhotoActivity extends BaseActivity {
             @Override
             public void onClick(View v) {
                 final File root = new File(Environment.getExternalStorageDirectory() + File.separator + GlobalConstants.PROFILE_PIC_DIRECTORY + File.separator);
-                if(root != null) {
-                    if(root.listFiles() != null) {
+                if (root != null) {
+                    if (root.listFiles() != null) {
                         for (File childFile : root.listFiles()) {
                             if (childFile != null) {
                                 if (childFile.exists())
@@ -189,6 +190,9 @@ public class UploadPhotoActivity extends BaseActivity {
                     }
                 }
                 onBackPressed();
+                overridePendingTransition(R.anim.leftin, R.anim.rightout);
+
+
             }
         });
     }
@@ -213,37 +217,28 @@ public class UploadPhotoActivity extends BaseActivity {
             @Override
             protected Boolean doInBackground(Void... params) {
                 boolean status = true;
-                /*String featuredUrl = GlobalConstants.FEATURED_API_URL + "userid=" + AppController.getInstance().getUserId();
-                String playerUrl = GlobalConstants.PLAYER_API_URL + "userid=" + AppController.getInstance().getUserId();
-                String coachesUrl = GlobalConstants.COACH_API_URL + "userid=" + AppController.getInstance().getUserId();
-                String opponentUrl = GlobalConstants.OPPONENT_API_URL + "userid=" + AppController.getInstance().getUserId();
-                String favoriteUrl = GlobalConstants.FAVORITE_API_URL + "userid=" + AppController.getInstance().getUserId();
-                try{
-                    videosList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(featuredUrl));
-                    videosList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(playerUrl));
-                    videosList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(coachesUrl));
-                    videosList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(opponentUrl));
-                    videosList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(favoriteUrl));
-
-                    SharedPreferences prefs = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
-                    if(!prefs.getBoolean(GlobalConstants.PREF_VAULT_SKIP_LOGIN, false)){
-                        long userId = prefs.getLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, 0);
-                        String email = prefs.getString(GlobalConstants.PREF_VAULT_USER_EMAIL, "");
-                        if(userId > 0 && !email.isEmpty())
-                            userJsonData = AppController.getInstance().getServiceManager().getVaultService().getUserData(userId, email);
-                    }
-
-                    status = true;
-                }catch(Exception e){
-                    e.printStackTrace();
-                    status = false;
-                }*/
                 try {
                     SharedPreferences pref = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
                     final long userId = pref.getLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, 0);
                     final String email = pref.getString(GlobalConstants.PREF_VAULT_USER_EMAIL, "");
                     userJsonData = AppController.getInstance().getServiceManager().getVaultService().getUserData(userId, email);
-                }catch (Exception e){
+
+                    if (!userJsonData.isEmpty()) {
+                        Gson gson = new Gson();
+                        Type classType = new TypeToken<User>() {
+                        }.getType();
+                        System.out.println("User Data : " + userJsonData);
+                        User responseUser = gson.fromJson(userJsonData.trim(), classType);
+                        if (responseUser != null) {
+                            if (responseUser.getUserID() > 0) {
+                                AppController.getInstance().storeUserDataInPreferences(responseUser);
+                            }
+                        }
+                    }
+
+
+                    status = Utils.loadDataFromServer(UploadPhotoActivity.this);
+                } catch (Exception e) {
                     e.printStackTrace();
                     status = false;
                 }
@@ -255,30 +250,19 @@ public class UploadPhotoActivity extends BaseActivity {
                 super.onPostExecute(isAllFetched);
                 try {
                     if (isAllFetched) {
+                        Profile fbProfile = Profile.getCurrentProfile();
+                        SharedPreferences pref = AppController.getInstance().getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
+                        long userId = pref.getLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, 0);
 
-                        //UGAVaultDatabaseHelper.getInstance(getApplicationContext()).insertVideosInDatabase(videosList);
-                        //save user data in local database
-                        if(!userJsonData.isEmpty()){
-                            Gson gson = new Gson();
-                            Type classType = new TypeToken<User>() {
-                            }.getType();
-                            System.out.println("User Data : "+userJsonData);
-                            User responseUser = gson.fromJson(userJsonData.trim(), classType);
-                            if (responseUser != null) {
-                                if (responseUser.getUserID() > 0) {
-                                    AppController.getInstance().storeUserDataInPreferences(responseUser);
-                                }
-                            }
+                        if (fbProfile != null || userId > 0) {
+                            Intent intent = new Intent(UploadPhotoActivity.this, MainActivity.class);
+                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(intent);
+                            overridePendingTransition(R.anim.slideup, R.anim.nochange);
+                            finish();
+                            if(!VideoDataService.isServiceRunning)
+                                startService(new Intent(UploadPhotoActivity.this, VideoDataService.class));
                         }
-
-                        VaultDatabaseHelper.getInstance(getApplicationContext()).removeAllRecords();
-                        startService(new Intent(UploadPhotoActivity.this, VideoDataService.class));
-
-                        Intent intent = new Intent(UploadPhotoActivity.this, MainActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(intent);
-                        overridePendingTransition(R.anim.rightin, R.anim.leftout);
-                        finish();
                     }
                     pDialog.dismiss();
                 } catch (Exception e) {
@@ -353,8 +337,8 @@ public class UploadPhotoActivity extends BaseActivity {
 
                             if (isImageProvided) {
                                 final File root = new File(Environment.getExternalStorageDirectory() + File.separator + GlobalConstants.PROFILE_PIC_DIRECTORY + File.separator);
-                                if(root != null) {
-                                    if(root.listFiles() != null) {
+                                if (root != null) {
+                                    if (root.listFiles() != null) {
                                         for (File childFile : root.listFiles()) {
                                             if (childFile != null) {
                                                 if (childFile.exists())
@@ -383,7 +367,7 @@ public class UploadPhotoActivity extends BaseActivity {
         mLoginTask.execute();
     }
 
-    public void showToastMessage(String message){
+    public void showToastMessage(String message) {
         View includedLayout = findViewById(R.id.llToast);
 
         final TextView text = (TextView) includedLayout.findViewById(R.id.tv_toast_message);
@@ -436,7 +420,6 @@ public class UploadPhotoActivity extends BaseActivity {
 */
 
 
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
@@ -458,7 +441,7 @@ public class UploadPhotoActivity extends BaseActivity {
                 if (selectedImageUri != null) {
                     try {
                         Bitmap selectedBitmap = Utils.getInstance().decodeUri(selectedImageUri, UploadPhotoActivity.this);
-                        selectedBitmap = Utils.getInstance().rotateImageDetails(selectedBitmap, selectedImageUri,UploadPhotoActivity.this, sdImageMainDirectory);
+                        selectedBitmap = Utils.getInstance().rotateImageDetails(selectedBitmap, selectedImageUri, UploadPhotoActivity.this, sdImageMainDirectory);
                         /*Drawable drawable = new BitmapDrawable(getResources(), selectedBitmap);
                         userProfilePic.setImageDrawable(drawable);*/
 

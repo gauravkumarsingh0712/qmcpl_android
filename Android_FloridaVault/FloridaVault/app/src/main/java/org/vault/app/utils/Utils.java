@@ -3,8 +3,6 @@ package org.vault.app.utils;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -12,43 +10,47 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
+import android.graphics.Point;
 import android.media.ExifInterface;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Handler;
+import android.os.Build;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.Display;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
+import android.view.WindowManager;
 import android.widget.CompoundButton;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gcm.GCMRegistrar;
-import com.ncsavault.floridavault.LoginEmailActivity;
+import com.ncsavault.floridavault.R;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
-import com.ncsavault.floridavault.R;
+import com.nostra13.universalimageloader.utils.MemoryCacheUtils;
 
 import org.vault.app.activities.MainActivity;
 import org.vault.app.appcontroller.AppController;
 import org.vault.app.database.VaultDatabaseHelper;
 import org.vault.app.dto.TabBannerDTO;
 import org.vault.app.globalconstants.GlobalConstants;
-import org.vault.app.service.VideoDataService;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -58,7 +60,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Locale;
+import java.util.HashMap;
 
 /**
  * @author aqeeb.pathan
@@ -75,6 +77,9 @@ public class Utils {
     AsyncTask<Void, Void, Void> mPermissionChangeTask;
     SharedPreferences prefs;
     private String result;
+
+
+    private static AsyncTask<Void, Void, ArrayList<TabBannerDTO>> mBannerTask;
 
     public static Utils getInstance() {
         return utilInstance;
@@ -117,25 +122,25 @@ public class Utils {
 
         int id = context.getResources().getIdentifier("config_showNavigationBar", "bool", "android");
 
-        if(!hasMenuKey && !hasBackKey) {                // Condition worked for Samsung Devices
+        if (!hasMenuKey && !hasBackKey) {                // Condition worked for Samsung Devices
             result = getNavigationBarHeight(context);
-        }else if(id > 0 && context.getResources().getBoolean(id)){      // Condition will work for Micromax Canvas Nitro 2
+        } else if (id > 0 && context.getResources().getBoolean(id)) {      // Condition will work for Micromax Canvas Nitro 2
             result = getNavigationBarHeight(context);
-        }else if((!(hasBackKey && hasHomeKey))){        // Condition worked for all other devices
+        } else if ((!(hasBackKey && hasHomeKey))) {        // Condition worked for all other devices
             result = getNavigationBarHeight(context);
         }
         return result;
     }
 
-    public static int getNavigationBarHeight(Context context){
+    public static int getNavigationBarHeight(Context context) {
         //The device has a navigation bar
         Resources resources = context.getResources();
 
         int orientation = context.getResources().getConfiguration().orientation;
         int resourceId;
-        if (context.getResources().getBoolean(R.bool.isTablet)){
+        if (context.getResources().getBoolean(R.bool.isTablet)) {
             resourceId = resources.getIdentifier(orientation == Configuration.ORIENTATION_PORTRAIT ? "navigation_bar_height" : "navigation_bar_height_landscape", "dimen", "android");
-        }  else {
+        } else {
             resourceId = resources.getIdentifier(orientation == Configuration.ORIENTATION_PORTRAIT ? "navigation_bar_height" : "navigation_bar_width", "dimen", "android");
         }
 
@@ -173,36 +178,112 @@ public class Utils {
         }
     }
 
-    public static void addBannerImageWithoutCaching(final ImageView bannerCacheableImageView, String url) {
-        DisplayImageOptions imgLoadingOptions = new DisplayImageOptions.Builder()
-                .resetViewBeforeLoading(false)
-                .bitmapConfig(Bitmap.Config.RGB_565)
-                .imageScaleType(ImageScaleType.EXACTLY)
-                .build();
-        com.nostra13.universalimageloader.core.ImageLoader.getInstance().displayImage(url,
-                bannerCacheableImageView, imgLoadingOptions, new ImageLoadingListener() {
 
-                    @Override
-                    public void onLoadingStarted(String s, View view) {
-                    }
+    public static void addBannerImage(final ImageView bannerCacheableImageView, final LinearLayout layout, TabBannerDTO tabBannerDTO, final Activity context) {
+        if (tabBannerDTO != null)
+            if (tabBannerDTO.isBannerActive()) {
+                DisplayImageOptions imgLoadingOptions = new DisplayImageOptions.Builder()
+                        .cacheOnDisk(true).resetViewBeforeLoading(true)
+                        .cacheInMemory(true)
+                        .bitmapConfig(Bitmap.Config.RGB_565)
+                        .imageScaleType(ImageScaleType.EXACTLY)
+                        .build();
+                com.nostra13.universalimageloader.core.ImageLoader.getInstance().displayImage(tabBannerDTO.getBannerURL(),
+                        bannerCacheableImageView, imgLoadingOptions, new ImageLoadingListener() {
 
-                    @Override
-                    public void onLoadingFailed(String s, View view, FailReason failReason) {
-                        bannerCacheableImageView.setVisibility(View.GONE);
-                    }
+                            @Override
+                            public void onLoadingStarted(String s, View view) {
+                            }
 
-                    @Override
-                    public void onLoadingComplete(String s, View view, Bitmap bitmap) {
-                        Animation anim = AnimationUtils.loadAnimation(AppController.getInstance().getApplicationContext(), R.anim.slidedown_header);
-                        bannerCacheableImageView.setAnimation(anim);
-                        bannerCacheableImageView.setVisibility(View.VISIBLE);
-                    }
+                            @Override
+                            public void onLoadingFailed(String s, View view, FailReason failReason) {
+                                bannerCacheableImageView.setVisibility(View.GONE);
+                            }
 
-                    @Override
-                    public void onLoadingCancelled(String s, View view) {
-//                        bannerCacheableImageView.setVisibility(View.GONE);
-                    }
-                });
+                            @Override
+                            public void onLoadingComplete(String s, View view, Bitmap bitmap) {
+                                Point size = new Point();
+                                WindowManager w = context.getWindowManager();
+                                int measuredWidth = 0;
+
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+                                    w.getDefaultDisplay().getSize(size);
+                                    measuredWidth = size.x;
+                                } else {
+                                    Display d = w.getDefaultDisplay();
+                                    measuredWidth = d.getWidth();
+                                }
+                                int aspectHeight = (measuredWidth * 3) / 16;
+
+                                FrameLayout.LayoutParams rLp = new FrameLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, aspectHeight);
+                                layout.setLayoutParams(rLp);
+
+                                bannerCacheableImageView.setVisibility(View.VISIBLE);
+                            }
+
+                            @Override
+                            public void onLoadingCancelled(String s, View view) {
+                                //                        bannerCacheableImageView.setVisibility(View.GONE);
+                            }
+                        });
+            } else {
+                bannerCacheableImageView.setVisibility(View.GONE);
+            }
+    }
+
+    public static void addBannerImagePullToRefresh(final ImageView bannerCacheableImageView, final LinearLayout llBlock, TabBannerDTO tabBannerDTO, final Activity context, final ProgressBar progressBar) {
+        if (tabBannerDTO != null)
+            if (tabBannerDTO.isBannerActive()) {
+                DisplayImageOptions imgLoadingOptions = new DisplayImageOptions.Builder()
+                        .cacheOnDisk(true).resetViewBeforeLoading(true)
+                        .cacheInMemory(true)
+                        .bitmapConfig(Bitmap.Config.RGB_565)
+                        .imageScaleType(ImageScaleType.EXACTLY)
+                        .build();
+                com.nostra13.universalimageloader.core.ImageLoader.getInstance().displayImage(tabBannerDTO.getBannerURL(),
+                        bannerCacheableImageView, imgLoadingOptions, new ImageLoadingListener() {
+
+                            @Override
+                            public void onLoadingStarted(String s, View view) {
+                                progressBar.setVisibility(View.VISIBLE);
+                            }
+
+                            @Override
+                            public void onLoadingFailed(String s, View view, FailReason failReason) {
+                                bannerCacheableImageView.setVisibility(View.GONE);
+                                progressBar.setVisibility(View.GONE);
+                            }
+
+                            @Override
+                            public void onLoadingComplete(String s, View view, Bitmap bitmap) {
+                                progressBar.setVisibility(View.GONE);
+                                Point size = new Point();
+                                WindowManager w = context.getWindowManager();
+                                int measuredWidth = 0;
+
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+                                    w.getDefaultDisplay().getSize(size);
+                                    measuredWidth = size.x;
+                                } else {
+                                    Display d = w.getDefaultDisplay();
+                                    measuredWidth = d.getWidth();
+                                }
+                                int aspectHeight = (measuredWidth * 3) / 16;
+
+                                FrameLayout.LayoutParams rLp = new FrameLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, aspectHeight);
+                                llBlock.setLayoutParams(rLp);
+                                bannerCacheableImageView.setVisibility(View.VISIBLE);
+                            }
+
+                            @Override
+                            public void onLoadingCancelled(String s, View view) {
+                                progressBar.setVisibility(View.GONE);
+                                //                        bannerCacheableImageView.setVisibility(View.GONE);
+                            }
+                        });
+            } else {
+                bannerCacheableImageView.setVisibility(View.GONE);
+            }
     }
 
 
@@ -307,7 +388,7 @@ public class Utils {
 
         // Register custom Broadcast receiver to show messages on activity
         /*registerReceiver(mHandleMessageReceiver, new IntentFilter(
-				GlobalConstants.DISPLAY_MESSAGE_ACTION));*/
+                GlobalConstants.DISPLAY_MESSAGE_ACTION));*/
 
         // Get GCM registration id
         final String regId = GCMRegistrar.getRegistrationId(mActivity.getApplicationContext());
@@ -525,103 +606,101 @@ public class Utils {
         return path;
     }
 
+    public static boolean loadDataFromServer(final Activity context) {
 
-    private static  AsyncTask<Void, Void, ArrayList<TabBannerDTO>> mBannerTask;
-    public static ArrayList<TabBannerDTO> bannerDTOArrayList = new ArrayList<TabBannerDTO>();
-    /**
-     * This method used for fetching all data for banner from Server
-     */
-    public static void loadDataFromServer(final Activity context) {
+        /**
+         * This method used for fetching all data for banner from Server
+         */
 
-        mBannerTask = new AsyncTask<Void, Void, ArrayList<TabBannerDTO>>() {
 
-            @Override
-            protected void onPreExecute() {
-                super.onPreExecute();
-                ProgressDialog pDialog = new ProgressDialog(context, R.style.CustomDialogTheme);
-                pDialog.show();
-                pDialog.setContentView(AppController.getInstance().setViewToProgressDialog(context));
-                pDialog.setCanceledOnTouchOutside(false);
-                pDialog.setCancelable(false);
+        try {
+            ArrayList<TabBannerDTO> arrayListBanner = new ArrayList<TabBannerDTO>();
 
-                pDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-                    @Override
-                    public void onCancel(DialogInterface dialog) {
-                        if (mBannerTask != null) {
-                            if (!mBannerTask.isCancelled())
-                                mBannerTask.cancel(true);
-                        }
+            arrayListBanner.addAll(AppController.getInstance().getServiceManager().getVaultService().getAllTabBannerData());
+
+            ArrayList<String> lstUrls = new ArrayList<>();
+            File imageFile;
+            for (TabBannerDTO bDTO : arrayListBanner) {
+                TabBannerDTO localBannerData = VaultDatabaseHelper.getInstance(context).getLocalTabBannerDataByTabId(bDTO.getTabId());
+                if (localBannerData != null) {
+                    if ((localBannerData.getBannerModified() != bDTO.getBannerModified()) || (localBannerData.getBannerCreated() != bDTO.getBannerCreated())) {
+                        VaultDatabaseHelper.getInstance(context).updateBannerData(bDTO);
                     }
-                });
-            }
-
-            @Override
-            protected ArrayList<TabBannerDTO> doInBackground(Void... params) {
-
-                ArrayList<TabBannerDTO> arrayListBanner = new ArrayList<TabBannerDTO>();
-
-
-                String url = "" + "userid=" + AppController.getInstance().getUserId();
-                try {
-                    arrayListBanner.addAll(AppController.getInstance().getServiceManager().getVaultService().getBannerListFromServer(url));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                bannerDTOArrayList.clear();
-                bannerDTOArrayList.addAll(arrayListBanner);
-
-                for (TabBannerDTO bDTO : bannerDTOArrayList) {
-                    TabBannerDTO localBannerData = VaultDatabaseHelper.getInstance(context.getApplicationContext()).getTabBannerDataById(bDTO.getBannerId());
-                    if (localBannerData != null) {
-                        if (localBannerData.getLastBannerUpdate() != bDTO.getLastBannerUpdate()) {
-                            VaultDatabaseHelper.getInstance(context.getApplicationContext()).updateBannerData(bDTO);
+                    if (localBannerData.getTabDataModified() != bDTO.getTabDataModified()) {
+                        VaultDatabaseHelper.getInstance(context).updateTabData(bDTO);
+                        if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.FEATURED).toLowerCase())) {
+                            VaultDatabaseHelper.getInstance(context).removeRecordsByTab(GlobalConstants.OKF_FEATURED);
+                            lstUrls.add(GlobalConstants.FEATURED_API_URL);
+                        } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.GAMES).toLowerCase())) {
+                            VaultDatabaseHelper.getInstance(context).removeRecordsByTab(GlobalConstants.OKF_GAMES);
+                            lstUrls.add(GlobalConstants.GAMES_API_URL);
+                        } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.PLAYERS).toLowerCase())) {
+                            VaultDatabaseHelper.getInstance(context).removeRecordsByTab(GlobalConstants.OKF_PLAYERS);
+                            lstUrls.add(GlobalConstants.PLAYER_API_URL);
+                        } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.OPPONENTS).toLowerCase())) {
+                            VaultDatabaseHelper.getInstance(context).removeRecordsByTab(GlobalConstants.OKF_OPPONENT);
+                            lstUrls.add(GlobalConstants.OPPONENT_API_URL);
+                        } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.COACHES_ERA).toLowerCase())) {
+                            VaultDatabaseHelper.getInstance(context).removeRecordsByTab(GlobalConstants.OKF_COACH);
+                            lstUrls.add(GlobalConstants.COACH_API_URL);
                         }
-                        if (localBannerData.getLastServerTabUpdate() != bDTO.getLastServerTabUpdate()) {
-
-                            if (localBannerData.getTabName() == (GlobalConstants.FEATURED).toLowerCase(Locale.getDefault())) {
-                                VaultDatabaseHelper.getInstance(context.getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_FEATURED);
-                                VideoDataService.API_URLS.add(GlobalConstants.FEATURED_API_URL);
-
-                            } else if (localBannerData.getTabName() == (GlobalConstants.GAMES).toLowerCase(Locale.getDefault())) {
-                                VaultDatabaseHelper.getInstance(context.getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_GAMES);
-                                VideoDataService.API_URLS.add(GlobalConstants.GAMES_API_URL);
-
-                            } else if (localBannerData.getTabName() == (GlobalConstants.PLAYERS).toLowerCase(Locale.getDefault())) {
-
-                                VaultDatabaseHelper.getInstance(context.getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_PLAYERS);
-                                VideoDataService.API_URLS.add(GlobalConstants.PLAYER_API_URL);
-
-                            } else if (localBannerData.getTabName() == (GlobalConstants.OPPONENTS).toLowerCase(Locale.getDefault())) {
-
-                                VaultDatabaseHelper.getInstance(context.getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_OPPONENT);
-                                VideoDataService.API_URLS.add(GlobalConstants.OPPONENT_API_URL);
-
-                            } else if (localBannerData.getTabName() == (GlobalConstants.COACHES_ERA).toLowerCase(Locale.getDefault())) {
-
-                                VaultDatabaseHelper.getInstance(context.getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_COACH);
-                                VideoDataService.API_URLS.add(GlobalConstants.COACH_API_URL);
-
-                            }
+                        imageFile = ImageLoader.getInstance().getDiscCache().get(localBannerData.getBannerURL());
+                        if (imageFile.exists()) {
+                            imageFile.delete();
                         }
-                    } else {
-                        VaultDatabaseHelper.getInstance(context.getApplicationContext()).insertTabBannerData(bDTO);
+                        MemoryCacheUtils.removeFromCache(localBannerData.getBannerURL(), ImageLoader.getInstance().getMemoryCache());
                     }
+                } else {
+                    VaultDatabaseHelper.getInstance(context).insertTabBannerData(bDTO);
                 }
-
-                return null;
             }
-
-
-            @Override
-            protected void onPostExecute(ArrayList<TabBannerDTO> bannerDTOs) {
-                super.onPostExecute(bannerDTOs);
-
-
+            if (lstUrls.size() == 0) {
+                int count = VaultDatabaseHelper.getInstance(context).getTabBannerCount();
+                if (count > 0) {
+                    lstUrls.add(GlobalConstants.FEATURED_API_URL);
+                    lstUrls.add(GlobalConstants.GAMES_API_URL);
+                    lstUrls.add(GlobalConstants.PLAYER_API_URL);
+                    lstUrls.add(GlobalConstants.OPPONENT_API_URL);
+                    lstUrls.add(GlobalConstants.COACH_API_URL);
+                }
             }
-        };
+            AppController.getInstance().setAPI_URLS(lstUrls);
+
+            /*Thread thread = new Thread();
+            thread.sleep(3000);*/
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
 
     }
 
+    public HashMap getVideoInfoFromBanner(String actionUrl) {
+//        actionUrl =  "uga:\\tabId=8;tabKeyword=OKFFeatured;videoId=4124519102076;videoName=Test featured;playlistId=0;playlistName=";
+        HashMap videoMap = new HashMap();
+        actionUrl = actionUrl.substring(5);
+        String[] videoParams = actionUrl.split(";");
+        if (videoParams.length > 0) {
+            for (int i = 0; i < videoParams.length; i++) {
 
+                String[] values = videoParams[i].split("=");
+                if (values[0].toString().toLowerCase().contains("tabid"))
+                    videoMap.put("TabId", values[1]);
+                else if (values[0].toString().toLowerCase().contains("tabkeyword"))
+                    videoMap.put("TabKeyword", values[1]);
+                else if (values[0].toString().toLowerCase().contains("videoid"))
+                    videoMap.put("VideoId", values[1]);
+                else if (values[0].toString().toLowerCase().contains("videoname"))
+                    videoMap.put("VideoName", values[1]);
+                else if (values[0].toString().toLowerCase().contains("playlistid"))
+                    videoMap.put("PlaylistId", values[1]);
+
+            }
+        }
+        System.out.println("Video Hash Map Length : " + videoMap.size());
+        return videoMap;
+    }
 }

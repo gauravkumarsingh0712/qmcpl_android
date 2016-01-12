@@ -4,6 +4,7 @@ package org.vault.app.adapters;
  * Created by aqeeb.pathan on 25-07-2015.
  */
 
+import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
@@ -49,7 +50,16 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
 
     @Override
     public CharSequence getPageTitle(int position) {
-        return PagerAdapter.CONTENT[position].toUpperCase();
+        if(fragments.get(position).getArguments() != null) {
+            Bundle bundle = fragments.get(position).getArguments();
+            String tabName = bundle.getString("tabName");
+            if (tabName != null)
+                return tabName.toUpperCase();
+            return "";
+        }else{
+            return CONTENT[5].toUpperCase();
+        }
+//        return PagerAdapter.CONTENT[position].toUpperCase();
 //        return GlobalConstants.tabsList[position].toUpperCase();
     }
 }

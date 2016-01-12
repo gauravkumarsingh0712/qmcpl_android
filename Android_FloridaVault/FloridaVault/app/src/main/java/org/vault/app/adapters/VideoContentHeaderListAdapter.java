@@ -24,14 +24,13 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.SectionIndexer;
 import android.widget.TextView;
-import android.widget.ToggleButton;
 
+import com.ncsavault.floridavault.LoginEmailActivity;
+import com.ncsavault.floridavault.R;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
-import com.ncsavault.floridavault.LoginEmailActivity;
-import com.ncsavault.floridavault.R;
 
 import org.vault.app.activities.MainActivity;
 import org.vault.app.appcontroller.AppController;
@@ -42,6 +41,8 @@ import org.vault.app.service.VideoDataService;
 import org.vault.app.utils.Utils;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
@@ -250,31 +251,7 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
         return convertView;
     }
 
-    /**
-     * This methos is use to filter the lisview according to text-------
-     *
-     * @param charText
-     */
-    public void filter(String charText) {
-        charText = charText.toLowerCase(Locale.getDefault());
-        arrayListVideoDTOs.clear();
-        if (charText.length() == 0) {
-            arrayListVideoDTOs.addAll(listSearch);
-        } else {
-            for (VideoDTO dto : listSearch) {
-                if (dto.getVideoShortDescription().toLowerCase(Locale.getDefault())
-                        .contains(charText) || dto.getVideoName().toLowerCase(Locale.getDefault()).contains(charText) || dto.getVideoTags().toLowerCase(Locale.getDefault()).contains(charText)) {
-                    arrayListVideoDTOs.add(dto);
-                }
-            }
-        }
 
-        if (arrayListVideoDTOs.size() > 0)
-            updateIndexer();
-        notifyDataSetChanged();
-
-
-    }
 
     public void initData(final int pos){
         if(arrayListVideoDTOs.get(pos).isVideoIsFavorite())
@@ -354,60 +331,73 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
         viewHolder.imgToggleButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (Utils.isInternetAvailable(context)) {
-                    if (AppController.getInstance().getUserId() == GlobalConstants.DEFAULT_USER_ID) {
-                        viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
-                        showConfirmLoginDialog(GlobalConstants.LOGIN_MESSAGE);
-                    } else {
-                        if (arrayListVideoDTOs.get(pos).isVideoIsFavorite()) {
-                            isFavoriteChecked = false;
-                            VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(0, arrayListVideoDTOs.get(pos).getVideoId());
-                            arrayListVideoDTOs.get(pos).setVideoIsFavorite(false);
-                            viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
-                        }else {
-                            isFavoriteChecked = true;
-                            VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(1, arrayListVideoDTOs.get(pos).getVideoId());
-                            arrayListVideoDTOs.get(pos).setVideoIsFavorite(true);
-                            viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargold);
-                        }
-
-                        mPostTask = new AsyncTask<Void, Void, Void>() {
-                            @Override
-                            protected void onPreExecute() {
-                                super.onPreExecute();
-                            }
-
-                            @Override
-                            protected Void doInBackground(Void... params) {
-                                try {
-                                    postResult = AppController.getInstance().getServiceManager().getVaultService().postFavoriteStatus(AppController.getInstance().getUserId(), arrayListVideoDTOs.get(pos).getVideoId(), arrayListVideoDTOs.get(pos).getPlaylistId(), isFavoriteChecked);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                                return null;
-                            }
-
-                            @Override
-                            protected void onPostExecute(Void result) {
-                                System.out.println("Result of POST request : " + postResult);
-                                if (isFavoriteChecked)
-                                    VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(1, arrayListVideoDTOs.get(pos).getVideoId());
-                                else
-                                    VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(0, arrayListVideoDTOs.get(pos).getVideoId());
-                            }
-                        };
-
-//                        mPostTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-                        mPostTask.execute();
-                    }
+                if (arrayListVideoDTOs.get(pos).isVideoIsFavorite() && ((arrayListVideoDTOs.get(pos).getVideoLongUrl().length() == 0 || arrayListVideoDTOs.get(pos).getVideoLongUrl().toLowerCase().equals("none")))) {
+                    markFavoriteStatus(pos);
                 } else {
-                    ((MainActivity) context).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
-                    viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
+                    if (arrayListVideoDTOs.get(pos).getVideoLongUrl().length() > 0 && !arrayListVideoDTOs.get(pos).getVideoLongUrl().toLowerCase().equals("none")) {
+                        markFavoriteStatus(pos);
+                    } else {
+                        ((MainActivity) context).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
+                        viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
+                    }
                 }
                 notifyDataSetChanged();
             }
         });
 
+    }
+
+    public void markFavoriteStatus(final int pos){
+        if (Utils.isInternetAvailable(context)) {
+            if (AppController.getInstance().getUserId() == GlobalConstants.DEFAULT_USER_ID) {
+                viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
+                showConfirmLoginDialog(GlobalConstants.LOGIN_MESSAGE);
+            } else {
+                if (arrayListVideoDTOs.get(pos).isVideoIsFavorite()) {
+                    isFavoriteChecked = false;
+                    VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(0, arrayListVideoDTOs.get(pos).getVideoId());
+                    arrayListVideoDTOs.get(pos).setVideoIsFavorite(false);
+                    viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
+                } else {
+                    isFavoriteChecked = true;
+                    VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(1, arrayListVideoDTOs.get(pos).getVideoId());
+                    arrayListVideoDTOs.get(pos).setVideoIsFavorite(true);
+                    viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargold);
+                }
+
+                mPostTask = new AsyncTask<Void, Void, Void>() {
+                    @Override
+                    protected void onPreExecute() {
+                        super.onPreExecute();
+                    }
+
+                    @Override
+                    protected Void doInBackground(Void... params) {
+                        try {
+                            postResult = AppController.getInstance().getServiceManager().getVaultService().postFavoriteStatus(AppController.getInstance().getUserId(), arrayListVideoDTOs.get(pos).getVideoId(), arrayListVideoDTOs.get(pos).getPlaylistId(), isFavoriteChecked);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    protected void onPostExecute(Void result) {
+                        System.out.println("Result of POST request : " + postResult);
+                        if (isFavoriteChecked)
+                            VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(1, arrayListVideoDTOs.get(pos).getVideoId());
+                        else
+                            VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(0, arrayListVideoDTOs.get(pos).getVideoId());
+                    }
+                };
+
+//                        mPostTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                mPostTask.execute();
+            }
+        } else {
+            ((MainActivity) context).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
+            viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
+        }
     }
 
     public void showConfirmLoginDialog(String message) {
@@ -516,6 +506,44 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
         mSectionIndices = getSectionIndices();
         mSectionLetters = getSectionLetters();
         notifyDataSetChanged();
+    }
+
+    /**
+     * This methos is use to filter the lisview according to text-------
+     *
+     * @param charText
+     */
+    public void filter(String charText) {
+        charText = charText.toLowerCase(Locale.getDefault());
+        arrayListVideoDTOs.clear();
+        if (charText.length() == 0) {
+            arrayListVideoDTOs.addAll(listSearch);
+        } else {
+            for (VideoDTO dto : listSearch) {
+                if (dto.getVideoShortDescription().toLowerCase(Locale.getDefault())
+                        .contains(charText) || dto.getVideoName().toLowerCase(Locale.getDefault()).contains(charText) || dto.getVideoTags().toLowerCase(Locale.getDefault()).contains(charText)) {
+                    arrayListVideoDTOs.add(dto);
+                }
+            }
+        }
+        Collections.sort(arrayListVideoDTOs, new Comparator<VideoDTO>() {
+
+            @Override
+            public int compare(VideoDTO lhs, VideoDTO rhs) {
+                // TODO Auto-generated method stub
+                if(isGames)
+                    return rhs.getPlaylistName().toLowerCase()
+                            .compareTo(lhs.getPlaylistName().toLowerCase());
+                else
+                    return lhs.getPlaylistName().toLowerCase()
+                            .compareTo(rhs.getPlaylistName().toLowerCase());
+            }
+        });
+        if (arrayListVideoDTOs.size() > 0)
+            updateIndexer();
+        notifyDataSetChanged();
+
+
     }
 
     @Override

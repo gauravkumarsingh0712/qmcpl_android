@@ -23,7 +23,7 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
     private static VaultDatabaseHelper sInstance;
 
     // ------ Database Version----------
-    public static final int DATABASE_VERSION = 1;
+    public static final int DATABASE_VERSION = 2;
     private static String DATABASE_PATH = "";
 
     // ----- Database Name------------
@@ -54,12 +54,14 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         VideoTable.onCreate(db);
+        TabBannerTable.onCreate(db);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL("DROP TABLE IF EXISTS " + OLD_VIDEO_TABLE);
         VideoTable.onUpgrade(db, oldVersion, newVersion);
+        TabBannerTable.onUpgrade(db, oldVersion, newVersion);
     }
 
     public void closeDB() {
@@ -82,10 +84,9 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
 
     /**
      * Method to check number of videos from the VideoTable in database
-     *
      * @return
      */
-    public int getVideoCount() {
+    public int getVideoCount(){
         try {
             SQLiteDatabase database = this.getReadableDatabase();
             database.enableWriteAheadLogging();
@@ -102,7 +103,7 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
         return 0;
     }
 
-    public ArrayList<VideoDTO> getVideoListByTab(String tabIdentifier) {
+    public ArrayList<VideoDTO> getVideoListByTab(String tabIdentifier){
         try {
             ArrayList<VideoDTO> videoDTOsArrayList = new ArrayList<>();
             SQLiteDatabase database = this.getReadableDatabase();
@@ -150,22 +151,18 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    /**
-     * This method is used to get list of featured videos
-     *
-     * @return
-     */
-    /*public ArrayList<VideoDTO> getFeaturedVideosArrayList() {
-        // TODO Auto-generated method stub
+    public VideoDTO getVideoDataByVideoId(String videoId){
         try {
-            ArrayList<VideoDTO> videoDTOsArrayList = new ArrayList<VideoDTO>();
             SQLiteDatabase database = this.getReadableDatabase();
             database.enableWriteAheadLogging();
-            Cursor cursor = database.rawQuery(VideoTable.selectOKFFeaturedQuery, null);
-
+            String query = "SELECT * FROM "
+                    + VideoTable.VIDEO_TABLE + " WHERE " + VideoTable.KEY_VIDEO_ID
+                    + " = "+videoId+" GROUP BY "+ VideoTable.KEY_VIDEO_ID;
+            Cursor cursor = database.rawQuery(query, null);
+            VideoDTO videoDTO = null;
             if (cursor.moveToFirst()) {
                 do {
-                    VideoDTO videoDTO = new VideoDTO();
+                    videoDTO = new VideoDTO();
                     videoDTO.setVideoId(cursor.getLong(cursor.getColumnIndex(VideoTable.KEY_VIDEO_ID)));
                     videoDTO.setVideoName(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_NAME)));
                     videoDTO.setVideoShortDescription(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_SHORT_DESC)));
@@ -193,179 +190,17 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
                     videoDTO.setPlaylistTags(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_TAGS)));
                     videoDTO.setPlaylistReferenceId(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_REFERENCE_ID)));
 
-                    videoDTOsArrayList.add(videoDTO);
                 } while (cursor.moveToNext());
             }
             cursor.close();
-            return videoDTOsArrayList;
+            return videoDTO;
         } catch (Exception e) {
             e.printStackTrace();
-            return new ArrayList<VideoDTO>();
+            return null;
         }
-    }*/
+    }
 
-    /**
-     * This method is used to get list of opponent videos
-     *
-     * @return
-     */
-    /*public ArrayList<VideoDTO> getOpponentsVideosArrayList() {
-        // TODO Auto-generated method stub
-        try {
-            ArrayList<VideoDTO> videoDTOsArrayList = new ArrayList<VideoDTO>();
-            SQLiteDatabase database = this.getReadableDatabase();
-            database.enableWriteAheadLogging();
-            Cursor cursor = database.rawQuery(VideoTable.selectOKFOpponentQuery, null);
-
-            if (cursor.moveToFirst()) {
-                do {
-                    VideoDTO videoDTO = new VideoDTO();
-                    videoDTO.setVideoId(cursor.getLong(cursor.getColumnIndex(VideoTable.KEY_VIDEO_ID)));
-                    videoDTO.setVideoName(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_NAME)));
-                    videoDTO.setVideoShortDescription(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_SHORT_DESC)));
-                    videoDTO.setVideoLongDescription(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_LONG_DESC)));
-                    videoDTO.setVideoShortUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_SHORT_URL)));
-                    videoDTO.setVideoLongUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_LONG_URL)));
-                    videoDTO.setVideoThumbnailUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_THUMB_URL)));
-                    videoDTO.setVideoStillUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_STILL_URL)));
-                    videoDTO.setVideoCoverUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_COVER_URL)));
-                    videoDTO.setVideoWideStillUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_WIDE_STILL_URL)));
-                    videoDTO.setVideoBadgeUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_BADGE_URL)));
-                    videoDTO.setVideoDuration(cursor.getLong(cursor.getColumnIndex(VideoTable.KEY_VIDEO_DURATION)));
-                    videoDTO.setVideoTags(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_TAGS)));
-                    if (cursor.getInt(cursor.getColumnIndex(VideoTable.KEY_VIDEO_IS_FAVORITE)) == 0)
-                        videoDTO.setVideoIsFavorite(false);
-                    else
-                        videoDTO.setVideoIsFavorite(true);
-
-                    videoDTO.setVideoIndex(cursor.getInt(cursor.getColumnIndex(VideoTable.KEY_VIDEO_INDEX)));
-                    videoDTO.setPlaylistName(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_NAME)));
-                    videoDTO.setPlaylistId(cursor.getLong(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_ID)));
-                    videoDTO.setPlaylistThumbnailUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_THUMB_URL)));
-                    videoDTO.setPlaylistShortDescription(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_SHORT_DESC)));
-                    videoDTO.setPlaylistLongDescription(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_LONG_DESC)));
-                    videoDTO.setPlaylistTags(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_TAGS)));
-                    videoDTO.setPlaylistReferenceId(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_REFERENCE_ID)));
-
-                    videoDTOsArrayList.add(videoDTO);
-                } while (cursor.moveToNext());
-            }
-            cursor.close();
-            return videoDTOsArrayList;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ArrayList<VideoDTO>();
-        }
-    }*/
-
-    /**
-     * This method is used to get the list of coaches era videos
-     *
-     * @return
-     */
-    /*public ArrayList<VideoDTO> getCoachesEraVideosArrayList() {
-        // TODO Auto-generated method stub
-        try {
-            ArrayList<VideoDTO> videoDTOsArrayList = new ArrayList<VideoDTO>();
-            SQLiteDatabase database = this.getReadableDatabase();
-            database.enableWriteAheadLogging();
-            Cursor cursor = database.rawQuery(VideoTable.selectOKFCoachesEraQuery, null);
-
-            if (cursor.moveToFirst()) {
-                do {
-                    VideoDTO videoDTO = new VideoDTO();
-                    videoDTO.setVideoId(cursor.getLong(cursor.getColumnIndex(VideoTable.KEY_VIDEO_ID)));
-                    videoDTO.setVideoName(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_NAME)));
-                    videoDTO.setVideoShortDescription(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_SHORT_DESC)));
-                    videoDTO.setVideoLongDescription(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_LONG_DESC)));
-                    videoDTO.setVideoShortUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_SHORT_URL)));
-                    videoDTO.setVideoLongUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_LONG_URL)));
-                    videoDTO.setVideoThumbnailUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_THUMB_URL)));
-                    videoDTO.setVideoStillUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_STILL_URL)));
-                    videoDTO.setVideoCoverUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_COVER_URL)));
-                    videoDTO.setVideoWideStillUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_WIDE_STILL_URL)));
-                    videoDTO.setVideoBadgeUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_BADGE_URL)));
-                    videoDTO.setVideoDuration(cursor.getLong(cursor.getColumnIndex(VideoTable.KEY_VIDEO_DURATION)));
-                    videoDTO.setVideoTags(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_TAGS)));
-                    if (cursor.getInt(cursor.getColumnIndex(VideoTable.KEY_VIDEO_IS_FAVORITE)) == 0)
-                        videoDTO.setVideoIsFavorite(false);
-                    else
-                        videoDTO.setVideoIsFavorite(true);
-
-                    videoDTO.setVideoIndex(cursor.getInt(cursor.getColumnIndex(VideoTable.KEY_VIDEO_INDEX)));
-                    videoDTO.setPlaylistName(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_NAME)));
-                    videoDTO.setPlaylistId(cursor.getLong(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_ID)));
-                    videoDTO.setPlaylistThumbnailUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_THUMB_URL)));
-                    videoDTO.setPlaylistShortDescription(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_SHORT_DESC)));
-                    videoDTO.setPlaylistLongDescription(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_LONG_DESC)));
-                    videoDTO.setPlaylistTags(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_TAGS)));
-                    videoDTO.setPlaylistReferenceId(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_REFERENCE_ID)));
-
-                    videoDTOsArrayList.add(videoDTO);
-                } while (cursor.moveToNext());
-            }
-            cursor.close();
-            return videoDTOsArrayList;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ArrayList<VideoDTO>();
-        }
-    }*/
-
-    /**
-     * This method is used to get the list of player videos
-     *
-     * @return
-     */
-    /*public ArrayList<VideoDTO> getPlayerVideosArrayList() {
-        // TODO Auto-generated method stub
-        try {
-            ArrayList<VideoDTO> videoDTOsArrayList = new ArrayList<VideoDTO>();
-            SQLiteDatabase database = this.getReadableDatabase();
-            database.enableWriteAheadLogging();
-            Cursor cursor = database.rawQuery(VideoTable.selectOKFPlayerQuery, null);
-
-            if (cursor.moveToFirst()) {
-                do {
-                    VideoDTO videoDTO = new VideoDTO();
-                    videoDTO.setVideoId(cursor.getLong(cursor.getColumnIndex(VideoTable.KEY_VIDEO_ID)));
-                    videoDTO.setVideoName(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_NAME)));
-                    videoDTO.setVideoShortDescription(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_SHORT_DESC)));
-                    videoDTO.setVideoLongDescription(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_LONG_DESC)));
-                    videoDTO.setVideoShortUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_SHORT_URL)));
-                    videoDTO.setVideoLongUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_LONG_URL)));
-                    videoDTO.setVideoThumbnailUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_THUMB_URL)));
-                    videoDTO.setVideoStillUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_STILL_URL)));
-                    videoDTO.setVideoCoverUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_COVER_URL)));
-                    videoDTO.setVideoWideStillUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_WIDE_STILL_URL)));
-                    videoDTO.setVideoBadgeUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_BADGE_URL)));
-                    videoDTO.setVideoDuration(cursor.getLong(cursor.getColumnIndex(VideoTable.KEY_VIDEO_DURATION)));
-                    videoDTO.setVideoTags(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_TAGS)));
-                    if (cursor.getInt(cursor.getColumnIndex(VideoTable.KEY_VIDEO_IS_FAVORITE)) == 0)
-                        videoDTO.setVideoIsFavorite(false);
-                    else
-                        videoDTO.setVideoIsFavorite(true);
-
-                    videoDTO.setVideoIndex(cursor.getInt(cursor.getColumnIndex(VideoTable.KEY_VIDEO_INDEX)));
-                    videoDTO.setPlaylistName(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_NAME)));
-                    videoDTO.setPlaylistId(cursor.getLong(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_ID)));
-                    videoDTO.setPlaylistThumbnailUrl(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_THUMB_URL)));
-                    videoDTO.setPlaylistShortDescription(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_SHORT_DESC)));
-                    videoDTO.setPlaylistLongDescription(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_LONG_DESC)));
-                    videoDTO.setPlaylistTags(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_TAGS)));
-                    videoDTO.setPlaylistReferenceId(cursor.getString(cursor.getColumnIndex(VideoTable.KEY_PLAYLIST_REFERENCE_ID)));
-
-                    videoDTOsArrayList.add(videoDTO);
-                } while (cursor.moveToNext());
-            }
-            cursor.close();
-            return videoDTOsArrayList;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ArrayList<VideoDTO>();
-        }
-    }*/
-    public ArrayList<VideoDTO> getAllVideoList() {
+    public ArrayList<VideoDTO> getAllVideoList(){
         String selectOKFQuery = "SELECT * FROM " + VideoTable.VIDEO_TABLE;
         try {
             ArrayList<VideoDTO> videoDTOsArrayList = new ArrayList<VideoDTO>();
@@ -414,9 +249,9 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    public ArrayList<VideoDTO> getVideoList(String referenceId) {
+    public ArrayList<VideoDTO> getVideoList(String referenceId){
         String selectOKFQuery = "SELECT * FROM " + VideoTable.VIDEO_TABLE
-                + " WHERE " + VideoTable.KEY_PLAYLIST_REFERENCE_ID + " LIKE '" + referenceId + "%'";
+                + " WHERE " + VideoTable.KEY_PLAYLIST_REFERENCE_ID + " LIKE '"+referenceId+"%'";
         try {
             ArrayList<VideoDTO> videoDTOsArrayList = new ArrayList<VideoDTO>();
             SQLiteDatabase database = this.getReadableDatabase();
@@ -604,6 +439,21 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
         return false;
     }
 
+    public boolean isVideoAvailableInDB(String videoId) {
+        // TODO Auto-generated method stub
+        int count = 0;
+        SQLiteDatabase database = this.getReadableDatabase();
+        database.enableWriteAheadLogging();
+        String query = "select * from " + VideoTable.VIDEO_TABLE + " where " + VideoTable.KEY_VIDEO_ID + " = " + videoId;
+        Cursor cursor = database.rawQuery(query, null);
+        count = cursor.getCount();
+        cursor.close();
+        if (count > 0) {
+            return true;
+        }
+        return false;
+    }
+
     public boolean checkVideoAvailability(long videoId) {
         // TODO Auto-generated method stub
         int count = 0;
@@ -619,19 +469,19 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
         return false;
     }
 
-    public boolean isChangeInData(VideoDTO newVideoObject) {
+    public boolean isChangeInData(VideoDTO newVideoObject){
         SQLiteDatabase database = this.getReadableDatabase();
         database.enableWriteAheadLogging();
         //Fetch Old Video Metadata from local database
         String query = "select * from " + VideoTable.VIDEO_TABLE + " where " + VideoTable.KEY_VIDEO_ID + " = " + newVideoObject.getVideoId();
-        Cursor cursor = database.rawQuery(query, null);
+        Cursor cursor = database.rawQuery(query,null);
         int count = cursor.getCount();
-        if (count > 0) {
+        if(count > 0){
             if (cursor.moveToFirst()) {
                 do {
                     if (!cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_NAME)).equals(newVideoObject.getVideoName()) || !cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_SHORT_DESC)).equals(newVideoObject.getVideoShortDescription()) || !cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_LONG_DESC)).equals(newVideoObject.getVideoLongDescription()) || !cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_SHORT_URL)).equals(newVideoObject.getVideoShortUrl()) || !cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_LONG_URL)).equals(newVideoObject.getVideoLongUrl()) || !cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_THUMB_URL)).equals(newVideoObject.getVideoThumbnailUrl()) || !cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_STILL_URL)).equals(newVideoObject.getVideoStillUrl()) || !cursor.getString(cursor.getColumnIndex(VideoTable.KEY_VIDEO_TAGS)).equals(newVideoObject.getVideoTags()) || cursor.getLong(cursor.getColumnIndex(VideoTable.KEY_VIDEO_DURATION)) != newVideoObject.getVideoDuration())
                         return true;
-                } while (cursor.moveToNext());
+                }while(cursor.moveToNext());
             }
         }
         cursor.close();
@@ -640,16 +490,16 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
 
     public ArrayList<VideoDTO> getRelatedVideosArrayList(String videoTags, long videoId) {
         try {
-            if (videoTags != null) {
+            if(videoTags != null) {
                 String getRelatedVideos = "SELECT * FROM " + VideoTable.VIDEO_TABLE + " WHERE (";
                 String[] arrTags = videoTags.split(",");
-                for (int i = 0; i < arrTags.length; i++) {
-                    if (i == 0)
-                        getRelatedVideos = getRelatedVideos + VideoTable.KEY_VIDEO_TAGS + " like '%" + arrTags[i].trim() + "%' ";
-                    else if (i > 0 && i < arrTags.length)
-                        getRelatedVideos = getRelatedVideos + " or " + VideoTable.KEY_VIDEO_TAGS + " like '%" + arrTags[i].trim() + "%' ";
+                for(int i=0; i<arrTags.length; i++){
+                    if(i==0)
+                        getRelatedVideos = getRelatedVideos + VideoTable.KEY_VIDEO_TAGS + " like '%"+arrTags[i].trim()+"%' ";
+                    else if(i > 0 && i < arrTags.length)
+                        getRelatedVideos = getRelatedVideos + " or " + VideoTable.KEY_VIDEO_TAGS + " like '%"+arrTags[i].trim()+"%' ";
                 }
-                getRelatedVideos = getRelatedVideos + ") and " + VideoTable.KEY_VIDEO_ID + " != " + videoId + " GROUP BY " + VideoTable.KEY_VIDEO_ID + " ORDER BY " + VideoTable.KEY_VIDEO_NAME + " ASC";
+                getRelatedVideos = getRelatedVideos + ") and "+VideoTable.KEY_VIDEO_ID+" != " + videoId + " GROUP BY " + VideoTable.KEY_VIDEO_ID + " ORDER BY " + VideoTable.KEY_VIDEO_NAME + " ASC";
                 ArrayList<VideoDTO> arrayListNewVideoDTOs = new ArrayList<VideoDTO>();
                 SQLiteDatabase database = this.getWritableDatabase();
                 database.enableWriteAheadLogging();
@@ -691,7 +541,7 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
 
                 cursor.close();
                 return arrayListNewVideoDTOs;
-            } else {
+            }else{
                 return new ArrayList<VideoDTO>();
             }
         } catch (Exception e) {
@@ -701,29 +551,29 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
 
     }
 
-    public String trimAndRemoveSpecialCharacters(String videoAttribute) {
-        videoAttribute = videoAttribute.replace("'", "");
-        videoAttribute = videoAttribute.replace(":", "");
-        videoAttribute = videoAttribute.replace(";", "");
-        videoAttribute = videoAttribute.replace("-", "");
-        videoAttribute = videoAttribute.replace("_", "");
-        videoAttribute = videoAttribute.replace("#", "");
+    public String trimAndRemoveSpecialCharacters(String videoAttribute){
+        videoAttribute = videoAttribute.replace("'","");
+        videoAttribute = videoAttribute.replace(":","");
+        videoAttribute = videoAttribute.replace(";","");
+        videoAttribute = videoAttribute.replace("-","");
+        videoAttribute = videoAttribute.replace("_","");
+        videoAttribute = videoAttribute.replace("#","");
 
         return videoAttribute.trim();
     }
 
     public ArrayList<VideoDTO> getRelatedVideosArrayListByNameAndTag(String videoTags, String videoName, long videoId) {
         try {
-            if (videoTags != null) {
+            if(videoTags != null) {
                 String getRelatedVideos = "SELECT * FROM " + VideoTable.VIDEO_TABLE + " WHERE (";
                 String[] arrTags = videoTags.split(",");
                 String[] arrName = videoName.split(" ");
                 ArrayList<String> fetchedNames = new ArrayList<>();
-                for (int i = 0; i < arrName.length; i++) {
-                    if (arrName[i].length() >= 4)
+                for(int i=0; i<arrName.length; i++){
+                    if(arrName[i].length() >= 4)
                         fetchedNames.add(arrName[i]);
                 }
-                if (arrTags.length > 0) {
+                if(arrTags.length > 0) {
                     for (int i = 0; i < arrTags.length; i++) {
                         if (i == 0)
                             getRelatedVideos = getRelatedVideos + VideoTable.KEY_VIDEO_TAGS + " like '%" + arrTags[i].trim() + "%' ";
@@ -779,10 +629,10 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
 
                     cursor.close();
                     return arrayListNewVideoDTOs;
-                } else {
+                }else{
                     return new ArrayList<VideoDTO>();
                 }
-            } else {
+            }else{
                 return new ArrayList<VideoDTO>();
             }
         } catch (Exception e) {
@@ -804,7 +654,7 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
             for (VideoDTO videoDTO : listVideos) {
                 //if video is not available in database, execute INSERT
                 if (!isVideoAvailableInDB(videoDTO.getVideoId(), videoDTO.getPlaylistReferenceId())) {
-                    if (videoDTO.getVideoShortDescription() != null && videoDTO.getVideoName() != null) {
+                    if(videoDTO.getVideoShortDescription() != null && videoDTO.getVideoName() != null) {
                         initialValues = new ContentValues();
                         initialValues.put(VideoTable.KEY_VIDEO_ID, videoDTO.getVideoId());
                         initialValues.put(VideoTable.KEY_VIDEO_NAME, videoDTO.getVideoName());
@@ -837,7 +687,7 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
 
                         checkVideoAvailabilityInOtherPlaylistAndUpdate(videoDTO);
                     }
-                } else {      // Perform UPDATE query on available record
+                }else{      // Perform UPDATE query on available record
                     ContentValues updateExistingVideo = new ContentValues();
                     updateExistingVideo.put(VideoTable.KEY_VIDEO_ID, videoDTO.getVideoId());
                     updateExistingVideo.put(VideoTable.KEY_VIDEO_NAME, videoDTO.getVideoName());
@@ -876,7 +726,7 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
 
     }
 
-    public void checkVideoAvailabilityInOtherPlaylistAndUpdate(VideoDTO videoDTO) {
+    public void checkVideoAvailabilityInOtherPlaylistAndUpdate(VideoDTO videoDTO){
         try {
             SQLiteDatabase database = this.getReadableDatabase();
             database.enableWriteAheadLogging();
@@ -934,7 +784,7 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
                     database.update(VideoTable.VIDEO_TABLE, updateExistingVideo, VideoTable.KEY_VIDEO_ID + "=?", new String[]{"" + videoDTO.getVideoId()});
                 }
             }
-        } catch (Exception e) {
+        }catch (Exception e){
             e.printStackTrace();
         }
     }
@@ -944,6 +794,7 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
             SQLiteDatabase db = this.getWritableDatabase();
             db.enableWriteAheadLogging();
             db.execSQL("DELETE FROM " + VideoTable.VIDEO_TABLE);
+            removeAllTabBannerData();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -963,29 +814,43 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
     //***********************************************************************//
     //*******************TAB BANNER METHODS**********************************//
     //***********************************************************************//
-    public void insertTabBannerData(TabBannerDTO tabBannerDTO) {
+    public void insertTabBannerData(TabBannerDTO tabBannerDTO){
         TabBannerTable.getInstance().insertTabBannerData(tabBannerDTO, this.getWritableDatabase());
     }
 
-    public TabBannerDTO getTabBannerDataById(long bannerId) {
-        return TabBannerTable.getInstance().getTabBannerDataById(this.getReadableDatabase(), bannerId);
+    public ArrayList<TabBannerDTO> getAllLocalTabBannerData(){
+        return TabBannerTable.getInstance().getAllLocalTabBannerData(this.getReadableDatabase());
     }
 
-    public void updateBannerData(TabBannerDTO tabBannerDTO) {
+    public TabBannerDTO getLocalTabBannerDataByBannerId(long bannerId){
+        return TabBannerTable.getInstance().getLocalTabBannerDataByBannerId(this.getReadableDatabase(), bannerId);
+    }
+
+    public int getTabBannerCount(){
+        return TabBannerTable.getInstance().getTabBannerCount(this.getWritableDatabase());
+    }
+
+    public TabBannerDTO getLocalTabBannerDataByTabId(long tabId){
+        return TabBannerTable.getInstance().getLocalTabBannerDataByTabId(this.getReadableDatabase(), tabId);
+    }
+
+    public void updateBannerData(TabBannerDTO tabBannerDTO){
         TabBannerTable.getInstance().updateBannerData(this.getWritableDatabase(), tabBannerDTO);
     }
 
-    public void updateTabData(TabBannerDTO tabBannerDTO) {
+    public void updateTabData(TabBannerDTO tabBannerDTO){
         TabBannerTable.getInstance().updateTabData(this.getWritableDatabase(), tabBannerDTO);
     }
 
-    public void removeAllTabBannerData() {
-        TabBannerTable.getInstance().removeAllTabBannerData(this.getWritableDatabase());
+    public void updateTabBannerData(TabBannerDTO tabBannerDTO){
+        TabBannerTable.getInstance().updateTabBannerData(this.getWritableDatabase(), tabBannerDTO);
     }
 
+    public void removeAllTabBannerData(){
+        TabBannerTable.getInstance().removeAllTabBannerData(this.getWritableDatabase());
+    }
 
     //***********************************************************************//
     //*********************END***********************************************//
     //***********************************************************************//
-
 }

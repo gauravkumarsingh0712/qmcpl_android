@@ -15,7 +15,7 @@
         <attr name="border_width" format="dimension" />
         <attr name="border_color" format="color" />
     </declare-styleable>-->
-    <declare-styleable name="CircularSeekBar">
+	<declare-styleable name="CircularSeekBar">
         <!-- <attr name="progress" format="integer"></attr> -->
         <attr name="max" format="integer"></attr>
         <attr name="move_outside_circle" format="boolean"></attr>
@@ -49,7 +49,7 @@
         <attr name="siRadius" format="dimension" />
         <!--BubbleImageView-->
         <!--<attr name="siArrowPosition"/>-->
-        <attr name="siTriangleHeight" format="dimension" />
+        <attr name="siTriangleHeight" format="dimension"/>
         <!--PorterImageView-->
         <attr name="siShape" format="integer|reference" />
         <!--ShaderImageView-->
@@ -88,5 +88,6 @@
         </attr>
         <attr name="tilt" format="float" />
     </declare-styleable>
+
 
 </resources>

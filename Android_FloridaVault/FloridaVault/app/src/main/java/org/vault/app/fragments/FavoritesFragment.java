@@ -111,7 +111,6 @@ public class FavoritesFragment extends BaseFragment {
 
             videoListAdapter = new VideoContentListAdapter(favoriteVideoList, mActivity, 2, true);
             listViewFavouriteVideos.setAdapter(videoListAdapter);
-
             if (VideoDataService.isServiceRunning) {
                 if (favoriteVideoList.size() == 0) {
                     progressBar.setVisibility(View.VISIBLE);
@@ -121,9 +120,11 @@ public class FavoritesFragment extends BaseFragment {
                 }
             } else {
                 if (favoriteVideoList.size() == 0) {
-                    tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
-                    listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
-                }else {
+                    if (GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+                        tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
+                        listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
+                    }
+                } else {
                     tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
                     listViewFavouriteVideos.setFastScrollAlwaysVisible(true);
                 }
@@ -132,15 +133,26 @@ public class FavoritesFragment extends BaseFragment {
             // ----------add banner-----------
             /*Utils.addVolleyBanner(bannerCacheableImageView,
                     GlobalConstants.URL_FAVORITESBANNER, getActivity());*/
-            Utils.addBannerImageWithoutCaching(bannerCacheableImageView, GlobalConstants.URL_FAVORITESBANNER);
+//            Utils.addBannerImage(bannerCacheableImageView, GlobalConstants.FAVORITES, mActivity);
 
-            if (progressBar != null) {
-                if (progressBar.getVisibility() == View.GONE || progressBar.getVisibility() == View.INVISIBLE) {
-                    refreshLayout.setEnabled(true);
-                    refreshLayout.setOnRefreshListener(refreshListener);
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if (progressBar.isShown()) {
+                        progressBar.setVisibility(View.GONE);
+                        tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
+                        if (progressBar != null) {
+                            if (progressBar.getVisibility() == View.GONE || progressBar.getVisibility() == View.INVISIBLE) {
+                                refreshLayout.setEnabled(true);
+                                refreshLayout.setOnRefreshListener(refreshListener);
+                            }
+                        }
+                    }
                 }
-            }
-        }catch(Exception e){
+            }, 3000);
+
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return v;
@@ -185,8 +197,12 @@ public class FavoritesFragment extends BaseFragment {
             isFreshDataLoading = false;
             if (VideoDataService.isServiceRunning) {
                 if (favoriteVideoList.size() == 0) {
-                    progressBar.setVisibility(View.VISIBLE);
-                    tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
+                    if (progressBar.isShown()) {
+                        progressBar.setVisibility(View.VISIBLE);
+                        tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
+                    } else {
+                        tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
+                    }
                 } else {
                     progressBar.setVisibility(View.GONE);
                 }
@@ -194,12 +210,12 @@ public class FavoritesFragment extends BaseFragment {
                 if (favoriteVideoList.size() == 0) {
                     tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
                     listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
-                }else {
+                } else {
                     tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
                     listViewFavouriteVideos.setFastScrollAlwaysVisible(true);
                 }
             }
-            if(searchView != null){
+            if (searchView != null) {
                 videoListAdapter.listSearch.clear();
                 videoListAdapter.listSearch.addAll(favoriteVideoList);
                 videoListAdapter.filter(searchView.getQuery().toString().toLowerCase(Locale
@@ -208,7 +224,7 @@ public class FavoritesFragment extends BaseFragment {
             }
             GlobalConstants.IS_RETURNED_FROM_PLAYER = false;
         }
-        if(progressBar != null && refreshLayout != null) {
+        if (progressBar != null && refreshLayout != null) {
             if (progressBar.getVisibility() == View.GONE || progressBar.getVisibility() == View.INVISIBLE) {
                 refreshLayout.setEnabled(true);
                 refreshLayout.setOnRefreshListener(refreshListener);
@@ -241,7 +257,7 @@ public class FavoritesFragment extends BaseFragment {
                 //set default scrollbar size to 0, because we were getting two scrollbars
                 //one default one and other was fastScrollBar (red one)
                 view.setScrollBarSize(0);
-                if(scrollState == 0){
+                if (scrollState == 0) {
                     Handler handler = new Handler();
 
                     final Runnable r = new Runnable() {
@@ -251,8 +267,7 @@ public class FavoritesFragment extends BaseFragment {
                     };
 
                     handler.postDelayed(r, 1000);
-                }
-                else
+                } else
                     listViewFavouriteVideos.setFastScrollAlwaysVisible(true);
             }
 
@@ -349,7 +364,7 @@ public class FavoritesFragment extends BaseFragment {
         bannerCacheableImageView = (ImageView) v
                 .findViewById(R.id.img_favorite_banner);
         progressBar = (ProgressBar) v.findViewById(R.id.progressbar);
-        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
             progressBar.setIndeterminateDrawable(getResources().getDrawable(R.drawable.circle_progress_bar_lower));
         else
             progressBar.setIndeterminateDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.progress_large_material, null));
@@ -387,7 +402,7 @@ public class FavoritesFragment extends BaseFragment {
                 // adding the banner
                 *//*Utils.addVolleyBanner(bannerCacheableImageView,
                         GlobalConstants.URL_FAVORITESBANNER, getActivity());*//*
-                Utils.addBannerImageWithoutCaching(bannerCacheableImageView, GlobalConstants.URL_FAVORITESBANNER);
+                Utils.addBannerImage(bannerCacheableImageView, GlobalConstants.URL_FAVORITESBANNER);
             }*/
             // it is used to track the ecent of opponennts fragment
             FlurryAgent.onEvent(GlobalConstants.FAVORITES);
@@ -421,10 +436,10 @@ public class FavoritesFragment extends BaseFragment {
                 boolean isRecordsAvailableInDb = false;
                 favoriteVideoList.clear();
                 favoriteVideoList.addAll(VaultDatabaseHelper.getInstance(mActivity).getFavouriteVideosArrayList());
-                if(favoriteVideoList.size() > 0){
+                if (favoriteVideoList.size() > 0) {
                     isRecordsAvailableInDb = true;
                     listViewFavouriteVideos.setFastScrollAlwaysVisible(true);
-                }else
+                } else
                     listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
                 if (videoListAdapter != null) {
                     videoListAdapter.listSearch.clear();
@@ -443,14 +458,14 @@ public class FavoritesFragment extends BaseFragment {
                         progressBar.setVisibility(View.GONE);
                         listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
                     }
-                    if(!isRecordsAvailableInDb) {
-                        tvsearchRecordsNotAvailable.setText("No favorites have been saved");
+                    if (!isRecordsAvailableInDb) {
+                        tvsearchRecordsNotAvailable.setText("No Records Found");
                         tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
                         progressBar.setVisibility(View.GONE);
                     }
                 } else {
                     tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
-                    if(favoriteVideoList.size() > 0)
+                    if (favoriteVideoList.size() > 0)
                         listViewFavouriteVideos.setFastScrollAlwaysVisible(true);
                 }
 
@@ -464,16 +479,24 @@ public class FavoritesFragment extends BaseFragment {
             public boolean onClose() {
                 if (VideoDataService.isServiceRunning) {
                     if (favoriteVideoList.size() == 0) {
-                        progressBar.setVisibility(View.VISIBLE);
-                        tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
+                        if (progressBar.isShown()) {
+                            progressBar.setVisibility(View.VISIBLE);
+                            tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
+                        } else {
+                            if (!tvsearchRecordsNotAvailable.isShown()) {
+                                tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
+                            }
+                            tvsearchRecordsNotAvailable.setText("No favorites have been saved");
+                        }
                     } else {
                         progressBar.setVisibility(View.GONE);
                     }
                 } else {
                     if (favoriteVideoList.size() == 0) {
                         tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
+                        tvsearchRecordsNotAvailable.setText("No favorites have been saved");
                         listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
-                    }else {
+                    } else {
                         tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
                         listViewFavouriteVideos.setFastScrollAlwaysVisible(true);
                     }
@@ -519,7 +542,7 @@ public class FavoritesFragment extends BaseFragment {
         protected void onPreExecute() {
             super.onPreExecute();
             refreshLayout.setRefreshing(true);
-            if(videoListAdapter != null) {
+            if (videoListAdapter != null) {
                 videoListAdapter.isPullRefreshInProgress = true;
                 videoListAdapter.notifyDataSetChanged();
             }
@@ -587,23 +610,26 @@ public class FavoritesFragment extends BaseFragment {
                     if (favoriteVideoList.size() == 0) {
                         tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
                         listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
-                    }else {
+                    } else {
                         tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
                         listViewFavouriteVideos.setFastScrollAlwaysVisible(true);
                     }
                 }
-                if(videoListAdapter.getCount() == 0){
-                    tvsearchRecordsNotAvailable.setText("No Records Found");
+                if (videoListAdapter.getCount() == 0) {
+                    tvsearchRecordsNotAvailable.setText("No favorites have been saved");
                     tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
                     progressBar.setVisibility(View.GONE);
                     listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
                 }
             }
-            if(favoriteVideoList.size() == 0){
-                tvsearchRecordsNotAvailable.setText("No Records Found");
+            if (favoriteVideoList.size() == 0) {
+                tvsearchRecordsNotAvailable.setText("No favorites have been saved");
                 tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
                 progressBar.setVisibility(View.GONE);
                 listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
+            }
+            if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+                tvsearchRecordsNotAvailable.setText("No Records Found");
             }
             videoListAdapter.isPullRefreshInProgress = false;
             refreshLayout.setRefreshing(false);

@@ -4,7 +4,6 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 
-import org.vault.app.activities.SplashActivity;
 import org.vault.app.appcontroller.AppController;
 import org.vault.app.database.VaultDatabaseHelper;
 import org.vault.app.dto.VideoDTO;
@@ -26,6 +25,8 @@ public class VideoDataService extends Service {
     public static boolean isServiceRunning = false;
     ArrayList<VideoDTO> arrayListVideos = new ArrayList<VideoDTO>();
 
+    ArrayList<String> lstUrls = new ArrayList<>();
+
     boolean status = true;
     String userJsonData = "";
 
@@ -35,8 +36,6 @@ public class VideoDataService extends Service {
     private static final String[] API_CALLS = {GlobalConstants.FEATURED_API_URL, GlobalConstants.GAMES_API_URL,
             GlobalConstants.PLAYER_API_URL, GlobalConstants.COACH_API_URL, GlobalConstants.OPPONENT_API_URL};
 
-    public static ArrayList<String> API_URLS = new ArrayList<>();
-
 
     Thread thread;
 
@@ -44,19 +43,18 @@ public class VideoDataService extends Service {
     public void onDestroy() {
         super.onDestroy();
         isServiceRunning = false;
-        /*if(thread != null)
-            thread.interrupt();*/
+        AppController.getInstance().getAPI_URLS().clear();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         isServiceRunning = true;
-
+        lstUrls.addAll(AppController.getInstance().getAPI_URLS());
         if (Utils.isInternetAvailable(AppController.getInstance().getApplicationContext())) {
             Thread thread = new Thread() {
                 @Override
                 public void run() {
-                    for (final String apiUrl : API_URLS) {
+                    for (String apiUrl : lstUrls) {
 
                         if (Utils.isInternetAvailable(AppController.getInstance().getApplicationContext())) {
                             if (isServiceRunning) {
@@ -74,7 +72,7 @@ public class VideoDataService extends Service {
                                 Intent broadCastIntent = new Intent();
                                 if (url.toLowerCase().contains("featured"))
                                     broadCastIntent.setAction(FeaturedFragment.FeaturedResponseReceiver.ACTION_RESP);
-                                else if (url.toLowerCase().contains("games"))
+                                else if(url.toLowerCase().contains("games"))
                                     broadCastIntent.setAction(GamesFragment.GamesResponseReceiver.ACTION_RESP);
                                 else if (url.toLowerCase().contains("player"))
                                     broadCastIntent.setAction(PlayerFragment.PlayerResponseReceiver.ACTION_RESP);
@@ -89,10 +87,12 @@ public class VideoDataService extends Service {
                             }
                         } else {
                             isServiceRunning = false;
+                            AppController.getInstance().getAPI_URLS().clear();
                             stopSelf();
                         }
                     }
                     isServiceRunning = false;
+                    AppController.getInstance().getAPI_URLS().clear();
                     stopSelf();
                 }
             };

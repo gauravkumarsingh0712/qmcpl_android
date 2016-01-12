@@ -10,19 +10,31 @@
 
     <org.vault.app.shimmer.ShimmerFrameLayout
         android:id="@+id/shimmer_view_container"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_gravity="center"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
         shimmer:duration="1500"
-        shimmer:repeat_count="2">
+        shimmer:repeat_count="10">
 
         <ImageView
             android:id="@+id/companyImageView"
-            android:layout_width="250dp"
-            android:layout_height="250dp"
-            android:layout_gravity="center"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             android:src="@drawable/vault_in_app_logo" />
     </org.vault.app.shimmer.ShimmerFrameLayout>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Loading..."
+        android:textStyle="bold|italic"
+        android:layout_below="@+id/shimmer_view_container"
+        android:textSize="24sp"
+        android:padding="15dp"
+        android:textColor="#FFFFFF"
+        android:layout_centerHorizontal="true"
+        android:visibility="gone"/>
+
 
     <include
         android:id="@+id/llToast"

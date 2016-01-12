@@ -50,7 +50,6 @@
                 android:name="android.app.searchable"
                 android:resource="@xml/searchable" />
         </activity>
-
         <activity
             android:name="org.vault.app.activities.LoginPasswordActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
@@ -80,25 +79,21 @@
             android:theme="@style/VaultTheme"
             android:windowSoftInputMode="adjustPan"></activity>
         <activity
-            android:name="com.ncsavault.floridavault.LoginEmailActivity"
+            android:name=".SplashActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:screenOrientation="portrait"
             android:theme="@style/VaultTheme">
-
-        </activity>
-
-        <activity
-            android:name="org.vault.app.activities.SplashActivity"
-            android:configChanges="keyboardHidden|orientation|screenSize"
-            android:screenOrientation="portrait"
-            android:theme="@style/VaultTheme">
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
+        </activity>
+        <activity
+            android:name=".LoginEmailActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait"
+            android:theme="@style/VaultTheme">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -106,8 +101,8 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="appsflyer" />
-                <!--<data android:scheme="http"-->
-                <!--android:host="sometest.com"  />-->
+                <!-- <data android:scheme="http" -->
+                <!-- android:host="sometest.com"  /> -->
             </intent-filter>
         </activity>
 
@@ -121,6 +116,7 @@
         <receiver android:name="com.appsflyer.AppsFlyerLib">
             <intent-filter>
                 <action android:name="android.intent.action.PACKAGE_REMOVED" />
+
                 <data android:scheme="package" />
             </intent-filter>
         </receiver>
@@ -133,7 +129,7 @@
             android:name="com.facebook.FacebookActivity"
             android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
             android:label="Florida Vault"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
 
         <meta-data
             android:name="com.facebook.sdk.ApplicationId"
@@ -173,7 +169,7 @@
             </intent-filter>
         </receiver>
 
-        <service android:name="com.ncsavault.floridavault.GCMIntentService" />
+        <service android:name=".GCMIntentService" />
         <service
             android:name="org.vault.app.service.VideoDataService"
             android:enabled="true" />
@@ -181,6 +177,7 @@
         <meta-data
             android:name="io.fabric.ApiKey"
             android:value="d2dd67ebb04ae3a478d630a28bef8ead1270834c" />
+
     </application>
 
 </manifest>

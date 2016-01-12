@@ -170,7 +170,7 @@ public class LoginEmailActivity extends BaseActivity {
 
             initData();
             initListener();
-        } catch (Exception e) {
+        }catch(Exception e){
             e.printStackTrace();
         }
     }
@@ -192,7 +192,7 @@ public class LoginEmailActivity extends BaseActivity {
                 screenWidth = d.getWidth();
             }
 
-            int dimension = (int) (screenWidth * 0.45);
+            int dimension = (int) (screenWidth*0.45);
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dimension, dimension);
             lp.setMargins(0, 30, 0, 0);
             ll_header_image.setLayoutParams(lp);
@@ -226,19 +226,14 @@ public class LoginEmailActivity extends BaseActivity {
                     InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                     inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
                 }
-                if (Utils.isInternetAvailable(LoginEmailActivity.this)) {
-
-
-                    if (Utils.bannerDTOArrayList.size() == 0) {
-                        Utils.loadDataFromServer(LoginEmailActivity.this);
-                    }
-
+                if(Utils.isInternetAvailable(LoginEmailActivity.this)) {
                     SharedPreferences prefs = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
                     prefs.edit().putLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, GlobalConstants.DEFAULT_USER_ID).apply();
                     prefs.edit().putBoolean(GlobalConstants.PREF_VAULT_SKIP_LOGIN, true).apply();
 
                     fetchInitialRecordsForAll();
-                } else {
+                }
+                else{
                     showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
                 }
                 /*else {
@@ -251,9 +246,6 @@ public class LoginEmailActivity extends BaseActivity {
             @Override
             public void onClick(View v) {
                 if (Utils.isInternetAvailable(LoginEmailActivity.this)) {
-                    if (Utils.bannerDTOArrayList.size() == 0) {
-                        Utils.loadDataFromServer(LoginEmailActivity.this);
-                    }
                     if (Profile.getCurrentProfile() == null)
                         LoginManager.getInstance().logInWithReadPermissions(LoginEmailActivity.this, Collections.singletonList("public_profile, email, user_birthday"));
                 } else {
@@ -267,11 +259,6 @@ public class LoginEmailActivity extends BaseActivity {
             @Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 if (keyCode == KeyEvent.KEYCODE_ENTER) {
-                    if (Utils.isInternetAvailable(LoginEmailActivity.this)) {
-                        if (Utils.bannerDTOArrayList.size() == 0) {
-                            Utils.loadDataFromServer(LoginEmailActivity.this);
-                        }
-                    }
                     checkEmailAndProceed();
                     return true;
                 } else {
@@ -300,10 +287,10 @@ public class LoginEmailActivity extends BaseActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (!s.toString().isEmpty()) {
+                if(!s.toString().isEmpty()){
                     ll_facebook_login.setVisibility(View.GONE);
                     tvNextLogin.setVisibility(View.VISIBLE);
-                } else {
+                }else{
                     ll_facebook_login.setVisibility(View.VISIBLE);
                     tvNextLogin.setVisibility(View.GONE);
                 }
@@ -316,7 +303,7 @@ public class LoginEmailActivity extends BaseActivity {
         });
     }
 
-    public void getFacebookLoginStatus(final LoginResult loginResult) {
+    public void getFacebookLoginStatus(final LoginResult loginResult){
         GraphRequest request = GraphRequest.newMeRequest(
                 loginResult.getAccessToken(),
                 new GraphRequest.GraphJSONObjectCallback() {
@@ -516,7 +503,7 @@ public class LoginEmailActivity extends BaseActivity {
     }
 
 
-    public void fetchInitialRecordsForAll() {
+    public void fetchInitialRecordsForAll(){
         mFetchingTask = new AsyncTask<Void, Void, Boolean>() {
 
             String userJsonData = "";
@@ -536,8 +523,8 @@ public class LoginEmailActivity extends BaseActivity {
                     public void onCancel(DialogInterface dialog) {
                         tvFacebookLogin.setText("Login with Facebook");
                         LoginManager.getInstance().logOut();
-                        if (mFetchingTask != null) {
-                            if (!mFetchingTask.isCancelled())
+                        if(mFetchingTask != null){
+                            if(!mFetchingTask.isCancelled())
                                 mFetchingTask.cancel(true);
                         }
 
@@ -549,37 +536,30 @@ public class LoginEmailActivity extends BaseActivity {
             @Override
             protected Boolean doInBackground(Void... params) {
                 boolean status = true;
-                /*String featuredUrl = GlobalConstants.FEATURED_API_URL + "userid=" + AppController.getInstance().getUserId();
-                String playerUrl = GlobalConstants.PLAYER_API_URL + "userid=" + AppController.getInstance().getUserId();
-                String coachesUrl = GlobalConstants.COACH_API_URL + "userid=" + AppController.getInstance().getUserId();
-                String opponentUrl = GlobalConstants.OPPONENT_API_URL + "userid=" + AppController.getInstance().getUserId();
-                String favoriteUrl = GlobalConstants.FAVORITE_API_URL + "userid=" + AppController.getInstance().getUserId();
-                try{
-                    videosList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(featuredUrl));
-                    videosList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(playerUrl));
-                    videosList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(coachesUrl));
-                    videosList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(opponentUrl));
-                    videosList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(favoriteUrl));
-
-                    SharedPreferences prefs = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
-                    if(!prefs.getBoolean(GlobalConstants.PREF_VAULT_SKIP_LOGIN, false)){
-                        long userId = prefs.getLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, 0);
-                        String email = prefs.getString(GlobalConstants.PREF_VAULT_USER_EMAIL, "");
-                        if(userId > 0 && !email.isEmpty())
-                            userJsonData = AppController.getInstance().getServiceManager().getVaultService().getUserData(userId, email);
-                    }
-
-                    status = true;
-                }catch(Exception e){
-                    e.printStackTrace();
-                    status = false;
-                }*/
                 try {
                     SharedPreferences pref = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
                     final long userId = pref.getLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, 0);
                     final String email = pref.getString(GlobalConstants.PREF_VAULT_USER_EMAIL, "");
                     userJsonData = AppController.getInstance().getServiceManager().getVaultService().getUserData(userId, email);
-                } catch (Exception e) {
+
+                    if(userJsonData != null) {
+                        if (!userJsonData.isEmpty()) {
+                            Gson gson = new Gson();
+                            Type classType = new TypeToken<User>() {
+                            }.getType();
+                            System.out.println("User Data : " + userJsonData);
+                            User responseUser = gson.fromJson(userJsonData.trim(), classType);
+                            if (responseUser != null) {
+                                if (responseUser.getUserID() > 0) {
+                                    AppController.getInstance().storeUserDataInPreferences(responseUser);
+                                }
+                            }
+                        }
+                    }
+
+                    status = Utils.loadDataFromServer(LoginEmailActivity.this);
+
+                }catch (Exception e){
                     e.printStackTrace();
                     status = false;
                 }
@@ -589,37 +569,24 @@ public class LoginEmailActivity extends BaseActivity {
             @Override
             protected void onPostExecute(Boolean isAllFetched) {
                 super.onPostExecute(isAllFetched);
-                try {
+                try{
                     if (isAllFetched) {
+                        Profile fbProfile = Profile.getCurrentProfile();
+                        SharedPreferences pref = AppController.getInstance().getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
+                        long userId = pref.getLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, 0);
 
-                        //UGAVaultDatabaseHelper.getInstance(getApplicationContext()).insertVideosInDatabase(videosList);
-                        //save user data in local database
-                        if (userJsonData != null) {
-                            if (!userJsonData.isEmpty()) {
-                                Gson gson = new Gson();
-                                Type classType = new TypeToken<User>() {
-                                }.getType();
-                                System.out.println("User Data : " + userJsonData);
-                                User responseUser = gson.fromJson(userJsonData.trim(), classType);
-                                if (responseUser != null) {
-                                    if (responseUser.getUserID() > 0) {
-                                        AppController.getInstance().storeUserDataInPreferences(responseUser);
-                                    }
-                                }
-                            }
+                        if (fbProfile != null || userId > 0) {
+                            Intent intent = new Intent(LoginEmailActivity.this, MainActivity.class);
+                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(intent);
+                            overridePendingTransition(R.anim.slideup, R.anim.nochange);
+                            finish();
+                            if(!VideoDataService.isServiceRunning)
+                                startService(new Intent(LoginEmailActivity.this, VideoDataService.class));
                         }
-                        VaultDatabaseHelper.getInstance(getApplicationContext()).removeAllRecords();
-
-                        startService(new Intent(LoginEmailActivity.this, VideoDataService.class));
-
-                        Intent intent = new Intent(LoginEmailActivity.this, MainActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(intent);
-                        overridePendingTransition(R.anim.rightin, R.anim.leftout);
-                        finish();
                     }
                     pDialog.dismiss();
-                } catch (Exception e) {
+                }catch(Exception e){
                     e.printStackTrace();
                     stopService(new Intent(LoginEmailActivity.this, VideoDataService.class));
                     VaultDatabaseHelper.getInstance(getApplicationContext()).removeAllRecords();
@@ -632,8 +599,8 @@ public class LoginEmailActivity extends BaseActivity {
         mFetchingTask.execute();
     }
 
-    public void checkEmailAndProceed() {
-        if (Utils.isInternetAvailable(this)) {
+    public void checkEmailAndProceed(){
+        if(Utils.isInternetAvailable(this)) {
             if (isValidEmail(edEmailBox.getText().toString())) {
                 View view = getCurrentFocus();
                 if (view != null) {
@@ -689,27 +656,31 @@ public class LoginEmailActivity extends BaseActivity {
                 }
 
             }
-        } else {
+        }
+        else{
             showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
         }
     }
 
     private boolean isValidEmail(String email) {
-        if (email.length() == 0) {
+        if(email.length() == 0){
 //            edEmailBox.setError("Email Not Entered!"); //Html.fromHtml("<font color='#CC0000'>Email Not Entered!</font>")
             showToastMessage("Email Not Entered!");
             return false;
-        } else {
+        }
+        else {
             String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
                     + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
 
             Pattern pattern = Pattern.compile(EMAIL_PATTERN);
             Matcher matcher = pattern.matcher(email);
-            if (!matcher.matches()) {
+            if(!matcher.matches())
+            {
 //                edEmailBox.setError("Invalid Email!");
                 showToastMessage("Invalid Email");
                 return false;
-            } else
+            }
+            else
                 return matcher.matches();
         }
     }
@@ -717,7 +688,7 @@ public class LoginEmailActivity extends BaseActivity {
     public void showAlertDialog(String loginType) {
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
         alertDialogBuilder
-                .setMessage("Oops, you previously used this email for " + loginType + " login. Please, login through " + loginType + ".");
+                .setMessage("Oops, you previously used this email for " + loginType + " login. Please, login through "+loginType+".");
 
         alertDialogBuilder.setPositiveButton("Ok",
                 new DialogInterface.OnClickListener() {
@@ -753,7 +724,7 @@ public class LoginEmailActivity extends BaseActivity {
     protected void onPause() {
         super.onPause();
         AppEventsLogger.deactivateApp(this);
-        if (pDialog != null)
+        if(pDialog != null)
             pDialog.dismiss();
     }
 
@@ -763,7 +734,7 @@ public class LoginEmailActivity extends BaseActivity {
         profileTracker.stopTracking();
     }
 
-    public void showToastMessage(String message) {
+    public void showToastMessage(String message){
         View includedLayout = findViewById(R.id.llToast);
 
         final TextView text = (TextView) includedLayout.findViewById(R.id.tv_toast_message);
@@ -776,9 +747,9 @@ public class LoginEmailActivity extends BaseActivity {
         text.setVisibility(View.VISIBLE);
 
         Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
+        handler.postDelayed(new Runnable(){
             @Override
-            public void run() {
+            public void run(){
                 animation = AnimationUtils.loadAnimation(LoginEmailActivity.this,
                         R.anim.abc_fade_out);
 
@@ -788,7 +759,7 @@ public class LoginEmailActivity extends BaseActivity {
         }, 2000);
     }
 
-    public void showNotificationConfirmationDialog(final Activity mActivity) {
+    public void showNotificationConfirmationDialog(final Activity mActivity){
 
         prefs = mActivity.getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
 

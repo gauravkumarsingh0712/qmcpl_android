@@ -13,18 +13,18 @@
     </content>
     <orderEntry type="jdk" jdkName="Android API 23 Platform" jdkType="Android SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="classes1" level="project" />
-    <orderEntry type="library" name="libs" level="project" />
-    <orderEntry type="library" name="classes" level="project" />
-    <orderEntry type="library" name="library" level="project" />
-    <orderEntry type="library" name="internal_impl-22.1.0" level="project" />
     <orderEntry type="library" name="classes2" level="project" />
-    <orderEntry type="module" module-name="library" />
+    <orderEntry type="library" name="libs" level="project" />
+    <orderEntry type="library" name="library" level="project" />
+    <orderEntry type="library" name="classes1" level="project" />
+    <orderEntry type="library" name="classes" level="project" />
+    <orderEntry type="library" name="internal_impl-22.1.0" level="project" />
     <orderEntry type="module" module-name="buildConfig" />
-    <orderEntry type="module" module-name="androidTest3" />
-    <orderEntry type="module" module-name="r" />
-    <orderEntry type="module" module-name="androidTest" />
-    <orderEntry type="module" module-name="main2" />
     <orderEntry type="module" module-name="main" />
+    <orderEntry type="module" module-name="main2" />
+    <orderEntry type="module" module-name="androidTest" />
+    <orderEntry type="module" module-name="r" />
+    <orderEntry type="module" module-name="androidTest2" />
+    <orderEntry type="module" module-name="library" />
   </component>
 </module>

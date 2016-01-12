@@ -42,7 +42,7 @@
             android:gravity="center_horizontal"
             android:orientation="vertical">
 
-            <com.auburn.android.utils.CircleImageView
+            <com.ncsavault.floridavault.utils.CircleImageView
                 android:id="@+id/facebookShare"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
@@ -100,7 +100,7 @@
             android:gravity="center_horizontal"
             android:orientation="vertical">
 
-            <com.auburn.android.utils.CircleImageView
+            <com.ncsavault.floridavault.utils.CircleImageView
                 android:id="@+id/twitterShare"
                 android:layout_width="50dp"
                 android:layout_height="50dp"

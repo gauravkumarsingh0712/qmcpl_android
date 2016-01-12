@@ -14,4 +14,11 @@
     <color name="pull_option_button_normal">#003471</color>
     <color name="pull_option_button_selected">#0378D3</color>
     <color name="pull_option_background">#003471</color>
+
+    <integer-array name="gplus_colors">
+        <item>@color/apptheme_color</item>
+        <item>@color/apptheme_color</item>
+        <item>@color/apptheme_color</item>
+        <item>@color/apptheme_color</item>
+    </integer-array>
 </resources>

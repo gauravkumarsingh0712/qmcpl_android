@@ -48,6 +48,8 @@ import org.vault.app.service.AndroidServiceContext;
 import org.vault.app.service.ServiceManager;
 import org.vault.app.serviceimpl.AbstractServiceManagerImpl;
 
+import java.util.ArrayList;
+
 import io.fabric.sdk.android.Fabric;
 
 public class AppController extends Application {
@@ -74,6 +76,16 @@ public class AppController extends Application {
 	private boolean isAllScreenRefreshed = true;
 	private boolean isDataRefreshed = false;
 	private long cacheClearTime = 999999999999999L;
+
+	private ArrayList<String> API_URLS = new ArrayList<>();
+
+	public ArrayList<String> getAPI_URLS() {
+		return API_URLS;
+	}
+
+	public void setAPI_URLS(ArrayList<String> API_URLS) {
+		this.API_URLS = API_URLS;
+	}
 
 	@Override
 	public void onCreate() {

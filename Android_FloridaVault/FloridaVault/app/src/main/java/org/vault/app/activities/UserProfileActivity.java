@@ -67,7 +67,6 @@ import org.json.JSONObject;
 import org.vault.app.appcontroller.AppController;
 import org.vault.app.database.VaultDatabaseHelper;
 import org.vault.app.dto.APIResponse;
-import org.vault.app.dto.TabBannerDTO;
 import org.vault.app.dto.User;
 import org.vault.app.globalconstants.GlobalConstants;
 import org.vault.app.service.VideoDataService;
@@ -76,12 +75,9 @@ import org.vault.app.utils.Utils;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.lang.reflect.Type;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Random;
 
 /**
@@ -221,13 +217,13 @@ public class UserProfileActivity extends BaseActivity implements TextWatcher {
                                             JSONObject object,
                                             GraphResponse response) {
                                         try {
-                                            URL image_path;
+                                            /*URL image_path;
                                             try {
                                                 image_path = new URL("http://graph.facebook.com/" + loginResult.getAccessToken().getUserId() + "/picture?type=large");
                                                 System.out.println("Image Path : " + image_path.toString());
                                             } catch (MalformedURLException e) {
                                                 e.printStackTrace();
-                                            }
+                                            }*/
                                             Log.v("LoginActivity", response.toString());
 
                                             tvFacebookStatus.setText(object.getString("name"));
@@ -313,20 +309,6 @@ public class UserProfileActivity extends BaseActivity implements TextWatcher {
 //                String token = authToken.token;
 //                String secret = authToken.secret;
                 tvTwitterStatus.setText("@" + session.getUserName());
-
-            /*TwitterApiClient twitterApiClient = new TwitterApiClient(session);
-            twitterApiClient.getAccountService().verifyCredentials(true, true, new Callback<com.twitter.sdk.android.core.models.User>() {
-                @Override
-                public void success(Result<com.twitter.sdk.android.core.models.User> userResult) {
-                    tvTwitterStatus.setText(userResult.data.screenName);
-                }
-
-                @Override
-                public void failure(TwitterException e) {
-
-                }
-            });*/
-
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -394,16 +376,6 @@ public class UserProfileActivity extends BaseActivity implements TextWatcher {
             }
         });
 
-        /*scrollView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                *//*edBio.clearFocus();
-                edFirstName.clearFocus();
-                edLastName.clearFocus();*//*
-                return true;
-            }
-        });*/
-
         tvLogout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -423,11 +395,9 @@ public class UserProfileActivity extends BaseActivity implements TextWatcher {
                 Twitter.logOut();
 
                 stopService(new Intent(UserProfileActivity.this, VideoDataService.class));
+//                VideoDataFetchingService.isServiceRunning = false;
 
                 VaultDatabaseHelper.getInstance(getApplicationContext()).removeAllRecords();
-
-                VaultDatabaseHelper.getInstance(getApplicationContext()).removeAllTabBannerData();
-
             }
         });
 
@@ -449,7 +419,8 @@ public class UserProfileActivity extends BaseActivity implements TextWatcher {
                             isValidFields = false;
 //                            edFirstName.setError("Invalid! Minimum 3 characters");
                             showToastMessage("First Name should have minimum 3 characters");
-                        } else if (!isValidText(edLastName.getText().toString())) {
+                        }
+                        else if (!isValidText(edLastName.getText().toString())) {
                             isValidFields = false;
 //                            edLastName.setError("Invalid! Minimum 3 characters");
                             showToastMessage("Last Name should have minimum 3 characters");
@@ -553,7 +524,8 @@ public class UserProfileActivity extends BaseActivity implements TextWatcher {
                             isValidFields = false;
 //                            edFirstName.setError("Invalid! Minimum 3 characters");
                             showToastMessage("First Name should have minimum 3 characters");
-                        } else if (!isValidText(edLastName.getText().toString())) {
+                        }
+                        else if (!isValidText(edLastName.getText().toString())) {
                             isValidFields = false;
 //                            edLastName.setError("Invalid! Minimum 3 characters");
                             showToastMessage("Last Name should have minimum 3 characters");
@@ -591,8 +563,8 @@ public class UserProfileActivity extends BaseActivity implements TextWatcher {
                     @Override
                     public void onClick(DialogInterface arg0, int arg1) {
                         final File root = new File(Environment.getExternalStorageDirectory() + File.separator + GlobalConstants.PROFILE_PIC_DIRECTORY + File.separator);
-                        if (root != null) {
-                            if (root.listFiles() != null) {
+                        if(root != null) {
+                            if(root.listFiles() != null) {
                                 for (File childFile : root.listFiles()) {
                                     if (childFile != null) {
                                         if (childFile.exists())
@@ -884,8 +856,8 @@ public class UserProfileActivity extends BaseActivity implements TextWatcher {
                             loadUserDataFromLocal();
                         }
                         final File root = new File(Environment.getExternalStorageDirectory() + File.separator + GlobalConstants.PROFILE_PIC_DIRECTORY + File.separator);
-                        if (root != null) {
-                            if (root.listFiles() != null) {
+                        if(root != null) {
+                            if(root.listFiles() != null) {
                                 for (File childFile : root.listFiles()) {
                                     if (childFile != null) {
                                         if (childFile.exists())
@@ -1157,6 +1129,4 @@ public class UserProfileActivity extends BaseActivity implements TextWatcher {
             }
         }, 2000);
     }
-
-
 }

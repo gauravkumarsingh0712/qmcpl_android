@@ -35,14 +35,12 @@ import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.ToggleButton;
 
 import com.facebook.AccessToken;
 import com.facebook.CallbackManager;
@@ -160,7 +158,14 @@ public class VideoInfoActivity extends FragmentActivity {
             performAnimations();
         }*/
 
-        if(getScreenOrientation() == 1)
+        //The reason to put this thread, to make screen aware of what orientation it is using
+        try {
+            Thread thread = new Thread();
+            thread.sleep(500);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (getScreenOrientation() == 1)
             performAnimations();
         else
             moveToFullscreen();
@@ -170,19 +175,18 @@ public class VideoInfoActivity extends FragmentActivity {
 
     }
 
-    public int getScreenOrientation()
-    {
+    public int getScreenOrientation() {
         Display getOrient = getWindowManager().getDefaultDisplay();
         int orientation = Configuration.ORIENTATION_UNDEFINED;
-        Point outSize=new Point();
+        Point outSize = new Point();
         getOrient.getSize(outSize);
 
-        if(outSize.x==outSize.y){
+        if (outSize.x == outSize.y) {
             orientation = Configuration.ORIENTATION_UNDEFINED;
-        } else{
-            if(outSize.x < outSize.y){
+        } else {
+            if (outSize.x < outSize.y) {
                 orientation = Configuration.ORIENTATION_PORTRAIT;
-            }else {
+            } else {
                 orientation = Configuration.ORIENTATION_LANDSCAPE;
             }
         }
@@ -371,10 +375,8 @@ public class VideoInfoActivity extends FragmentActivity {
             videoView.setKeepScreenOn(true);
             videoView.setMediaController(mController);
 //            mController.setAnchorView(videoView);
-
             videoView.setVideoURI(videoUri);
 
-            videoView.requestFocus();
 //            videoView.start();
             System.out.println("Video Length : " + videoView.getDuration());
         } else {
@@ -409,30 +411,35 @@ public class VideoInfoActivity extends FragmentActivity {
             @Override
             public void onPlay() {
                 if (!Utils.isInternetAvailable(VideoInfoActivity.this)) {
+
                     isConnectionMessageShown = true;
                     if (isConnectionMessageShown) {
                         showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
                         videoView.pause();
                     }
                 }
+                System.out.println("VideoInfo onPlay");
             }
 
             @Override
             public void onPause() {
 
+                System.out.println("VideoInfo onPause");
             }
         });
 
         videoView.setOnErrorListener(new MediaPlayer.OnErrorListener() {
             @Override
             public boolean onError(MediaPlayer mp, int what, int extra) {
-                bufferProgressBar.setVisibility(View.GONE);
-                return false;
+                llVideoLoader.setVisibility(View.GONE);
+                showToastMessage("Unable to play video");
+                videoView.stopPlayback();
+                mVideoControlHandler.removeCallbacks(videoRunning);
+                return true;
             }
         });
 
         videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-
             @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
             @Override
             public void onPrepared(MediaPlayer mp) {
@@ -449,23 +456,27 @@ public class VideoInfoActivity extends FragmentActivity {
                     }
                 });
 
-                mp.setOnVideoSizeChangedListener(new MediaPlayer.OnVideoSizeChangedListener() {
+                FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+                lp.gravity = Gravity.BOTTOM;
+                mController.setLayoutParams(lp);
+
+                mController.setAnchorView(videoView);
+                System.out.println("VideoInfo on pre");
+                mVideoControlHandler.postDelayed(videoRunning, 1000);
+
+                ((ViewGroup) mController.getParent()).removeView(mController);
+
+                rlVideoLayout.addView(mController);
+                mController.setVisibility(View.INVISIBLE);
+
+                /*mp.setOnVideoSizeChangedListener(new MediaPlayer.OnVideoSizeChangedListener() {
                     @Override
                     public void onVideoSizeChanged(MediaPlayer mediaPlayer, int i, int i1) {
-                        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
-                        lp.gravity = Gravity.BOTTOM;
-                        mController.setLayoutParams(lp);
 
-                        mController.setAnchorView(videoView);
-                        mVideoControlHandler.postDelayed(videoRunning, 1000);
-
-                        ((ViewGroup) mController.getParent()).removeView(mController);
-
-                        rlVideoLayout.addView(mController);
-                        mController.setVisibility(View.INVISIBLE);
                     }
-                });
-                if(isVideoCompleted)
+                });*/
+
+                if (isVideoCompleted)
                     videoView.pause();
                 else
                     videoView.start();
@@ -485,7 +496,7 @@ public class VideoInfoActivity extends FragmentActivity {
                         public void run() {
                             mController.setVisibility(View.INVISIBLE);
                         }
-                    }, 2000);
+                    }, 1000);
                 }
                 return false;
             }
@@ -496,14 +507,42 @@ public class VideoInfoActivity extends FragmentActivity {
             @Override
             public void onCompletion(MediaPlayer mp) {
                 // TODO Auto-generated method stub
+               // isFirstTime = true;
                 isVideoCompleted = true;
                 imgVideoStillUrl.setVisibility(View.VISIBLE);
                 mVideoControlHandler.removeCallbacks(videoRunning);
-                mp.reset();
+
+              //  mp.reset();
+                 videoView.stopPlayback();
+
+                if (mController != null) {
+                    mController.removeAllViews();
+                    mController = null;
+//                    mController = mTempMediaController;
+//                    videoView.setMediaController(mController);
+//                    mController.setAnchorView(videoView);
+//                  //  mController.show();
+                }
+//
+
+                if (mController == null) {
+                    mController = new CustomMediaController(VideoInfoActivity.this);
+                }
+                videoView.setKeepScreenOn(true);
+                videoView.setMediaController(mController);
+
                 String encodedVideoUrl = videoObject.getVideoLongUrl();
                 encodedVideoUrl = encodedVideoUrl.replace("(format=m3u8-aapl)", "(format=m3u8-aapl-v3)");
                 videoView.setVideoURI(Uri.parse(encodedVideoUrl));
-                videoView.requestFocus();
+                //videoView.requestFocus();
+                prevVideoTime = 0;
+                new Handler().postDelayed(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        llVideoLoader.setVisibility(View.VISIBLE);
+                    }
+                }, 500);
             }
         });
 
@@ -583,6 +622,80 @@ public class VideoInfoActivity extends FragmentActivity {
             }
         });
     }
+
+
+    private boolean isConnectionMessageShown;
+    private CustomMediaController mTempMediaController;
+    private boolean isFirstTime = true;
+    private CustomVideoView mTempVideoView;
+    private Runnable videoRunning = new Runnable() {
+
+        @Override
+        public void run() {
+            // TODO Auto-generated method stub
+            if (Utils.isInternetAvailable(VideoInfoActivity.this)) {
+                isConnectionMessageShown = false;
+
+                System.out.println("VideoInfo handler");
+                if (llVideoLoader.isShown()
+                        /*&& videoView.getCurrentPosition() > 500*/) {
+                    llVideoLoader.setVisibility(View.GONE);
+                    videoView.requestFocus();
+                    mController.show();
+                } else {
+                    mController.hide();
+                }
+
+                if (videoView.isPlaying()) {
+                    System.out.println("Video Playing and total duration "
+                            + videoView.getDuration());
+                    System.out.println("Video Playing and current duration "
+                            + videoView.getCurrentPosition());
+
+                    if (imgVideoStillUrl.isShown() && videoView.getCurrentPosition() > 500) {
+                        Animation anim = AnimationUtils.loadAnimation(VideoInfoActivity.this, R.anim.fadein);
+                        imgVideoStillUrl.setAnimation(anim);
+                        imgVideoStillUrl.setVisibility(View.GONE);
+                        llVideoLoader.setVisibility(View.GONE);
+                        videoView.requestFocus();
+                        mController.show();
+                    } else {
+                        mController.hide();
+                    }
+                    System.out.println("VideoInfo getCurrentPosition "
+                            + videoView.getCurrentPosition());
+                    prevVideoTime = videoView.getCurrentPosition();
+                }
+                if (!videoView.isPlaying()) {
+                    System.out.println("VideoInfo isPlaying ");
+                    videoView.seekTo((int) prevVideoTime);
+                }
+
+//                if (videoView.getCurrentPosition() >= videoView.getDuration() - 10000 && isFirstTime) {
+//
+//                    if (mTempMediaController == null) {
+//                        mTempMediaController = new CustomMediaController(VideoInfoActivity.this);
+//                    }
+////                    String encodedVideoUrl = videoObject.getVideoLongUrl();
+////                    encodedVideoUrl = encodedVideoUrl.replace("(format=m3u8-aapl)", "(format=m3u8-aapl-v3)");
+////                    mTempVideoView = new CustomVideoView(VideoInfoActivity.this);
+////                    mTempVideoView.setVideoURI(Uri.parse(encodedVideoUrl));
+//
+//                    isFirstTime = false;
+//                }
+
+
+            } else {
+                if (!isConnectionMessageShown) {
+                    showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
+                    videoView.pause();
+                }
+                isConnectionMessageShown = true;
+            }
+            mVideoControlHandler.postDelayed(this, 2000);
+
+        }
+    };
 
     public void loadVideoThumbnail() {
         DisplayImageOptions imgLoadingOptions = new DisplayImageOptions.Builder()
@@ -686,53 +799,7 @@ public class VideoInfoActivity extends FragmentActivity {
         }
     }
 
-    private boolean isConnectionMessageShown;
-    private Runnable videoRunning = new Runnable() {
 
-        @Override
-        public void run() {
-            // TODO Auto-generated method stub
-            if(Utils.isInternetAvailable(VideoInfoActivity.this)) {
-                isConnectionMessageShown = false;
-                if (llVideoLoader.isShown()
-                        && videoView.getCurrentPosition() > 500) {
-                    llVideoLoader.setVisibility(View.GONE);
-                }
-
-                /*if (!llVideoLoader.isShown()) {
-                    if (prevVideoTime == videoView.getCurrentPosition())
-                        bufferProgressBar.setVisibility(View.VISIBLE);
-                    else
-                        bufferProgressBar.setVisibility(View.GONE);
-                }*/
-
-                if (videoView.isPlaying()) {
-                    System.out.println("Video Playing and total duration "
-                            + videoView.getDuration());
-                    System.out.println("Video Playing and current duration "
-                            + videoView.getCurrentPosition());
-
-                    if (imgVideoStillUrl.isShown() && videoView.getCurrentPosition() > 500) {
-                        Animation anim = AnimationUtils.loadAnimation(VideoInfoActivity.this, R.anim.fadein);
-                        imgVideoStillUrl.setAnimation(anim);
-                        imgVideoStillUrl.setVisibility(View.GONE);
-                    }
-
-                    prevVideoTime = videoView.getCurrentPosition();
-                }
-                if(!videoView.isPlaying()){
-                    videoView.seekTo((int) prevVideoTime);
-                }
-            }else{
-                if(!isConnectionMessageShown) {
-                    showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
-                    videoView.pause();
-                }
-                isConnectionMessageShown = true;
-            }
-            mVideoControlHandler.postDelayed(this, 2000);
-        }
-    };
 
 
     public void makeShareDialog() {
@@ -872,7 +939,7 @@ public class VideoInfoActivity extends FragmentActivity {
         progressDialog.setContentView(view);
     }
 
-    public void stopVideoEvents(){
+    public void stopVideoEvents() {
         mVideoControlHandler.removeCallbacks(videoRunning);
         videoView.stopPlayback();
         llVideoLoader.setVisibility(View.GONE);
@@ -883,14 +950,14 @@ public class VideoInfoActivity extends FragmentActivity {
         videoObject = videoObj;
     }
 
-    public void setRelatedVideoData(VideoDTO videoObject){
+    public void setRelatedVideoData(VideoDTO videoObject) {
         //Set Video to videoview
         if (videoCategory != null) {
             // -----stopping the flurry event of video-----------
             FlurryAgent.endTimedEvent(videoCategory);
         }
         videoCategory = GlobalConstants.RELATED_VIDEO_CATEGORY;
-        if(videoObject != null) {
+        if (videoObject != null) {
             if (Utils.isInternetAvailable(this)) {
                 String encodedVideoUrl = videoObject.getVideoLongUrl();
                 llVideoLoader.setVisibility(View.VISIBLE);
@@ -929,7 +996,7 @@ public class VideoInfoActivity extends FragmentActivity {
             VideoInfoPagerFragment descriptionFragment = (VideoInfoPagerFragment) mPagerAdapter.getItem(0);
             View fragmentView = descriptionFragment.getView();
             TextView tvLongDescription = (TextView) fragmentView.findViewById(R.id.tv_video_long_description);
-            tvLongDescription.setText(videoObject.getVideoShortDescription());
+            tvLongDescription.setText(videoObject.getVideoLongDescription());
 
             mPagerAdapter.notifyDataSetChanged();
         }

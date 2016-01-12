@@ -36,6 +36,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.facebook.Profile;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.ncsavault.floridavault.BaseActivity;
@@ -188,7 +189,7 @@ public class LoginPasswordActivity extends BaseActivity {
             screenWidth = d.getWidth();
         }
 
-        int dimension = (int) (screenWidth*0.45);
+        int dimension = (int) (screenWidth * 0.45);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dimension, dimension);
         lp.setMargins(0, 20, 0, 0);
         lp.gravity = Gravity.CENTER_HORIZONTAL;
@@ -204,6 +205,7 @@ public class LoginPasswordActivity extends BaseActivity {
         public void onScrollingStarted(WheelView wheel) {
             wheelScrolled = true;
         }
+
         public void onScrollingFinished(WheelView wheel) {
             wheelScrolled = false;
             edAgeOptional.setText(yearArray[yearWheel.getCurrentItem()]);
@@ -223,9 +225,9 @@ public class LoginPasswordActivity extends BaseActivity {
         int startingYear = 1901;
         int currentYear = Calendar.getInstance().get(Calendar.YEAR);
         int numberOfYears = currentYear - startingYear;
-        yearArray = new String[numberOfYears+1];
+        yearArray = new String[numberOfYears + 1];
         int yearCheck = startingYear;
-        for(int i=0; i<=numberOfYears; i++){
+        for (int i = 0; i <= numberOfYears; i++) {
             yearArray[i] = String.valueOf(yearCheck);
             yearCheck++;
         }
@@ -245,10 +247,10 @@ public class LoginPasswordActivity extends BaseActivity {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
             w.getDefaultDisplay().getSize(size);
-             Measuredheight = size.y;
+            Measuredheight = size.y;
         } else {
             Display d = w.getDefaultDisplay();
-             Measuredheight = d.getHeight();
+            Measuredheight = d.getHeight();
         }
     }
 
@@ -293,7 +295,7 @@ public class LoginPasswordActivity extends BaseActivity {
                     InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                     inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
                 }
-                if(llUsernameBlock.isShown()){
+                if (llUsernameBlock.isShown()) {
                     checkUsernameAndProceed();
                 }
             }
@@ -307,7 +309,7 @@ public class LoginPasswordActivity extends BaseActivity {
                     InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                     inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
                 }
-                if(llUserDetailBlock.isShown()){
+                if (llUserDetailBlock.isShown()) {
                     checkSignUpFieldAndProceed();
                 }
             }
@@ -321,7 +323,7 @@ public class LoginPasswordActivity extends BaseActivity {
                     InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                     inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
                 }
-                if(llUserOptionalDetailBlock.isShown()){
+                if (llUserOptionalDetailBlock.isShown()) {
                     checkOptionalValuesAndProceed();
                 }
             }
@@ -335,7 +337,7 @@ public class LoginPasswordActivity extends BaseActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if(s.length() > 0)
+                if (s.length() > 0)
                     tvOptionalSkipNext.setText("Next");
             }
 
@@ -348,8 +350,8 @@ public class LoginPasswordActivity extends BaseActivity {
         edAgeOptional.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, (int) (Measuredheight*0.30));
-                lp.setMargins(0, 10, 0,0);
+                FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, (int) (Measuredheight * 0.30));
+                lp.setMargins(0, 10, 0, 0);
                 lp.gravity = Gravity.BOTTOM;
                 yearWheel.setLayoutParams(lp);
 //                yearWheel.setMinimumHeight((int) (Measuredheight*0.30));
@@ -363,7 +365,7 @@ public class LoginPasswordActivity extends BaseActivity {
         scrollView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                if(yearWheel.isShown()){
+                if (yearWheel.isShown()) {
                     Animation anim = AnimationUtils.loadAnimation(LoginPasswordActivity.this, R.anim.slidedown);
                     yearWheel.setAnimation(anim);
                     yearWheel.setVisibility(View.GONE);
@@ -499,13 +501,13 @@ public class LoginPasswordActivity extends BaseActivity {
         if (pass != null && pass.length() >= 6) {
             return true;
         }
-        if(pass != null)
-                if(pass.length() == 0)
+        if (pass != null)
+            if (pass.length() == 0)
 //                    edPassword.setError("Password not entered");
-                    showToastMessage("Password not entered");
-                else if(pass.length() < 6)
+                showToastMessage("Password not entered");
+            else if (pass.length() < 6)
 //                    edPassword.setError("Minimum 6 characters required!");
-                    showToastMessage("Password should contain minimum 6 characters!");
+                showToastMessage("Password should contain minimum 6 characters!");
         return false;
     }
 
@@ -517,17 +519,18 @@ public class LoginPasswordActivity extends BaseActivity {
         return confirmPass != null && (confirmPass.equals(edPassword.getText().toString()));
     }
 
-    public void loginVaultUser(){
+    public void loginVaultUser() {
         View view = getCurrentFocus();
         if (view != null) {
             InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
         }
-        if(Utils.isInternetAvailable(this)) {
+        if (Utils.isInternetAvailable(this)) {
             if (mValidateTask == null) {
                 mValidateTask = new AsyncTask<Void, Void, String>() {
 
                     String password = "";
+
                     @Override
                     protected void onPreExecute() {
                         super.onPreExecute();
@@ -551,7 +554,7 @@ public class LoginPasswordActivity extends BaseActivity {
                             Gson gson = new Gson();
                             Type classType = new TypeToken<APIResponse>() {
                             }.getType();
-                            if(result != null) {
+                            if (result != null) {
                                 APIResponse response = gson.fromJson(result.trim(), classType);
                                 pDialog.dismiss();
                                 if (response != null) {
@@ -580,13 +583,13 @@ public class LoginPasswordActivity extends BaseActivity {
                 // execute AsyncTask
                 mValidateTask.execute();
             }
-        }else{
+        } else {
             showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
         }
     }
 
 
-    public void fetchInitialRecordsForAll(){
+    public void fetchInitialRecordsForAll() {
         mFetchingTask = new AsyncTask<Void, Void, Boolean>() {
 
             String userJsonData = "";
@@ -604,8 +607,8 @@ public class LoginPasswordActivity extends BaseActivity {
                 pDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
                     @Override
                     public void onCancel(DialogInterface dialog) {
-                        if(mFetchingTask != null){
-                            if(!mFetchingTask.isCancelled())
+                        if (mFetchingTask != null) {
+                            if (!mFetchingTask.isCancelled())
                                 mFetchingTask.cancel(true);
                         }
                     }
@@ -645,7 +648,21 @@ public class LoginPasswordActivity extends BaseActivity {
                     final long userId = pref.getLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, 0);
                     final String email = pref.getString(GlobalConstants.PREF_VAULT_USER_EMAIL, "");
                     userJsonData = AppController.getInstance().getServiceManager().getVaultService().getUserData(userId, email);
-                }catch (Exception e){
+
+                    if (!userJsonData.isEmpty()) {
+                        Gson gson = new Gson();
+                        Type classType = new TypeToken<User>() {
+                        }.getType();
+                        System.out.println("User Data : " + userJsonData);
+                        User responseUser = gson.fromJson(userJsonData.trim(), classType);
+                        if (responseUser != null) {
+                            if (responseUser.getUserID() > 0) {
+                                AppController.getInstance().storeUserDataInPreferences(responseUser);
+                            }
+                        }
+                    }
+                    status = Utils.loadDataFromServer(LoginPasswordActivity.this);
+                } catch (Exception e) {
                     e.printStackTrace();
                     status = false;
                 }
@@ -655,35 +672,24 @@ public class LoginPasswordActivity extends BaseActivity {
             @Override
             protected void onPostExecute(Boolean isAllFetched) {
                 super.onPostExecute(isAllFetched);
-                try{
-                    if(isAllFetched){
+                try {
+                    if (isAllFetched) {
+                        Profile fbProfile = Profile.getCurrentProfile();
+                        SharedPreferences pref = AppController.getInstance().getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
+                        long userId = pref.getLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, 0);
 
-                        //UGAVaultDatabaseHelper.getInstance(getApplicationContext()).insertVideosInDatabase(videosList);
-                        //save user data in local database
-                        if(!userJsonData.isEmpty()){
-                            Gson gson = new Gson();
-                            Type classType = new TypeToken<User>() {
-                            }.getType();
-                            System.out.println("User Data : "+userJsonData);
-                            User responseUser = gson.fromJson(userJsonData.trim(), classType);
-                            if (responseUser != null) {
-                                if (responseUser.getUserID() > 0) {
-                                    AppController.getInstance().storeUserDataInPreferences(responseUser);
-                                }
-                            }
+                        if (fbProfile != null || userId > 0) {
+                            Intent intent = new Intent(LoginPasswordActivity.this, MainActivity.class);
+                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(intent);
+                            overridePendingTransition(R.anim.slideup, R.anim.nochange);
+                            finish();
+                            if (!VideoDataService.isServiceRunning)
+                                startService(new Intent(LoginPasswordActivity.this, VideoDataService.class));
                         }
-
-                        VaultDatabaseHelper.getInstance(getApplicationContext()).removeAllRecords();
-                        startService(new Intent(LoginPasswordActivity.this, VideoDataService.class));
-
-                        Intent intent = new Intent(LoginPasswordActivity.this, MainActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(intent);
-                        overridePendingTransition(R.anim.rightin, R.anim.leftout);
-                        finish();
                     }
                     pDialog.dismiss();
-                }catch(Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                     stopService(new Intent(LoginPasswordActivity.this, VideoDataService.class));
                     VaultDatabaseHelper.getInstance(getApplicationContext()).removeAllRecords();
@@ -696,7 +702,7 @@ public class LoginPasswordActivity extends BaseActivity {
         mFetchingTask.execute();
     }
 
-    public void checkPasswordAndProceed(){
+    public void checkPasswordAndProceed() {
         if (isValidPassword(edPassword.getText().toString())) {
             if (isConfirmPasswordValid(edConfirmPassword.getText().toString())) {
                 View view = getCurrentFocus();
@@ -724,8 +730,8 @@ public class LoginPasswordActivity extends BaseActivity {
         }
     }
 
-    public void checkUsernameAndProceed(){
-        if(Utils.isInternetAvailable(this)) if (isValidText(edUsername.getText().toString())) {
+    public void checkUsernameAndProceed() {
+        if (Utils.isInternetAvailable(this)) if (isValidText(edUsername.getText().toString())) {
             View view = getCurrentFocus();
             if (view != null) {
                 InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -754,7 +760,7 @@ public class LoginPasswordActivity extends BaseActivity {
                     @Override
                     protected void onPostExecute(String result) {
                         System.out.println("Result of username validation : " + result);
-                        if(result != null) {
+                        if (result != null) {
                             if (result.toLowerCase().contains("true")) {
                                 leftOutAnimation = AnimationUtils.loadAnimation(LoginPasswordActivity.this, R.anim.leftout);
                                 rightInAnimation = AnimationUtils.loadAnimation(LoginPasswordActivity.this, R.anim.rightin);
@@ -789,36 +795,36 @@ public class LoginPasswordActivity extends BaseActivity {
 //            edUsername.setError("Minimum 3 characters");
             showToastMessage("Username should contain minimum 3 characters");
         }
-        else{
+        else {
             showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
         }
     }
 
-    public void checkSignUpFieldAndProceed(){
-        if(edFirstName.getText().toString().length() == 0) {
+    public void checkSignUpFieldAndProceed() {
+        if (edFirstName.getText().toString().length() == 0) {
 //            edFirstName.setError("First name required");
             showToastMessage("First name required");
             isSignUpFieldsValid = false;
         }
-        if(isSignUpFieldsValid)
-            if(edFirstName.getText().toString().length() < 3) {
+        if (isSignUpFieldsValid)
+            if (edFirstName.getText().toString().length() < 3) {
 //                edFirstName.setError("Minimum 3 characters ");
                 showToastMessage("First name should contain minimum 3 characters");
                 isSignUpFieldsValid = false;
             }
-        if(isSignUpFieldsValid)
-            if(edLastName.getText().toString().length() == 0) {
+        if (isSignUpFieldsValid)
+            if (edLastName.getText().toString().length() == 0) {
                 //edLastName.setError("Last name required");
                 showToastMessage("Last name required");
                 isSignUpFieldsValid = false;
             }
-        if(isSignUpFieldsValid)
-            if(edLastName.getText().toString().length() < 3) {
+        if (isSignUpFieldsValid)
+            if (edLastName.getText().toString().length() < 3) {
 //                edLastName.setError("Minimum 3 characters ");
                 showToastMessage("Last name should contain minimum 3 characters ");
                 isSignUpFieldsValid = false;
             }
-        if(isSignUpFieldsValid){
+        if (isSignUpFieldsValid) {
             leftOutAnimation = AnimationUtils.loadAnimation(LoginPasswordActivity.this, R.anim.leftout);
             rightInAnimation = AnimationUtils.loadAnimation(LoginPasswordActivity.this, R.anim.rightin);
 
@@ -833,15 +839,15 @@ public class LoginPasswordActivity extends BaseActivity {
             llUserOptionalDetailBlock.setVisibility(View.VISIBLE);
             llHeaderImage.setVisibility(View.VISIBLE);
             radGroupGenderOptional.setVisibility(View.GONE);
-            if(edAgeOptional.getText().length() > 0)
+            if (edAgeOptional.getText().length() > 0)
                 tvOptionalSkipNext.setText("Next");
         }
         isSignUpFieldsValid = true;
     }
 
-    public void checkOptionalValuesAndProceed(){
+    public void checkOptionalValuesAndProceed() {
         boolean isValidated = false;
-        if(llAgeBox.isShown()) {
+        if (llAgeBox.isShown()) {
             if (edAgeOptional.getText().toString().length() > 0 && tvOptionalSkipNext.getText().toString().toLowerCase().equals("next")) {
                 isValidated = true;
             } else if (tvOptionalSkipNext.getText().toString().toLowerCase().equals("skip") && edAgeOptional.getText().toString().length() == 0) {
@@ -850,7 +856,7 @@ public class LoginPasswordActivity extends BaseActivity {
                 if (edAgeOptional.getText().toString().length() == 0)
                     showToastMessage("Please provide proper age");
             }
-            if(isValidated){
+            if (isValidated) {
                 if (yearWheel.isShown()) {
                     Animation anim = AnimationUtils.loadAnimation(LoginPasswordActivity.this, R.anim.slidedown);
                     yearWheel.setAnimation(anim);
@@ -877,13 +883,13 @@ public class LoginPasswordActivity extends BaseActivity {
                 return;
             }
 
-        }else if(radGroupGenderOptional.isShown()){
-            if((radFemaleOptional.isChecked() || radMaleOptional.isChecked()) && tvOptionalSkipNext.getText().toString().toLowerCase().equals("next") ){
+        } else if (radGroupGenderOptional.isShown()) {
+            if ((radFemaleOptional.isChecked() || radMaleOptional.isChecked()) && tvOptionalSkipNext.getText().toString().toLowerCase().equals("next")) {
                 isValidated = true;
-            }else if(tvOptionalSkipNext.getText().toString().toLowerCase().equals("skip") && (!radFemaleOptional.isChecked() && !radMaleOptional.isChecked())){
+            } else if (tvOptionalSkipNext.getText().toString().toLowerCase().equals("skip") && (!radFemaleOptional.isChecked() && !radMaleOptional.isChecked())) {
                 isValidated = true;
             }
-            if(isValidated) {
+            if (isValidated) {
                 User usr = new User();
                 usr.setFname(edFirstName.getText().toString());
                 usr.setLname(edLastName.getText().toString());
@@ -906,8 +912,8 @@ public class LoginPasswordActivity extends BaseActivity {
                 intent.putExtra("user", usr);
                 startActivity(intent);
                 overridePendingTransition(R.anim.rightin, R.anim.leftout);
-            }else{
-                if(!radGroupGenderOptional.isSelected())
+            } else {
+                if (!radGroupGenderOptional.isSelected())
                     showToastMessage("Please provide proper gender");
             }
         }
@@ -923,14 +929,14 @@ public class LoginPasswordActivity extends BaseActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        if(pDialog != null)
+        if (pDialog != null)
             pDialog.dismiss();
     }
 
     @Override
     public void onBackPressed() {
-        if(llUserOptionalDetailBlock.isShown()){
-            if(radGroupGenderOptional.isShown()){
+        if (llUserOptionalDetailBlock.isShown()) {
+            if (radGroupGenderOptional.isShown()) {
                 leftInAnimation = AnimationUtils.loadAnimation(LoginPasswordActivity.this, R.anim.leftin);
                 rightOutAnimation = AnimationUtils.loadAnimation(LoginPasswordActivity.this, R.anim.rightout);
 
@@ -947,11 +953,12 @@ public class LoginPasswordActivity extends BaseActivity {
                 tvHeader.setText("Register");
                 llUserOptionalDetailBlock.setVisibility(View.VISIBLE);
                 llHeaderImage.setVisibility(View.VISIBLE);
-                if(edAgeOptional.getText().length() > 0)
+                if (edAgeOptional.getText().length() > 0)
                     tvOptionalSkipNext.setText("Next");
                 else
                     tvOptionalSkipNext.setText("Skip");
-            }else if(llAgeBox.isShown()){
+
+            } else if (llAgeBox.isShown()) {
                 if (yearWheel.isShown()) {
                     Animation anim = AnimationUtils.loadAnimation(LoginPasswordActivity.this, R.anim.slidedown);
                     yearWheel.setAnimation(anim);
@@ -975,7 +982,7 @@ public class LoginPasswordActivity extends BaseActivity {
                 llHeaderImage.setVisibility(View.VISIBLE);
             }
             return;
-        }else if (llUserDetailBlock.isShown()) {
+        } else if (llUserDetailBlock.isShown()) {
             leftInAnimation = AnimationUtils.loadAnimation(LoginPasswordActivity.this, R.anim.leftin);
             rightOutAnimation = AnimationUtils.loadAnimation(LoginPasswordActivity.this, R.anim.rightout);
 
@@ -1005,12 +1012,26 @@ public class LoginPasswordActivity extends BaseActivity {
             llPasswordBlock.setVisibility(View.VISIBLE);
             llHeaderImage.setVisibility(View.VISIBLE);
             return;
-        }
+        }/*else if(llPasswordBlock.isShown()){
 
+            llPasswordBlock.setAnimation(rightOutAnimation);
+            llHeaderImage.setAnimation(rightOutAnimation);
+            llPasswordBlock.setVisibility(View.GONE);
+            llHeaderImage.setVisibility(View.GONE);
+
+            llPasswordBlock.setAnimation(leftInAnimation);
+            tvHeader.setText("Login");
+            llHeaderImage.setAnimation(leftInAnimation);
+            llPasswordBlock.setVisibility(View.VISIBLE);
+            llHeaderImage.setVisibility(View.VISIBLE);
+            return;
+        }*/
         super.onBackPressed();
+
+        overridePendingTransition(R.anim.leftin, R.anim.rightout);
     }
 
-    public void showToastMessage(String message){
+    public void showToastMessage(String message) {
         View includedLayout = findViewById(R.id.llToast);
 
         final TextView text = (TextView) includedLayout.findViewById(R.id.tv_toast_message);

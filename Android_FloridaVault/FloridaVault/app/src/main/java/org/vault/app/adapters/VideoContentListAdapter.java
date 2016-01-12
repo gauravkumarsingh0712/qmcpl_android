@@ -22,15 +22,14 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.ToggleButton;
 
 import com.android.volley.toolbox.ImageLoader;
+import com.ncsavault.floridavault.LoginEmailActivity;
+import com.ncsavault.floridavault.R;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
-import com.ncsavault.floridavault.LoginEmailActivity;
-import com.ncsavault.floridavault.R;
 
 import org.vault.app.activities.MainActivity;
 import org.vault.app.appcontroller.AppController;
@@ -157,7 +156,7 @@ public class VideoContentListAdapter extends BaseAdapter {
             viewHolder = (ViewHolder) convertView.getTag();
         }
 
-        if(isPullRefreshInProgress)
+        if (isPullRefreshInProgress)
             viewHolder.imgToggleButton.setEnabled(false);
         else
             viewHolder.imgToggleButton.setEnabled(true);
@@ -168,8 +167,8 @@ public class VideoContentListAdapter extends BaseAdapter {
         return convertView;
     }
 
-    public void initData(final int pos){
-        if(arrayListVideoDTOs.get(pos).isVideoIsFavorite())
+    public void initData(final int pos) {
+        if (arrayListVideoDTOs.get(pos).isVideoIsFavorite())
             viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargold);
         else
             viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
@@ -178,7 +177,6 @@ public class VideoContentListAdapter extends BaseAdapter {
             viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargold);
         else
             viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
-
 
 
         videoThumbnailURL = arrayListVideoDTOs.get(pos).getVideoStillUrl();
@@ -210,21 +208,21 @@ public class VideoContentListAdapter extends BaseAdapter {
                 });
 
         viewHolder.tvVideoName.setText(videoName);
-        if(viewType == 1){
+        if (viewType == 1) {
             int aspectHeight = (Measuredwidth * 9) / 16;
 
             viewHolder.frmVideoItem.setMinimumHeight(aspectHeight);
 
             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, aspectHeight);
             viewHolder.thumbnailImageView.setLayoutParams(lp);
-        }else if(viewType == 2) {
+        } else if (viewType == 2) {
             if (videoDescription != null)
                 viewHolder.tvVideoDescription.setText(videoDescription);
             else
                 viewHolder.tvVideoDescription.setText("");
         }
 
-        if(isFavoriteTab){
+        if (isFavoriteTab) {
             viewHolder.imgToggleButton.setEnabled(false);
             viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargold);
         }
@@ -241,58 +239,71 @@ public class VideoContentListAdapter extends BaseAdapter {
         viewHolder.imgToggleButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (Utils.isInternetAvailable(context)) {
-                    if (AppController.getInstance().getUserId() == GlobalConstants.DEFAULT_USER_ID) {
-                        viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
-                        showConfirmLoginDialog(GlobalConstants.LOGIN_MESSAGE);
-                    } else {
-                        if (arrayListVideoDTOs.get(pos).isVideoIsFavorite()) {
-                            isFavoriteChecked = false;
-                            VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(0, arrayListVideoDTOs.get(pos).getVideoId());
-                            arrayListVideoDTOs.get(pos).setVideoIsFavorite(false);
-                            viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
-                        }else {
-                            isFavoriteChecked = true;
-                            VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(1, arrayListVideoDTOs.get(pos).getVideoId());
-                            arrayListVideoDTOs.get(pos).setVideoIsFavorite(true);
-                            viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargold);
-                        }
-
-                        mPostTask = new AsyncTask<Void, Void, Void>() {
-                            @Override
-                            protected void onPreExecute() {
-                                super.onPreExecute();
-                            }
-
-                            @Override
-                            protected Void doInBackground(Void... params) {
-                                try {
-                                    postResult = AppController.getInstance().getServiceManager().getVaultService().postFavoriteStatus(AppController.getInstance().getUserId(), arrayListVideoDTOs.get(pos).getVideoId(), arrayListVideoDTOs.get(pos).getPlaylistId(), isFavoriteChecked);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                                return null;
-                            }
-
-                            @Override
-                            protected void onPostExecute(Void result) {
-                                System.out.println("Result of POST request : " + postResult);
-                                if (isFavoriteChecked)
-                                    VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(1, arrayListVideoDTOs.get(pos).getVideoId());
-                                else
-                                    VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(0, arrayListVideoDTOs.get(pos).getVideoId());
-                            }
-                        };
-
-                        mPostTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-                    }
+                if (arrayListVideoDTOs.get(pos).isVideoIsFavorite() && ((arrayListVideoDTOs.get(pos).getVideoLongUrl().length() == 0 || arrayListVideoDTOs.get(pos).getVideoLongUrl().toLowerCase().equals("none")))) {
+                    markFavoriteStatus(pos);
                 } else {
-                    ((MainActivity) context).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
-                    viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
+                    if (arrayListVideoDTOs.get(pos).getVideoLongUrl().length() > 0 && !arrayListVideoDTOs.get(pos).getVideoLongUrl().toLowerCase().equals("none")) {
+                        markFavoriteStatus(pos);
+                    } else {
+                        ((MainActivity) context).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
+                        viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
+                    }
                 }
                 notifyDataSetChanged();
             }
         });
+    }
+
+    public void markFavoriteStatus(final int pos) {
+        if (Utils.isInternetAvailable(context)) {
+            if (AppController.getInstance().getUserId() == GlobalConstants.DEFAULT_USER_ID) {
+                viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
+                showConfirmLoginDialog(GlobalConstants.LOGIN_MESSAGE);
+            } else {
+                if (arrayListVideoDTOs.get(pos).isVideoIsFavorite()) {
+                    isFavoriteChecked = false;
+                    VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(0, arrayListVideoDTOs.get(pos).getVideoId());
+                    arrayListVideoDTOs.get(pos).setVideoIsFavorite(false);
+                    viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
+                } else {
+                    isFavoriteChecked = true;
+                    VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(1, arrayListVideoDTOs.get(pos).getVideoId());
+                    arrayListVideoDTOs.get(pos).setVideoIsFavorite(true);
+                    viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargold);
+                }
+
+                mPostTask = new AsyncTask<Void, Void, Void>() {
+                    @Override
+                    protected void onPreExecute() {
+                        super.onPreExecute();
+                    }
+
+                    @Override
+                    protected Void doInBackground(Void... params) {
+                        try {
+                            postResult = AppController.getInstance().getServiceManager().getVaultService().postFavoriteStatus(AppController.getInstance().getUserId(), arrayListVideoDTOs.get(pos).getVideoId(), arrayListVideoDTOs.get(pos).getPlaylistId(), isFavoriteChecked);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    protected void onPostExecute(Void result) {
+                        System.out.println("Result of POST request : " + postResult);
+                        if (isFavoriteChecked)
+                            VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(1, arrayListVideoDTOs.get(pos).getVideoId());
+                        else
+                            VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(0, arrayListVideoDTOs.get(pos).getVideoId());
+                    }
+                };
+
+                mPostTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            }
+        } else {
+            ((MainActivity) context).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
+            viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
+        }
     }
 
     public void showConfirmLoginDialog(String message) {

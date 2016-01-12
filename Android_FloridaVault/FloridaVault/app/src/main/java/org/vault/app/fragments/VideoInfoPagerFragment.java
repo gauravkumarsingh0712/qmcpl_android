@@ -98,7 +98,7 @@ public class VideoInfoPagerFragment extends BaseFragment {
         if(pageNo == 1) {
             llRelatedVideos.setVisibility(View.GONE);
             scrollView.setVisibility(View.VISIBLE);
-            tvVideoLongDescription.setText(videoObject.getVideoShortDescription());
+            tvVideoLongDescription.setText(videoObject.getVideoLongDescription());
         }else {
             scrollView.setVisibility(View.GONE);
             llRelatedVideos.setVisibility(View.VISIBLE);

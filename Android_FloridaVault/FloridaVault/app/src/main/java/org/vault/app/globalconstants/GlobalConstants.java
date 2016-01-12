@@ -9,13 +9,13 @@ public class GlobalConstants {
     /*******************IMPORTANT CONSTANTS THAT CHANGES IN DIFFERENT VAULT APPS********************
     ***********************************************************************************************/
 
-    //UGA Vault Twitter App Keys
+    //Florida Vault Twitter App Keys
     public static final String TWITTER_CONSUMER_KEY = "8PmUOfrzsYO96shEwi8mFtAiU";
     public static final String TWITTER_CONSUMER_SECRET = "qRPfHL1Y492jhzH2s1zICH4JM0IzqtFQgQ9wuEWCgyiFGLEh9H";
 
     public static final int APP_ID = 3;
     public static final String APP_NAME = "floridavault";
-    public static final String APP_VERSION = "1.0";
+    public static final String APP_VERSION = "1.1";
     public static final String DEVICE_TYPE = "Android";
 
     // --------Banner image url-----------
@@ -24,7 +24,8 @@ public class GlobalConstants {
     public static final String URL_OPPONETSBANNER = "http://www.ncsavault.com/banner/ufl/gopponents.png";
     public static final String URL_PLAYERSBANNER = "http://www.ncsavault.com/banner/ufl/gplayers.png";
     public static final String URL_COACHESBANNER = "http://www.ncsavault.com/banner/ufl/gcoaches.png";
-    public static final String URL_FAVORITESBANNER = "http://www.ncsavault.com/banner/ufl/gfavorites.png";
+    public static final String URL_FAVORITESBANNER = "http://www.ncs" +
+            "avault.com/banner/ufl/gfavorites.png";
 
     //Asana API call needed parameters
     public static final String ASANA_TASK_API_URL = "https://app.asana.com/api/1.0/tasks";
@@ -76,10 +77,10 @@ public class GlobalConstants {
     public static final String RELATED_VIDEO_CATEGORY = "Related Videos";
 
     //Production Url
-//    public static final String BASE_URL = "http://vaultservices.cloudapp.net/api";
+    public static final String BASE_URL = "http://vaultservices.cloudapp.net/api";
 
     //Staging Url
-    public static final String BASE_URL = "http://0b78b111a9d0410784caa8a634aa3b90.cloudapp.net/api";
+   // public static final String BASE_URL = "http://0b78b111a9d0410784caa8a634aa3b90.cloudapp.net/api";
 
     public static final String PUSH_REGISTER_URL = BASE_URL + "/MobileUsers/PostPushData";
 
@@ -94,6 +95,9 @@ public class GlobalConstants {
     public static final String COACH_API_URL = BASE_URL + "/playlist/GetCoach?";
     public static final String FAVORITE_API_URL = BASE_URL + "/FavoriteTab/GetFavorites?";
     public static final String FAVORITE_POST_STATUS_URL = BASE_URL + "/FavoriteTab/PostFavoriteData";
+    public static final String GET_ALL_TAB_BANNER_DATA_URL = BASE_URL + "/NavigationTab/ListTabsInfo";
+    public static final String GET_TAB_BANNER_DATA_URL = BASE_URL + "/NavigationTab/ListTabsInfo";
+    public static final String GET_VIDEO_DATA_FROM_BANNER = BASE_URL + "/NavigationTab/ListVideoPlaylistInfo";
 
     //User specific API calls
     public static final String VALIDATE_EMAIL_URL = BASE_URL + "/MobileUsers/validateEmail?emailID=";
