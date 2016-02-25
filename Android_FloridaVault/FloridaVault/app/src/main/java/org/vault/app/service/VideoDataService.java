@@ -55,13 +55,11 @@ public class VideoDataService extends Service {
                 @Override
                 public void run() {
                     for (String apiUrl : lstUrls) {
-
                         if (Utils.isInternetAvailable(AppController.getInstance().getApplicationContext())) {
                             if (isServiceRunning) {
                                 String url = apiUrl + "userid=" + AppController.getInstance().getUserId();
                                 try {
                                     arrayListVideos.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
-                                    System.out.println("Size of list after calling " + apiUrl + " : " + arrayListVideos.size());
                                 } catch (Exception e) {
                                     status = false;
                                     e.printStackTrace();
@@ -97,6 +95,7 @@ public class VideoDataService extends Service {
                 }
             };
             thread.start();
+
         }
 
         return Service.START_NOT_STICKY;

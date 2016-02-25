@@ -238,6 +238,19 @@ public class AppController extends Application {
 		return email;
 	}
 
+
+	public boolean getMailChimpRegisterUser() {
+		SharedPreferences pref = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
+		boolean mailChimpRegisterUser = pref.getBoolean(GlobalConstants.PREF_JOIN_MAIL_CHIMP,false);
+		return mailChimpRegisterUser;
+	}
+
+	public void setMailChimpRegisterUser(boolean registerUserValue) {
+		SharedPreferences pref = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
+		pref.edit().putBoolean(GlobalConstants.PREF_JOIN_MAIL_CHIMP, registerUserValue).commit();
+	}
+
+
 	public void storeUserDataInPreferences(User userDto){
 		SharedPreferences pref = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
 		pref.edit().putLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, userDto.getUserID()).commit();
@@ -251,9 +264,11 @@ public class AppController extends Application {
 		pref.edit().putString(GlobalConstants.PREF_VAULT_USER_FLAG_STATUS, userDto.getFlagStatus()).commit();
 		pref.edit().putString(GlobalConstants.PREF_VAULT_USER_PASSWORD, userDto.getPasswd()).commit();
 		pref.edit().putInt(GlobalConstants.PREF_VAULT_USER_AGE, userDto.getAge()).commit();
+		//pref.edit().putString(GlobalConstants.PREF_JOIN_MAIL_CHIMP, userDto.getIsRegisteredUser()).commit();
+
 	}
 
-	public User getUserData(){
+	public User getUserData() {
 		User userDto = new User();
 		SharedPreferences pref = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
 		userDto.setUserID(pref.getLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, 0));
@@ -268,6 +283,7 @@ public class AppController extends Application {
 		userDto.setFlagStatus(pref.getString(GlobalConstants.PREF_VAULT_USER_FLAG_STATUS, ""));
 		userDto.setPasswd(pref.getString(GlobalConstants.PREF_VAULT_USER_PASSWORD, ""));
 		userDto.setAppID(GlobalConstants.APP_ID);
+		//userDto.setIsRegisteredUser(pref.getString(GlobalConstants.PREF_JOIN_MAIL_CHIMP, ""));
 		return userDto;
 	}
 

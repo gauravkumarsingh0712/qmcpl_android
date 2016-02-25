@@ -1,0 +1,12 @@
+{
+	"tabName" : "Featured",
+    	"tabId" : 11,
+    	"tabPosition" : 1,
+    	"lastServerTabUpdate" : 341551212390,
+    	"bannerUrl" :  "http://www.theblogboutique.com/wp-content/uploads/2009/11/simply-solids-turquoise.png",
+    	"bannerId" :	"111",
+    	"lastBannerUpdate" :	243422346789,
+    	"isBannerActivated" : "true",
+    	"isHyperLinkAvailable" : "true",
+    	"actionUrl" : "http://www.google.com"
+}

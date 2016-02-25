@@ -183,11 +183,11 @@ public class UserProfileActivity extends BaseActivity implements TextWatcher {
 
         scrollView = (ScrollView) findViewById(R.id.scroll_view);
         pBar = (ProgressBar) findViewById(R.id.progressbar);
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             pBar.setIndeterminateDrawable(getResources().getDrawable(R.drawable.circle_progress_bar_lower));
-        else
+        } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
             pBar.setIndeterminateDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.progress_large_material, null));
-
+        }
 //        edBio.setScroller(new Scroller(this));
         edBio.setMaxLines(2);
         edBio.setVerticalScrollBarEnabled(true);
@@ -704,6 +704,7 @@ public class UserProfileActivity extends BaseActivity implements TextWatcher {
                                 username = responseUser.getUsername();
                                 tvFirstName.setText(responseUser.getFname());
                                 tvLastName.setText(responseUser.getLname());
+
                                 if (responseUser.getBiotext() != null)
                                     if (responseUser.getBiotext().length() > 0)
                                         tvBio.setText(responseUser.getBiotext());

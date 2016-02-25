@@ -21,6 +21,16 @@ public class User implements Serializable {
     private String biotext;
     private String flagStatus;
     private long userID;
+    private String IsRegisteredUser;
+    public String getIsRegisteredUser() {
+        return IsRegisteredUser;
+    }
+
+    public void setIsRegisteredUser(String isRegisteredUser) {
+        IsRegisteredUser = isRegisteredUser;
+    }
+
+
 
     public int getAppID() {
         return appID;

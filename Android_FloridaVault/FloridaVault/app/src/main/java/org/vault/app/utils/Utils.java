@@ -1,8 +1,11 @@
 package org.vault.app.utils;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -17,6 +20,7 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.Log;
@@ -24,13 +28,19 @@ import android.util.TypedValue;
 import android.view.Display;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Switch;
@@ -38,19 +48,25 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gcm.GCMRegistrar;
-import com.ncsavault.floridavault.R;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 import com.nostra13.universalimageloader.utils.MemoryCacheUtils;
+import com.ncsavault.floridavault.R;
 
 import org.vault.app.activities.MainActivity;
 import org.vault.app.appcontroller.AppController;
 import org.vault.app.database.VaultDatabaseHelper;
 import org.vault.app.dto.TabBannerDTO;
 import org.vault.app.globalconstants.GlobalConstants;
+import org.vault.app.mailchimp.org.xmlrpc.android.XMLRPCException;
+import org.vault.app.mailchimp.rsg.mailchimp.api.MailChimpApiException;
+import org.vault.app.mailchimp.rsg.mailchimp.api.lists.ListMethods;
+import org.vault.app.mailchimp.rsg.mailchimp.api.lists.MergeFieldListUtil;
+import org.vault.app.model.LocalModel;
+import org.vault.app.service.VideoDataService;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -59,8 +75,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import se.emilsjolander.stickylistheaders.StickyListHeadersListView;
 
 /**
  * @author aqeeb.pathan
@@ -68,7 +88,7 @@ import java.util.HashMap;
 public class Utils {
 
 
-    private static Utils utilInstance = new Utils();
+    private static Utils utilInstance;
 
     private ProgressDialog progressDialog;
 
@@ -77,11 +97,18 @@ public class Utils {
     AsyncTask<Void, Void, Void> mPermissionChangeTask;
     SharedPreferences prefs;
     private String result;
+    //variable used in mail chimp intregation
+    private AsyncTask<Void, Void, Boolean> mMailChimpTask;
+    private boolean mIsSignUpSuccessfull;
+    private Animation animation;
 
-
-    private static AsyncTask<Void, Void, ArrayList<TabBannerDTO>> mBannerTask;
 
     public static Utils getInstance() {
+
+        if (utilInstance == null) {
+            utilInstance = new Utils();
+        }
+
         return utilInstance;
     }
 
@@ -256,7 +283,7 @@ public class Utils {
 
                             @Override
                             public void onLoadingComplete(String s, View view, Bitmap bitmap) {
-                                progressBar.setVisibility(View.GONE);
+                               progressBar.setVisibility(View.GONE);
                                 Point size = new Point();
                                 WindowManager w = context.getWindowManager();
                                 int measuredWidth = 0;
@@ -357,9 +384,24 @@ public class Utils {
      * @param context
      * @param v
      */
-    public static void addPagerIndicatorBelowActionBar(Context context, View v) {
+    public static void addProgressBarBelowActionBar(Context context, View v) {
         int actionBarHeight = Utils.CalculateActionBar(context)
                 + Utils.getStatusBarHeight(context);
+        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) v
+                .getLayoutParams();
+        layoutParams.setMargins(0, actionBarHeight, 0, 0);
+        v.setLayoutParams(layoutParams);
+    }
+
+    /**
+     * This methos is used to place the view below the action bar
+     *
+     * @param context
+     * @param v
+     */
+    public static void addPagerIndicatorBelowActionBar(Context context, View v) {
+        int actionBarHeight = Utils.CalculateActionBar(context)
+                + Utils.getStatusBarHeight(context) ;
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) v
                 .getLayoutParams();
         layoutParams.setMargins(0, actionBarHeight, 0, 0);
@@ -702,5 +744,326 @@ public class Utils {
         }
         System.out.println("Video Hash Map Length : " + videoMap.size());
         return videoMap;
+    }
+
+    /**
+     * Method used for get list view height dynamically
+     *
+     * @param listView
+     * @return
+     */
+    public static int getTotalHeightofNormalListView(ListView listView) {
+        int totalHeight = 0;
+        try {
+            ListAdapter mAdapter = listView.getAdapter();
+
+            for (int i = 0; i < mAdapter.getCount(); i++) {
+                View mView = mAdapter.getView(i, null, listView);
+
+                mView.measure(
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+
+                totalHeight += mView.getMeasuredHeight();
+                if (LocalModel.getInstance().getmDisplayHeight() < totalHeight) {
+                    break;
+                }
+                Log.w("HEIGHT" + i, String.valueOf(totalHeight));
+
+            }
+
+            ViewGroup.LayoutParams params = listView.getLayoutParams();
+            params.height = totalHeight
+                    + (listView.getDividerHeight() * (mAdapter.getCount() - 1));
+            listView.setLayoutParams(params);
+            listView.requestLayout();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return totalHeight;
+
+    }
+
+    public static void setVisibilityOfScrollBarHeightForNormalList(Activity activity,String newText, ListView listView) {
+//        LocalModel localModel = LocalModel.getInstance();
+//        localModel.setmListViewHeight(getTotalHeightofNormalListView(listView));
+        int count = VaultDatabaseHelper.getInstance(activity.getApplicationContext()).getFavoriteCount();
+      //  System.out.println("getmListViewHeight : "+localModel.getmListViewHeight()+" : "+localModel.getmDisplayHeight());
+        if (count < 6) {
+            listView.setFastScrollAlwaysVisible(false);
+            listView.setVerticalScrollBarEnabled(false);
+            listView.setFastScrollEnabled(false);
+
+        } else {
+            listView.setFastScrollAlwaysVisible(true);
+            listView.setVerticalScrollBarEnabled(true);
+            listView.setFastScrollEnabled(true);
+        }
+
+        if (newText.equals("")) {
+            listView.setFastScrollAlwaysVisible(true);
+            listView.setVerticalScrollBarEnabled(true);
+            listView.setFastScrollEnabled(true);
+        }
+    }
+
+    public static void setDisabledStickyListHeadersListViewScrolling(StickyListHeadersListView stickyListHeadersListView) {
+        stickyListHeadersListView.setOnTouchListener(new View.OnTouchListener() {
+
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                    return true; // Indicates that this has been handled by you and will not be forwarded further.
+                }
+                return false;
+            }
+        });
+
+        if (stickyListHeadersListView != null) {
+            stickyListHeadersListView.setFastScrollEnabled(false);
+            stickyListHeadersListView.setVerticalScrollBarEnabled(false);
+            stickyListHeadersListView.setFastScrollAlwaysVisible(false);
+        }
+
+    }
+
+    public static void setEnabledStickyListHeadersListViewScrolling(StickyListHeadersListView stickyListHeadersListView) {
+        stickyListHeadersListView.setOnTouchListener(new View.OnTouchListener() {
+            // Setting on Touch Listener for handling the touch inside ScrollView
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                // Disallow the touch request for parent scroll on touch of child view
+                v.setEnabled(true);
+                return false;
+            }
+        });
+
+        if (stickyListHeadersListView != null) {
+            stickyListHeadersListView.setFastScrollEnabled(true);
+            stickyListHeadersListView.setVerticalScrollBarEnabled(true);
+            stickyListHeadersListView.setFastScrollAlwaysVisible(true);
+        }
+
+    }
+
+    /**
+     * Method used for get list view height dynamically
+     *
+     * @param listView
+     * @return
+     */
+    public static int getTotalHeightofListViewForHeaderList(StickyListHeadersListView listView) {
+
+        int totalHeight = 0;
+        try {
+            ListAdapter mAdapter = listView.getAdapter();
+
+
+            for (int i = 0; i < mAdapter.getCount(); i++) {
+                View mView = mAdapter.getView(i, null, listView);
+
+                mView.measure(
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+
+                totalHeight += mView.getMeasuredHeight();
+                if (LocalModel.getInstance().getmDisplayHeight() < totalHeight) {
+                    break;
+                }
+                Log.w("HEIGHT" + i, String.valueOf(totalHeight));
+
+            }
+
+            ViewGroup.LayoutParams params = listView.getLayoutParams();
+            params.height = totalHeight
+                    + (listView.getDividerHeight() * (mAdapter.getCount() - 1));
+            listView.setLayoutParams(params);
+            listView.requestLayout();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return totalHeight;
+
+    }
+
+    public static void setVisibilityOfScrollBarHeightForHeader(String newText, StickyListHeadersListView stickyListHeadersListView) {
+
+        LocalModel localModel = LocalModel.getInstance();
+        localModel.setmListViewHeight(getTotalHeightofListViewForHeaderList(stickyListHeadersListView));
+
+        if (localModel.getmListViewHeight() < localModel.getmDisplayHeight()) {
+            stickyListHeadersListView.setFastScrollAlwaysVisible(false);
+            stickyListHeadersListView.setVerticalScrollBarEnabled(false);
+            stickyListHeadersListView.setFastScrollEnabled(false);
+
+        } else {
+            stickyListHeadersListView.setFastScrollAlwaysVisible(true);
+            stickyListHeadersListView.setVerticalScrollBarEnabled(true);
+            stickyListHeadersListView.setFastScrollEnabled(true);
+
+        }
+
+        if (newText.equals("")) {
+            stickyListHeadersListView.setFastScrollAlwaysVisible(true);
+            stickyListHeadersListView.setVerticalScrollBarEnabled(true);
+            stickyListHeadersListView.setFastScrollEnabled(true);
+        }
+    }
+
+    public void showConfirmLoginDialog(final Activity context, String message, final String firstName, final String lastName, final String emailId) {
+        AlertDialog alertDialog = null;
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(context);
+        alertDialogBuilder
+                .setMessage(message);
+        alertDialogBuilder.setTitle("Join our Mailing list?");
+        alertDialogBuilder.setPositiveButton("YES, Keep me Updated",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface arg0, int arg1) {
+                        SharedPreferences pref = AppController.getInstance().getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
+                        pref.edit().putBoolean(GlobalConstants.PREF_JOIN_MAIL_CHIMP, true).commit();
+                        if (Utils.isInternetAvailable(context)) {
+                            if (mMailChimpTask == null) {
+
+                                mMailChimpTask = new AsyncTask<Void, Void, Boolean>() {
+
+                                    @Override
+                                    protected void onPreExecute() {
+                                        super.onPreExecute();
+                                        progressDialog = new ProgressDialog(context, R.style.CustomDialogTheme);
+                                        progressDialog.show();
+                                        progressDialog.setContentView(AppController.getInstance().setViewToProgressDialog(context));
+                                        progressDialog.setCanceledOnTouchOutside(false);
+                                    }
+
+                                    @Override
+                                    protected Boolean doInBackground(Void... params) {
+
+                                        return addToList(context, emailId, firstName, lastName);
+                                    }
+
+                                    @Override
+                                    protected void onPostExecute(Boolean aBoolean) {
+                                        super.onPostExecute(aBoolean);
+                                        Intent intent = new Intent(context, MainActivity.class);
+                                        if (!aBoolean) {
+                                            intent.putExtra("is_success", false);
+                                        } else {
+                                            intent.putExtra("is_success", true);
+                                        }
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        context.startActivity(intent);
+                                        context.overridePendingTransition(R.anim.slideup, R.anim.nochange);
+                                        context.finish();
+                                        if (!VideoDataService.isServiceRunning)
+                                            context.startService(new Intent(context, VideoDataService.class));
+                                        progressDialog.dismiss();
+                                        mMailChimpTask = null;
+                                    }
+                                };
+
+                                // execute AsyncTask
+                                mMailChimpTask.execute();
+                            }
+                        } else {
+                            showToastMessage(context, GlobalConstants.MSG_NO_CONNECTION);
+                        }
+                    }
+                });
+
+        alertDialogBuilder.setNegativeButton("No Thanks",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface arg0, int arg1) {
+                        Intent intent = new Intent(context, MainActivity.class);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                        context.startActivity(intent);
+                        context.overridePendingTransition(R.anim.slideup, R.anim.nochange);
+                        context.finish();
+                        if (!VideoDataService.isServiceRunning)
+                            context.startService(new Intent(context, VideoDataService.class));
+                    }
+                });
+
+        alertDialog = alertDialogBuilder.create();
+        alertDialog.setCancelable(false);
+        alertDialog.setCanceledOnTouchOutside(false);
+        alertDialog.show();
+    }
+
+
+    private boolean addToList(final Activity context, String emailId, String firstName, String lastName) {
+
+        MergeFieldListUtil mergeFields = new MergeFieldListUtil();
+        mergeFields.addEmail(emailId);
+        try {
+            mergeFields.addDateField("BIRFDAY", (new SimpleDateFormat("MM/dd/yyyy")).parse("07/30/2007"));
+        } catch (ParseException e1) {
+        }
+        mergeFields.addField("FNAME", firstName);
+        mergeFields.addField("LNAME", lastName);
+        mergeFields.addField("PLATEFORM", "Android");
+        mergeFields.addField("SCHOOL", "Florida");
+
+        ListMethods listMethods = new ListMethods(context.getResources().getText(R.string.mc_api_key));
+
+        try {
+            try {
+                mIsSignUpSuccessfull = listMethods.listSubscribe(context.getText(R.string.mc_list_id).toString(), emailId, mergeFields);
+            } catch (XMLRPCException e) {
+                e.printStackTrace();
+//                context.runOnUiThread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        showToastMessage(context, "This email id has been registered already on Mail Chimp.");
+//                    }
+//                });
+
+                mIsSignUpSuccessfull = false;
+
+                return mIsSignUpSuccessfull;
+            }
+        } catch (MailChimpApiException e) {
+            Log.e("MailChimp", "Exception subscribing person: " + e.getMessage());
+            e.getMessage();
+//            context.runOnUiThread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    showToastMessage(context, "This email id has been registered already on Mail Chimp.");
+//                }
+//            });
+            mIsSignUpSuccessfull = false;
+            return mIsSignUpSuccessfull;
+        }
+
+        return mIsSignUpSuccessfull;
+
+    }
+
+
+    public void showToastMessage(final Activity context, String message) {
+        View includedLayout = context.findViewById(R.id.llToast);
+
+        final TextView text = (TextView) includedLayout.findViewById(R.id.tv_toast_message);
+        text.setText(message);
+
+        animation = AnimationUtils.loadAnimation(context,
+                R.anim.abc_fade_in);
+
+        text.setAnimation(animation);
+        text.setVisibility(View.VISIBLE);
+
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                animation = AnimationUtils.loadAnimation(context,
+                        R.anim.abc_fade_out);
+
+                text.setAnimation(animation);
+                text.setVisibility(View.GONE);
+            }
+        }, 2000);
     }
 }

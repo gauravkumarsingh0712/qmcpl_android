@@ -1,5 +1,6 @@
 package org.vault.app.activities;
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -15,6 +16,7 @@ import android.os.Handler;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -25,6 +27,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -45,8 +48,14 @@ import com.ncsavault.floridavault.R;
 import org.vault.app.appcontroller.AppController;
 import org.vault.app.database.VaultDatabaseHelper;
 import org.vault.app.dto.APIResponse;
+import org.vault.app.dto.MailChimpData;
 import org.vault.app.dto.User;
 import org.vault.app.globalconstants.GlobalConstants;
+import org.vault.app.mailchimp.org.xmlrpc.android.XMLRPCException;
+import org.vault.app.mailchimp.rsg.mailchimp.api.MailChimpApiException;
+import org.vault.app.mailchimp.rsg.mailchimp.api.lists.ListMethods;
+import org.vault.app.mailchimp.rsg.mailchimp.api.lists.MergeFieldListUtil;
+import org.vault.app.model.LocalModel;
 import org.vault.app.service.VideoDataService;
 import org.vault.app.utils.Utils;
 import org.vault.app.wheeladapters.NumericWheelAdapter;
@@ -55,6 +64,8 @@ import org.vault.app.wheelwidget.OnWheelScrollListener;
 import org.vault.app.wheelwidget.WheelView;
 
 import java.lang.reflect.Type;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
 /**
@@ -95,6 +106,13 @@ public class LoginPasswordActivity extends BaseActivity {
     ProgressDialog pDialog;
     private Animation animation;
     private int Measuredheight = 0;
+
+    //variable used in mail chimp intregation
+    private String mFirstName;
+    private String mLastName;
+    private String mEmailId;
+    private long mUserId;
+    private User responseUser;
 
 
     @Override
@@ -654,7 +672,7 @@ public class LoginPasswordActivity extends BaseActivity {
                         Type classType = new TypeToken<User>() {
                         }.getType();
                         System.out.println("User Data : " + userJsonData);
-                        User responseUser = gson.fromJson(userJsonData.trim(), classType);
+                        responseUser = gson.fromJson(userJsonData.trim(), classType);
                         if (responseUser != null) {
                             if (responseUser.getUserID() > 0) {
                                 AppController.getInstance().storeUserDataInPreferences(responseUser);
@@ -664,6 +682,7 @@ public class LoginPasswordActivity extends BaseActivity {
                     status = Utils.loadDataFromServer(LoginPasswordActivity.this);
                 } catch (Exception e) {
                     e.printStackTrace();
+                    
                     status = false;
                 }
                 return status;
@@ -677,18 +696,28 @@ public class LoginPasswordActivity extends BaseActivity {
                         Profile fbProfile = Profile.getCurrentProfile();
                         SharedPreferences pref = AppController.getInstance().getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
                         long userId = pref.getLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, 0);
-
                         if (fbProfile != null || userId > 0) {
-                            Intent intent = new Intent(LoginPasswordActivity.this, MainActivity.class);
-                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-                            startActivity(intent);
-                            overridePendingTransition(R.anim.slideup, R.anim.nochange);
-                            finish();
-                            if (!VideoDataService.isServiceRunning)
-                                startService(new Intent(LoginPasswordActivity.this, VideoDataService.class));
+                            if (responseUser.getIsRegisteredUser().equals("N") && !AppController.getInstance().getMailChimpRegisterUser()) {
+                                AppController.getInstance().setMailChimpRegisterUser(true);
+                                pDialog.dismiss();
+                                mFirstName = AppController.getInstance().getFirstName().toString();
+                                mLastName = AppController.getInstance().getLastName().toString();
+                                mEmailId = AppController.getInstance().getEmailAddress().toString();
+                                mUserId = AppController.getInstance().getUserId();
+                                showConfirmLoginDialog(GlobalConstants.DO_YOU_WANT_TO_JOIN_OUR_MAILING_LIST, mFirstName, mLastName, mEmailId, mUserId);
+                            } else {
+                                Intent intent = new Intent(LoginPasswordActivity.this, MainActivity.class);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(intent);
+                                overridePendingTransition(R.anim.slideup, R.anim.nochange);
+                                finish();
+                                if (!VideoDataService.isServiceRunning)
+                                    startService(new Intent(LoginPasswordActivity.this, VideoDataService.class));
+                                pDialog.dismiss();
+                            }
                         }
                     }
-                    pDialog.dismiss();
+
                 } catch (Exception e) {
                     e.printStackTrace();
                     stopService(new Intent(LoginPasswordActivity.this, VideoDataService.class));
@@ -896,6 +925,8 @@ public class LoginPasswordActivity extends BaseActivity {
                 usr.setUsername(edUsername.getText().toString());
                 usr.setEmailID(email);
                 usr.setPasswd(edPassword.getText().toString());
+                LocalModel.getInstance().setFirstName(usr.getFname());
+                LocalModel.getInstance().setLastName(usr.getLname());
                 if (edAgeOptional.getText().toString().length() > 0)
                     usr.setAge(Integer.parseInt(edAgeOptional.getText().toString()));
                 usr.setAppID(1);
@@ -1055,4 +1086,203 @@ public class LoginPasswordActivity extends BaseActivity {
             }
         }, 2000);
     }
+
+    MailChimpData mailChimpData;
+    private AsyncTask<Void, Void, Boolean> mMailChimpTask;
+    private boolean mIsSignUpSuccessfull;
+
+    public void showConfirmLoginDialog(String mailChimpMessage, final String firstName, final String lastName, final String emailId, final long userId) {
+        mailChimpData = new MailChimpData();
+        AlertDialog alertDialog = null;
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        LinearLayout layout = new LinearLayout(this);
+        TextView message = new TextView(this);
+        //message.setGravity(Gravity.CENTER);
+        message.setPadding(75, 50, 5, 10);
+        message.setTextSize(17);
+        message.setText(mailChimpMessage);
+        message.setTextColor(getResources().getColor(R.color.gray));
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.addView(message);
+        alertDialogBuilder.setTitle("Join our Mailing list?");
+        alertDialogBuilder.setView(layout);
+//        alertDialogBuilder
+//                .setMessage(message);
+//        alertDialogBuilder.setTitle("Join our Mailing list?");
+        alertDialogBuilder.setPositiveButton("No Thanks",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface arg0, int arg1) {
+
+                        if (Utils.isInternetAvailable(LoginPasswordActivity.this)) {
+                            if (mMailChimpTask == null) {
+
+                                mMailChimpTask = new AsyncTask<Void, Void, Boolean>() {
+
+                                    @Override
+                                    protected void onPreExecute() {
+                                        super.onPreExecute();
+                                        pDialog = new ProgressDialog(LoginPasswordActivity.this, R.style.CustomDialogTheme);
+                                        pDialog.show();
+                                        pDialog.setContentView(AppController.getInstance().setViewToProgressDialog(LoginPasswordActivity.this));
+                                        pDialog.setCanceledOnTouchOutside(false);
+                                    }
+
+                                    @Override
+                                    protected Boolean doInBackground(Void... params) {
+
+                                        mailChimpData.setIsRegisteredUser("N");
+                                        mailChimpData.setUserID(userId);
+                                        String postMailChimpData = AppController.getInstance().getServiceManager().getVaultService().postMailChimpData(mailChimpData);
+                                        System.out.println("postMailChimpData no : " + postMailChimpData);
+                                        return false;
+                                    }
+
+                                    @Override
+                                    protected void onPostExecute(Boolean aBoolean) {
+                                        super.onPostExecute(aBoolean);
+
+                                        Intent intent = new Intent(LoginPasswordActivity.this, MainActivity.class);
+                                        intent.putExtra("is_success", false);
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        startActivity(intent);
+                                        overridePendingTransition(R.anim.slideup, R.anim.nochange);
+                                        finish();
+                                        if (!VideoDataService.isServiceRunning)
+                                            startService(new Intent(LoginPasswordActivity.this, VideoDataService.class));
+                                        pDialog.dismiss();
+                                        mMailChimpTask = null;
+                                    }
+                                };
+
+                                // execute AsyncTask
+                                mMailChimpTask.execute();
+                            }
+                        } else {
+                            showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
+                        }
+                    }
+                });
+
+        alertDialogBuilder.setNegativeButton("Yes! Keep me Updated",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface arg0, int arg1) {
+                        if (Utils.isInternetAvailable(LoginPasswordActivity.this)) {
+                            if (mMailChimpTask == null) {
+
+                                mMailChimpTask = new AsyncTask<Void, Void, Boolean>() {
+
+                                    @Override
+                                    protected void onPreExecute() {
+                                        super.onPreExecute();
+                                        pDialog = new ProgressDialog(LoginPasswordActivity.this, R.style.CustomDialogTheme);
+                                        pDialog.show();
+                                        pDialog.setContentView(AppController.getInstance().setViewToProgressDialog(LoginPasswordActivity.this));
+                                        pDialog.setCanceledOnTouchOutside(false);
+                                    }
+
+                                    @Override
+                                    protected Boolean doInBackground(Void... params) {
+
+                                        mailChimpData.setIsRegisteredUser("Y");
+                                        mailChimpData.setUserID(userId);
+                                        String postMailChimpData = AppController.getInstance().getServiceManager().getVaultService().postMailChimpData(mailChimpData);
+
+                                        System.out.println("postMailChimpData : " + postMailChimpData);
+                                        return addToList(emailId, firstName, lastName);
+                                    }
+
+                                    @Override
+                                    protected void onPostExecute(Boolean aBoolean) {
+                                        super.onPostExecute(aBoolean);
+
+                                        Intent intent = new Intent(LoginPasswordActivity.this, MainActivity.class);
+                                        intent.putExtra("is_success", true);
+                                        intent.putExtra("emailId", mEmailId);
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        startActivity(intent);
+                                        overridePendingTransition(R.anim.slideup, R.anim.nochange);
+                                        finish();
+                                        if (!VideoDataService.isServiceRunning)
+                                            startService(new Intent(LoginPasswordActivity.this, VideoDataService.class));
+                                        pDialog.dismiss();
+                                        mMailChimpTask = null;
+                                    }
+                                };
+
+                                // execute AsyncTask
+                                mMailChimpTask.execute();
+                            }
+                        } else {
+                            showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
+                        }
+
+                    }
+                });
+
+        alertDialog = alertDialogBuilder.create();
+        alertDialog.setCancelable(false);
+        alertDialog.setCanceledOnTouchOutside(false);
+        alertDialog.show();
+        Button nbutton = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        nbutton.setPadding(0, 0, 30, 0);
+        nbutton.setAllCaps(false);
+        nbutton.setTextColor(Color.GRAY);
+        Button pbutton = alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+        pbutton.setTextColor(getResources().getColor(R.color.apptheme_color));
+        pbutton.setPadding(0, 0, 180, 0);
+        pbutton.setAllCaps(false);
+    }
+
+
+    private boolean addToList(String emailId, String firstName, String lastName) {
+
+        MergeFieldListUtil mergeFields = new MergeFieldListUtil();
+        mergeFields.addEmail(emailId);
+        try {
+            mergeFields.addDateField("BIRFDAY", (new SimpleDateFormat("MM/dd/yyyy")).parse("07/30/2007"));
+        } catch (ParseException e1) {
+        }
+        mergeFields.addField("FNAME", firstName);
+        mergeFields.addField("LNAME", lastName);
+        mergeFields.addField("PLATEFORM", GlobalConstants.DEVICE_TYPE);
+        mergeFields.addField("SCHOOL", GlobalConstants.APP_SCHOOL_NAME);
+
+        // ListMethods listMethods = new ListMethods(getResources().getText(R.string.mc_api_key));
+        ListMethods listMethods = new ListMethods(GlobalConstants.MAIL_CHIMP_API_KEY);
+
+        try {
+            try {
+                mIsSignUpSuccessfull = listMethods.listSubscribe(GlobalConstants.MAIL_CHIMP_LIST_ID, emailId, mergeFields);
+            } catch (XMLRPCException e) {
+                e.printStackTrace();
+//                context.runOnUiThread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        showToastMessage(context, "This email id has been registered already on Mail Chimp.");
+//                    }
+//                });
+
+                mIsSignUpSuccessfull = false;
+
+                return mIsSignUpSuccessfull;
+            }
+        } catch (MailChimpApiException e) {
+            Log.e("MailChimp", "Exception subscribing person: " + e.getMessage());
+            e.getMessage();
+//            context.runOnUiThread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    showToastMessage(context, "This email id has been registered already on Mail Chimp.");
+//                }
+//            });
+            mIsSignUpSuccessfull = false;
+            return mIsSignUpSuccessfull;
+        }
+
+        return mIsSignUpSuccessfull;
+
+    }
+
 }

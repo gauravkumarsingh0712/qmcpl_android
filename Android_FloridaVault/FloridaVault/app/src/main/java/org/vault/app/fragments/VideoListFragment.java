@@ -198,10 +198,11 @@ public class VideoListFragment extends BaseFragment {
             refreshLayoutSticky.setLayoutParams(lp);
         }
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             progressBar.setIndeterminateDrawable(getResources().getDrawable(R.drawable.circle_progress_bar_lower));
-        else
+        } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
             progressBar.setIndeterminateDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.progress_large_material, null));
+        }
     }
 
     public void initData() {
@@ -360,7 +361,7 @@ public class VideoListFragment extends BaseFragment {
         videoListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                ((MainActivity) mActivity).makeShareDialog(videoDTOArrayList.get(position).getVideoLongUrl(), videoDTOArrayList.get(position).getVideoShortUrl(), videoDTOArrayList.get(position).getVideoStillUrl(), videoDTOArrayList.get(position).getVideoLongDescription(), videoDTOArrayList.get(position).getVideoName(), getActivity());
+               // ((MainActivity) mActivity).makeShareDialog(videoDTOArrayList.get(position).getVideoLongUrl(), videoDTOArrayList.get(position).getVideoShortUrl(), videoDTOArrayList.get(position).getVideoStillUrl(), videoDTOArrayList.get(position).getVideoLongDescription(), videoDTOArrayList.get(position).getVideoName(), getActivity());
                 return true;
             }
         });
@@ -369,7 +370,7 @@ public class VideoListFragment extends BaseFragment {
         videoStickyListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                ((MainActivity) mActivity).makeShareDialog(videoDTOArrayList.get(position).getVideoLongUrl(), videoDTOArrayList.get(position).getVideoShortUrl(), videoDTOArrayList.get(position).getVideoStillUrl(), videoDTOArrayList.get(position).getVideoLongDescription(), videoDTOArrayList.get(position).getVideoName(), getActivity());
+              //  ((MainActivity) mActivity).makeShareDialog(videoDTOArrayList.get(position).getVideoLongUrl(), videoDTOArrayList.get(position).getVideoShortUrl(), videoDTOArrayList.get(position).getVideoStillUrl(), videoDTOArrayList.get(position).getVideoLongDescription(), videoDTOArrayList.get(position).getVideoName(), getActivity());
                 return true;
             }
         });

@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.support.v4.content.res.ResourcesCompat;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -34,9 +35,9 @@ import android.widget.TextView;
 
 import com.baoyz.widget.PullRefreshLayout;
 import com.flurry.android.FlurryAgent;
-import com.ncsavault.floridavault.R;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.utils.MemoryCacheUtils;
+import com.ncsavault.floridavault.R;
 
 import org.vault.app.activities.MainActivity;
 import org.vault.app.activities.VideoInfoActivity;
@@ -85,6 +86,8 @@ public class OpponentsFragment extends BaseFragment {
     private ProgressDialog pDialog;
     private ProgressBar mBannerProgressBar;
     private LinearLayout bannerLayout;
+    private ProgressBar auto_refresh_progress_bar;
+    private String tabId;
 
     public OpponentsFragment() {
 
@@ -102,9 +105,9 @@ public class OpponentsFragment extends BaseFragment {
             refreshLayout.setRefreshing(false);
         */
         try {
-            if (receiver != null && mActivity != null)
-                mActivity.unregisterReceiver(receiver);
-        }catch (Exception e){
+//            if (receiver != null && mActivity != null)
+//                mActivity.unregisterReceiver(receiver);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -120,11 +123,33 @@ public class OpponentsFragment extends BaseFragment {
         super.onResume();
         if (videoHeaderListAdapter != null)
             videoHeaderListAdapter.notifyDataSetChanged();
-        if(progressBar != null && refreshLayout != null) {
+        if (progressBar != null && refreshLayout != null) {
             if (progressBar.getVisibility() == View.GONE || progressBar.getVisibility() == View.INVISIBLE) {
                 refreshLayout.setEnabled(true);
                 refreshLayout.setOnRefreshListener(refreshListener);
             }
+        }
+
+        if (opponentsVideoList != null && opponentsVideoList.size() == 0) {
+            progressBar.setVisibility(View.VISIBLE);
+        } else {
+            progressBar.setVisibility(View.GONE);
+        }
+
+
+        gethideKeyboard();
+
+    }
+
+    /**
+     * hiding keyboard
+     */
+    private void gethideKeyboard() {
+        View view = mActivity.getCurrentFocus();
+        if (view != null) {
+            System.out.println("onResume gethideKeyboard111 ");
+            InputMethodManager imm = (InputMethodManager) mActivity.getSystemService(Activity.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
         }
     }
 
@@ -138,7 +163,7 @@ public class OpponentsFragment extends BaseFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Bundle bundle = getArguments();
-        String tabId = bundle.getString("tabId");
+        tabId = bundle.getString("tabId");
         // tabBannerDTO = (TabBannerDTO) bundle.getSerializable("tabObject");
         tabBannerDTO = VaultDatabaseHelper.getInstance(getActivity()).getLocalTabBannerDataByTabId(Long.valueOf(tabId));
     }
@@ -151,6 +176,7 @@ public class OpponentsFragment extends BaseFragment {
                 R.layout.opponets_coaches_playersfragment_layout, container,
                 false);
         isLastPageLoaded = false;
+
 //        isFreshDataLoading = true;
         setHasOptionsMenu(true);
 
@@ -159,7 +185,13 @@ public class OpponentsFragment extends BaseFragment {
         System.out.println("Opponent Video List Count : " + opponentsVideoList.size());
         // ------ registerevents---------
         registerEvents();
+        getOpponentsDataFromDataBase();
 
+        return view;
+    }
+
+    private void getOpponentsDataFromDataBase()
+    {
         AsyncTask<Void, Void, Void> mDbTask = new AsyncTask<Void, Void, Void>() {
 
             @Override
@@ -219,7 +251,7 @@ public class OpponentsFragment extends BaseFragment {
                 // ---- adding the banner-------------
                 /*Utils.addVolleyBanner(bannerCacheableImageView,
                         GlobalConstants.URL_OPPONETSBANNER, mActivity);*/
-                if(tabBannerDTO != null)
+                if (tabBannerDTO != null)
                     Utils.addBannerImage(bannerCacheableImageView, bannerLayout, tabBannerDTO, mActivity);
 
                 if (progressBar != null) {
@@ -229,17 +261,15 @@ public class OpponentsFragment extends BaseFragment {
                     }
                 }
 
-                if(opponentsVideoList.size() == 0)
-                    stickyListHeadersListView.setFastScrollAlwaysVisible(false);
-                else
-                    stickyListHeadersListView.setFastScrollAlwaysVisible(true);
+                //visibility of scroll bar set dynamically list height
+                Utils.setVisibilityOfScrollBarHeightForHeader(GlobalConstants.SEARCH_VIEW_QUERY, stickyListHeadersListView);
+
             }
         };
 
         mDbTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 
-
-        return view;
+        updateBannerImage();
     }
 
     /*public void setUpPullOptionHeader(View view){
@@ -279,8 +309,16 @@ public class OpponentsFragment extends BaseFragment {
         @Override
         public void onRefresh() {
             if (Utils.isInternetAvailable(mActivity.getApplicationContext())) {
-                pullRefreshTask = new PullRefreshTask();
-                pullRefreshTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                if (MainActivity.autoRefreshProgressBar.getVisibility() == View.VISIBLE) {
+                    refreshLayout.setEnabled(false);
+                    refreshLayout.setRefreshing(false);
+                } else {
+                    refreshLayout.setEnabled(true);
+                    refreshLayout.setRefreshing(true);
+                    pullRefreshTask = new PullRefreshTask();
+                    pullRefreshTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                }
+
             } else {
                 ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
                 refreshLayout.setRefreshing(false);
@@ -295,7 +333,7 @@ public class OpponentsFragment extends BaseFragment {
         stickyListHeadersListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-//                ((MainActivity) mActivity).makeShareDialog(opponentsVideoList.get(position).getVideoLongUrl(), opponentsVideoList.get(position).getVideoShortUrl(), opponentsVideoList.get(position).getVideoStillUrl(), opponentsVideoList.get(position).getVideoLongDescription(), opponentsVideoList.get(position).getVideoName(), getActivity());
+                // ((MainActivity) mActivity).makeShareDialog(opponentsVideoList.get(position).getVideoLongUrl(), opponentsVideoList.get(position).getVideoShortUrl(), opponentsVideoList.get(position).getVideoStillUrl(), opponentsVideoList.get(position).getVideoLongDescription(), opponentsVideoList.get(position).getVideoName(), getActivity());
                 return true;
             }
         });
@@ -307,32 +345,34 @@ public class OpponentsFragment extends BaseFragment {
                     public void onItemClick(AdapterView<?> arg0, View arg1,
                                             int pos, long arg3) {
                         // TODO Auto-generated method stub
-                        View view = mActivity.getCurrentFocus();
-                        if (view != null) {
-                            InputMethodManager inputManager = (InputMethodManager) mActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
-                            inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
-                        }
-                        if (Utils.isInternetAvailable(mActivity)) {
-                            if (opponentsVideoList.get(pos).getVideoLongUrl() != null) {
-                                if (opponentsVideoList.get(pos).getVideoLongUrl().length() > 0 && !opponentsVideoList.get(pos).getVideoLongUrl().toLowerCase().equals("none")) {
-                                    String videoCategory = GlobalConstants.OPPONENTS;
-                                    Intent intent = new Intent(mActivity,
-                                            VideoInfoActivity.class);
-                                    intent.putExtra(GlobalConstants.KEY_CATEGORY, videoCategory);
-                                    intent.putExtra(GlobalConstants.PLAYLIST_REF_ID, opponentsVideoList.get(pos).getPlaylistReferenceId());
-                                    intent.putExtra(GlobalConstants.VIDEO_OBJ, opponentsVideoList.get(pos));
-                                    GlobalConstants.LIST_FRAGMENT = new OpponentsFragment();
-                                    GlobalConstants.LIST_ITEM_POSITION = pos;
-                                    startActivity(intent);
-                                    mActivity.overridePendingTransition(R.anim.slide_up_video_info, R.anim.nochange);
+                        if (!videoHeaderListAdapter.isPullRefreshInProgress) {
+                            View view = mActivity.getCurrentFocus();
+                            if (view != null) {
+                                InputMethodManager inputManager = (InputMethodManager) mActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
+                                inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+                            }
+                            if (Utils.isInternetAvailable(mActivity)) {
+                                if (opponentsVideoList.get(pos).getVideoLongUrl() != null) {
+                                    if (opponentsVideoList.get(pos).getVideoLongUrl().length() > 0 && !opponentsVideoList.get(pos).getVideoLongUrl().toLowerCase().equals("none")) {
+                                        String videoCategory = GlobalConstants.OPPONENTS;
+                                        Intent intent = new Intent(mActivity,
+                                                VideoInfoActivity.class);
+                                        intent.putExtra(GlobalConstants.KEY_CATEGORY, videoCategory);
+                                        intent.putExtra(GlobalConstants.PLAYLIST_REF_ID, opponentsVideoList.get(pos).getPlaylistReferenceId());
+                                        intent.putExtra(GlobalConstants.VIDEO_OBJ, opponentsVideoList.get(pos));
+                                        GlobalConstants.LIST_FRAGMENT = new OpponentsFragment();
+                                        GlobalConstants.LIST_ITEM_POSITION = pos;
+                                        startActivity(intent);
+                                        mActivity.overridePendingTransition(R.anim.slide_up_video_info, R.anim.nochange);
+                                    } else {
+                                        ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
+                                    }
                                 } else {
                                     ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
                                 }
                             } else {
-                                ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
+                                ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
                             }
-                        } else {
-                            ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
                         }
                     }
                 });
@@ -369,42 +409,42 @@ public class OpponentsFragment extends BaseFragment {
         bannerCacheableImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(tabBannerDTO != null){
-                    if(tabBannerDTO.isBannerActive()){
-                        if(tabBannerDTO.isHyperlinkActive() && tabBannerDTO.getBannerActionURL().length() > 0){
+                if (tabBannerDTO != null) {
+                    if (tabBannerDTO.isBannerActive()) {
+                        if (tabBannerDTO.isHyperlinkActive() && tabBannerDTO.getBannerActionURL().length() > 0) {
                             //Start the ActionUrl in Browser
                             Intent intent = new Intent(Intent.ACTION_VIEW).setData(Uri.parse(tabBannerDTO.getBannerActionURL()));
                             startActivity(intent);
-                        }else if(!tabBannerDTO.isHyperlinkActive() && tabBannerDTO.getBannerActionURL().length() > 0){
+                        } else if (!tabBannerDTO.isHyperlinkActive() && tabBannerDTO.getBannerActionURL().length() > 0) {
                             //The ActionUrl has DeepLink associated with it
                             HashMap videoMap = Utils.getInstance().getVideoInfoFromBanner(tabBannerDTO.getBannerActionURL());
-                            if(videoMap != null) {
+                            if (videoMap != null) {
                                 if (videoMap.get("VideoId") != null) {
-                                    if(VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).isVideoAvailableInDB(videoMap.get("VideoId").toString())){
+                                    if (VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).isVideoAvailableInDB(videoMap.get("VideoId").toString())) {
                                         VideoDTO videoDTO = VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getVideoDataByVideoId(videoMap.get("VideoId").toString());
-                                        if(videoDTO != null){
-                                            if (Utils.isInternetAvailable(mActivity)) {
+                                        if (Utils.isInternetAvailable(mActivity)) {
+                                            if (videoDTO != null) {
                                                 if (videoDTO.getVideoLongUrl() != null) {
                                                     //if (videoDTO.getVideoLongUrl().length() > 0 && !videoDTO.getVideoLongUrl().toLowerCase().equals("none")) {
-                                                        String videoCategory = GlobalConstants.OPPONENTS;
-                                                        Intent intent = new Intent(mActivity,
-                                                                VideoInfoActivity.class);
-                                                        intent.putExtra(GlobalConstants.KEY_CATEGORY, videoCategory);
-                                                        intent.putExtra(GlobalConstants.PLAYLIST_REF_ID, videoDTO.getPlaylistReferenceId());
-                                                        intent.putExtra(GlobalConstants.VIDEO_OBJ, videoDTO);
-                                                        startActivity(intent);
-                                                        mActivity.overridePendingTransition(R.anim.slide_up_video_info, R.anim.nochange);
-                                                    } /*else {
+                                                    String videoCategory = GlobalConstants.OPPONENTS;
+                                                    Intent intent = new Intent(mActivity,
+                                                            VideoInfoActivity.class);
+                                                    intent.putExtra(GlobalConstants.KEY_CATEGORY, videoCategory);
+                                                    intent.putExtra(GlobalConstants.PLAYLIST_REF_ID, videoDTO.getPlaylistReferenceId());
+                                                    intent.putExtra(GlobalConstants.VIDEO_OBJ, videoDTO);
+                                                    startActivity(intent);
+                                                    mActivity.overridePendingTransition(R.anim.slide_up_video_info, R.anim.nochange);
+                                                } /*else {
                                                         ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
                                                     }*/
-                                                } else {
-                                                    ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
-                                                }
                                             } else {
-                                                ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
+                                                ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
+                                            }
+                                            } else {
+                                            ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
                                             }
 
-                                    }else{
+                                    } else {
                                         //Make an API call to get video data
                                         System.out.println("Video not available in the local database. Making server call for video.");
                                         VideoDataTask task = new VideoDataTask();
@@ -428,18 +468,18 @@ public class OpponentsFragment extends BaseFragment {
         stickyListHeadersListView.setFastScrollEnabled(true);
 
         mBannerProgressBar = (ProgressBar) v.findViewById(R.id.progress_bar);
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             mBannerProgressBar.setIndeterminateDrawable(context.getResources().getDrawable(R.drawable.circle_progress_bar_lower));
-        else
+        }else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
             mBannerProgressBar.setIndeterminateDrawable(ResourcesCompat.getDrawable(context.getResources(), R.drawable.progress_large_material, null));
-
+        }
         bannerCacheableImageView = (ImageView) v
                 .findViewById(R.id.imv_opponents_coaches_playe_banner);
         bannerLayout = (LinearLayout) v
                 .findViewById(R.id.ll_banner_block);
 
         progressBar = (ProgressBar) v.findViewById(R.id.progressbar);
-        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
             progressBar.setIndeterminateDrawable(getResources().getDrawable(R.drawable.circle_progress_bar_lower));
         else
             progressBar.setIndeterminateDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.progress_large_material, null));
@@ -465,6 +505,8 @@ public class OpponentsFragment extends BaseFragment {
         SearchManager searchManager = (SearchManager) getActivity().getSystemService(Context.SEARCH_SERVICE);
         final MenuItem menuItem = menu.findItem(R.id.action_search);
 
+        // progressBarItem = menu.findItem(R.id.miActionProgress);
+
         searchView = (SearchView) menuItem.getActionView();
         searchView.setSearchableInfo(searchManager.getSearchableInfo(getActivity().getComponentName()));
         searchView.setIconified(true);
@@ -482,17 +524,24 @@ public class OpponentsFragment extends BaseFragment {
                 // TODO Auto-generated method stub
                 boolean isRecordsAvailableInDb = false;
                 ArrayList<VideoDTO> videoList = VaultDatabaseHelper.getInstance(mActivity).getVideoList(GlobalConstants.OKF_OPPONENT);
-                if(videoList.size() > 0) {
+                if (videoList.size() > 0) {
                     isRecordsAvailableInDb = true;
-                    stickyListHeadersListView.setFastScrollAlwaysVisible(true);
-                }else
-                    stickyListHeadersListView.setFastScrollAlwaysVisible(false);
+                }
+//                    stickyListHeadersListView.setFastScrollAlwaysVisible(true);
+//                }else
+//                    stickyListHeadersListView.setFastScrollAlwaysVisible(false);
                 GlobalConstants.SEARCH_VIEW_QUERY = newText;
-                if (videoHeaderListAdapter!= null) {
+                if (videoHeaderListAdapter != null) {
                     videoHeaderListAdapter.filter(newText.toLowerCase(Locale
                             .getDefault()));
                     videoHeaderListAdapter.notifyDataSetChanged();
                 }
+
+                //visibility of scroll bar set dynamically list height
+                if (stickyListHeadersListView != null) {
+                    Utils.setVisibilityOfScrollBarHeightForHeader(newText, stickyListHeadersListView);
+                }
+
                 if (!newText.isEmpty()) {
 
                     if ((opponentsVideoList.size() == 0 && isRecordsAvailableInDb) || (opponentsVideoList.size() == 0 && !VideoDataService.isServiceRunning)) {
@@ -506,7 +555,7 @@ public class OpponentsFragment extends BaseFragment {
                     }
                 } else {
                     tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
-                    if(opponentsVideoList.size() > 0)
+                    if (opponentsVideoList.size() > 0)
                         stickyListHeadersListView.setFastScrollAlwaysVisible(true);
                 }
                 return false;
@@ -560,11 +609,18 @@ public class OpponentsFragment extends BaseFragment {
 
             // it is used to track the ecent of opponennts fragment
             FlurryAgent.onEvent(GlobalConstants.OPPONENTS);
+            if(progressBar != null) {
+                if (opponentsVideoList != null && opponentsVideoList.size() == 0) {
+                    progressBar.setVisibility(View.VISIBLE);
+                } else {
+                    progressBar.setVisibility(View.GONE);
+                }
+            }
 
         }
     }
 
-    public class VideoDataTask extends AsyncTask<HashMap, Void, ArrayList<VideoDTO>>{
+    public class VideoDataTask extends AsyncTask<HashMap, Void, ArrayList<VideoDTO>> {
 
         @Override
         protected void onPreExecute() {
@@ -578,15 +634,15 @@ public class OpponentsFragment extends BaseFragment {
 
         @Override
         protected ArrayList<VideoDTO> doInBackground(HashMap... params) {
-            ArrayList<VideoDTO> videoList = AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(GlobalConstants.GET_VIDEO_DATA_FROM_BANNER+"?navTabId="+params[0].get("TabId").toString()+"&videoId="+ params[0].get("VideoId").toString()+"&userId="+AppController.getInstance().getUserId());
-            System.out.println("Video List Size from server : "+videoList.size());
+            ArrayList<VideoDTO> videoList = AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(GlobalConstants.GET_VIDEO_DATA_FROM_BANNER + "?navTabId=" + params[0].get("TabId").toString() + "&videoId=" + params[0].get("VideoId").toString() + "&userId=" + AppController.getInstance().getUserId());
+            System.out.println("Video List Size from server : " + videoList.size());
             return videoList;
         }
 
         @Override
         protected void onPostExecute(ArrayList<VideoDTO> videoDTOs) {
             super.onPostExecute(videoDTOs);
-            if(videoDTOs.size() > 0) {
+            if (videoDTOs.size() > 0) {
                 VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).insertVideosInDatabase(videoDTOs);
                 if (Utils.isInternetAvailable(mActivity)) {
                     if (videoDTOs.get(0).getVideoLongUrl() != null) {
@@ -622,8 +678,13 @@ public class OpponentsFragment extends BaseFragment {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+
+            if (stickyListHeadersListView != null) {
+                Utils.setDisabledStickyListHeadersListViewScrolling(stickyListHeadersListView);
+            }
+
             refreshLayout.setRefreshing(true);
-            if(videoHeaderListAdapter != null) {
+            if (videoHeaderListAdapter != null) {
                 videoHeaderListAdapter.isPullRefreshInProgress = true;
                 videoHeaderListAdapter.notifyDataSetChanged();
             }
@@ -635,16 +696,16 @@ public class OpponentsFragment extends BaseFragment {
             try {
                 String url = GlobalConstants.OPPONENT_API_URL + "userId=" + AppController.getInstance().getUserId();
                 arrList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
-                if(arrList.size() > 0) {
+                if (arrList.size() > 0) {
                     VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).removeRecordsByTab("OKFOpponent");
                     VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).insertVideosInDatabase(arrList);
                 }
 
                 //Update Banner Data
-                if(tabBannerDTO != null) {
+                if (tabBannerDTO != null) {
                     TabBannerDTO serverObj = AppController.getInstance().getServiceManager().getVaultService().getTabBannerDataById(tabBannerDTO.getTabBannerId(), tabBannerDTO.getTabKeyword(), tabBannerDTO.getTabId());
-                    if(serverObj != null){
-                        if((tabBannerDTO.getBannerModified() != serverObj.getBannerModified()) || (tabBannerDTO.getBannerCreated() != serverObj.getBannerCreated())) {
+                    if (serverObj != null) {
+                        if ((tabBannerDTO.getBannerModified() != serverObj.getBannerModified()) || (tabBannerDTO.getBannerCreated() != serverObj.getBannerCreated())) {
                             File imageFile = ImageLoader.getInstance().getDiscCache().get(tabBannerDTO.getBannerURL());
                             if (imageFile.exists()) {
                                 imageFile.delete();
@@ -669,6 +730,7 @@ public class OpponentsFragment extends BaseFragment {
                 opponentsVideoList.clear();
                 opponentsVideoList.addAll(VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getVideoList(GlobalConstants.OKF_OPPONENT));
 
+
                 Collections.sort(opponentsVideoList, new Comparator<VideoDTO>() {
 
                     @Override
@@ -691,27 +753,31 @@ public class OpponentsFragment extends BaseFragment {
                             .getDefault()));
                     videoHeaderListAdapter.notifyDataSetChanged();
                 }
-                if(videoHeaderListAdapter.getCount() == 0){
+                if (videoHeaderListAdapter.getCount() == 0) {
                     tvsearchRecordsNotAvailable.setText("No Records Found");
                     tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
                     progressBar.setVisibility(View.GONE);
                     stickyListHeadersListView.setFastScrollAlwaysVisible(false);
                 }
             }
-            if(opponentsVideoList.size() == 0){
+            if (opponentsVideoList.size() == 0) {
                 tvsearchRecordsNotAvailable.setText("No Records Found");
                 tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
                 progressBar.setVisibility(View.GONE);
                 stickyListHeadersListView.setFastScrollAlwaysVisible(false);
             }
-            if(isBannerUpdated)
-                if(tabBannerDTO != null) {
+            if (isBannerUpdated)
+                if (tabBannerDTO != null) {
                     tabBannerDTO = VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getLocalTabBannerDataByTabId(tabBannerDTO.getTabId());
-                    if(tabBannerDTO != null)
-                        Utils.addBannerImagePullToRefresh(bannerCacheableImageView, bannerLayout, tabBannerDTO, mActivity,mBannerProgressBar);
+                    if (tabBannerDTO != null)
+                        Utils.addBannerImagePullToRefresh(bannerCacheableImageView, bannerLayout, tabBannerDTO, mActivity, mBannerProgressBar);
                 }
             videoHeaderListAdapter.isPullRefreshInProgress = false;
             refreshLayout.setRefreshing(false);
+
+            if (stickyListHeadersListView != null) {
+                Utils.setEnabledStickyListHeadersListViewScrolling(stickyListHeadersListView);
+            }
         }
     }
 
@@ -736,14 +802,14 @@ public class OpponentsFragment extends BaseFragment {
             });
 
 
-            videoHeaderListAdapter = new VideoContentHeaderListAdapter(opponentsVideoList, mActivity, 2,  true, false);
+            videoHeaderListAdapter = new VideoContentHeaderListAdapter(opponentsVideoList, mActivity, 2, true, false);
             if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
                 videoHeaderListAdapter.filter(GlobalConstants.SEARCH_VIEW_QUERY.toLowerCase(Locale
                         .getDefault()));
             }
             stickyListHeadersListView.setAdapter(videoHeaderListAdapter);
-
-            if (opponentsVideoList.size() == 0 && VideoDataService.isServiceRunning) {
+            System.out.println("tabBannerDTO opponentsVideoList " + opponentsVideoList.size() + " isServiceRunning " + VideoDataService.isServiceRunning);
+            if (opponentsVideoList.size() == 0 /*&& VideoDataService.isServiceRunning*/) {
                 progressBar.setVisibility(View.VISIBLE);
             } else {
                 progressBar.setVisibility(View.GONE);
@@ -755,6 +821,46 @@ public class OpponentsFragment extends BaseFragment {
                     refreshLayout.setOnRefreshListener(refreshListener);
                 }
             }
+
+            tabBannerDTO = VaultDatabaseHelper.getInstance(getActivity()).getLocalTabBannerDataByTabId(Long.valueOf(tabId));
+            System.out.println("tabBannerDTO opp " + tabBannerDTO);
+            if (tabBannerDTO != null) {
+                tabBannerDTO = VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getLocalTabBannerDataByTabId(tabBannerDTO.getTabId());
+                if (tabBannerDTO != null)
+                    Utils.addBannerImagePullToRefresh(bannerCacheableImageView, bannerLayout, tabBannerDTO, mActivity, mBannerProgressBar);
+            }
+
         }
     }
+
+
+    CountDownTimer countDownTimer;
+
+    private void updateBannerImage() {
+        countDownTimer = new CountDownTimer(GlobalConstants.AUTO_REFRESH_INTERVAL, GlobalConstants.AUTO_REFRESH_INTERVAL) {
+
+
+            @Override
+            public void onTick(long millisUntilFinished) {
+                tabBannerDTO = VaultDatabaseHelper.getInstance(getActivity()).getLocalTabBannerDataByTabId(Long.valueOf(tabId));
+                if (tabBannerDTO != null) {
+                    tabBannerDTO = VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getLocalTabBannerDataByTabId(tabBannerDTO.getTabId());
+                    if (tabBannerDTO != null) {
+                        Utils.addBannerImagePullToRefresh(bannerCacheableImageView, bannerLayout, tabBannerDTO, mActivity, mBannerProgressBar);
+                    }
+                }
+            }
+
+            @Override
+            public void onFinish() {
+
+                if (countDownTimer != null) {
+                    countDownTimer.start();
+                }
+
+            }
+        }.start();
+
+    }
+
 }

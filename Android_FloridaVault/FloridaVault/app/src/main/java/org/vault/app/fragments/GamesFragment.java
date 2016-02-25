@@ -9,9 +9,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.support.v4.content.res.ResourcesCompat;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -32,13 +34,12 @@ import android.widget.ProgressBar;
 import android.widget.SearchView;
 import android.widget.SearchView.OnQueryTextListener;
 import android.widget.TextView;
-import android.net.Uri;
 
 import com.baoyz.widget.PullRefreshLayout;
 import com.flurry.android.FlurryAgent;
-import com.ncsavault.floridavault.R;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.utils.MemoryCacheUtils;
+import com.ncsavault.floridavault.R;
 
 import org.vault.app.activities.MainActivity;
 import org.vault.app.activities.VideoInfoActivity;
@@ -84,8 +85,19 @@ public class GamesFragment extends BaseFragment {
     private ProgressDialog pDialog;
     private ProgressBar mBannerProgressBar;
     private LinearLayout bannerLayout;
-
+    private ProgressBar auto_refresh_progress_bar;
+    static GamesFragment gamesFragment;
+    private String tabId;
+    CountDownTimer countDownTimer;
     public GamesFragment() {
+
+    }
+
+    public static GamesFragment getInstance() {
+        if (gamesFragment == null) {
+            gamesFragment = new GamesFragment();
+        }
+        return gamesFragment;
 
     }
 
@@ -93,8 +105,9 @@ public class GamesFragment extends BaseFragment {
     public void onPause() {
         super.onPause();
         try {
-            if (receiver != null && mActivity != null)
-                mActivity.unregisterReceiver(receiver);
+            if (receiver != null && mActivity != null) {
+                //    mActivity.unregisterReceiver(receiver);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -117,13 +130,36 @@ public class GamesFragment extends BaseFragment {
                 refreshLayout.setOnRefreshListener(refreshListener);
             }
         }
+
+        if (gamesVideoList != null && gamesVideoList.size() == 0) {
+            progressBar.setVisibility(View.VISIBLE);
+        } else {
+            progressBar.setVisibility(View.GONE);
+        }
+
+        gethideKeyboard();
+
     }
+
+    /**
+     * hiding keyboard
+     */
+    private void gethideKeyboard() {
+        View view = mActivity.getCurrentFocus();
+        if (view != null) {
+            System.out.println("onResume gethideKeyboard111 ");
+            InputMethodManager imm = (InputMethodManager) mActivity.getSystemService(Activity.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+    }
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Bundle bundle = getArguments();
-        String tabId = bundle.getString("tabId");
+        tabId = bundle.getString("tabId");
+
         // tabBannerDTO = (TabBannerDTO) bundle.getSerializable("tabObject");
         tabBannerDTO = VaultDatabaseHelper.getInstance(getActivity()).getLocalTabBannerDataByTabId(Long.valueOf(tabId));
 
@@ -145,6 +181,13 @@ public class GamesFragment extends BaseFragment {
 
         // ------registerevents---------
         registerEvents();
+        getGameDataFromDataBase();
+
+        return v;
+    }
+
+    private void getGameDataFromDataBase() {
+
 
         AsyncTask<Void, Void, Void> mDbTask = new AsyncTask<Void, Void, Void>() {
 
@@ -198,7 +241,6 @@ public class GamesFragment extends BaseFragment {
             @Override
             protected void onPostExecute(Void aVoid) {
                 super.onPostExecute(aVoid);
-                //stickyListHeadersListView.setAdapter(stickyHeaderListAdapter);
                 stickyListHeadersListView.setAdapter(videoHeaderListAdapter);
 
                 if (gamesVideoList.size() == 0 && VideoDataService.isServiceRunning) {
@@ -214,16 +256,14 @@ public class GamesFragment extends BaseFragment {
                     refreshLayout.setEnabled(true);
                     refreshLayout.setOnRefreshListener(refreshListener);
                 }
-                if (gamesVideoList.size() == 0)
-                    stickyListHeadersListView.setFastScrollAlwaysVisible(false);
-                else
-                    stickyListHeadersListView.setFastScrollAlwaysVisible(true);
+                //visibility of scroll bar set dynamically list height
+                Utils.setVisibilityOfScrollBarHeightForHeader(GlobalConstants.SEARCH_VIEW_QUERY, stickyListHeadersListView);
             }
         };
 
         mDbTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 
-        return v;
+        updateBannerImage();
     }
 
     /*public void setUpPullOptionHeader(View view){
@@ -263,8 +303,17 @@ public class GamesFragment extends BaseFragment {
         @Override
         public void onRefresh() {
             if (Utils.isInternetAvailable(mActivity.getApplicationContext())) {
-                pullTask = new PullRefreshTask();
-                pullTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+
+                if (MainActivity.autoRefreshProgressBar.getVisibility() == View.VISIBLE) {
+                    refreshLayout.setEnabled(false);
+                    refreshLayout.setRefreshing(false);
+                } else {
+                    refreshLayout.setEnabled(true);
+                    refreshLayout.setRefreshing(true);
+                    pullTask = new PullRefreshTask();
+                    pullTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                }
+
             } else {
                 ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
                 refreshLayout.setRefreshing(false);
@@ -281,34 +330,6 @@ public class GamesFragment extends BaseFragment {
             }
         });
 
-        stickyListHeadersListView.setOnScrollListener(new AbsListView.OnScrollListener() {
-            @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
-            @Override
-            public void onScrollStateChanged(AbsListView view, int scrollState) {
-                view.setScrollBarSize(0);
-                /*if(scrollState == 0){
-                    Handler handler = new Handler();
-
-                    final Runnable r = new Runnable() {
-                        public void run() {
-                            stickyListHeadersListView.setFastScrollAlwaysVisible(false);
-                        }
-                    };
-
-                    handler.postDelayed(r, 1000);
-                }
-                else
-                    stickyListHeadersListView.setFastScrollAlwaysVisible(true);*/
-            }
-
-            @Override
-            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-                if (((MainActivity) mActivity).progressDialog != null)
-                    if (((MainActivity) mActivity).progressDialog.isShowing())
-                        ((MainActivity) mActivity).progressDialog.dismiss();
-            }
-
-        });
 
 
         // TODO Auto-generated method stub
@@ -318,32 +339,35 @@ public class GamesFragment extends BaseFragment {
                     @Override
                     public void onItemClick(AdapterView<?> arg0, View arg1,
                                             int pos, long arg3) {
-                        // TODO Auto-generated method stub
-                        View view = mActivity.getCurrentFocus();
-                        if (view != null) {
-                            InputMethodManager inputManager = (InputMethodManager) mActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
-                            inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
-                        }
-                        if (Utils.isInternetAvailable(mActivity)) {
-                            if (gamesVideoList.get(pos).getVideoLongUrl() != null) {
-                                if (gamesVideoList.get(pos).getVideoLongUrl().length() > 0 && !gamesVideoList.get(pos).getVideoLongUrl().toLowerCase().equals("none")) {
-                                    String videoCategory = GlobalConstants.GAMES;
-                                    Intent intent = new Intent(mActivity,
-                                            VideoInfoActivity.class);
-                                    intent.putExtra(GlobalConstants.KEY_CATEGORY, videoCategory);
-                                    intent.putExtra(GlobalConstants.VIDEO_OBJ, gamesVideoList.get(pos));
-                                    GlobalConstants.LIST_FRAGMENT = new GamesFragment();
-                                    GlobalConstants.LIST_ITEM_POSITION = pos;
-                                    mActivity.startActivity(intent);
-                                    mActivity.overridePendingTransition(R.anim.slide_up_video_info, R.anim.nochange);
+
+                        if (!videoHeaderListAdapter.isPullRefreshInProgress) {
+                            // TODO Auto-generated method stub
+                            View view = mActivity.getCurrentFocus();
+                            if (view != null) {
+                                InputMethodManager inputManager = (InputMethodManager) mActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
+                                inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+                            }
+                            if (Utils.isInternetAvailable(mActivity)) {
+                                if (gamesVideoList.get(pos).getVideoLongUrl() != null) {
+                                    if (gamesVideoList.get(pos).getVideoLongUrl().length() > 0 && !gamesVideoList.get(pos).getVideoLongUrl().toLowerCase().equals("none")) {
+                                        String videoCategory = GlobalConstants.GAMES;
+                                        Intent intent = new Intent(mActivity,
+                                                VideoInfoActivity.class);
+                                        intent.putExtra(GlobalConstants.KEY_CATEGORY, videoCategory);
+                                        intent.putExtra(GlobalConstants.VIDEO_OBJ, gamesVideoList.get(pos));
+                                        GlobalConstants.LIST_FRAGMENT = new GamesFragment();
+                                        GlobalConstants.LIST_ITEM_POSITION = pos;
+                                        mActivity.startActivity(intent);
+                                        mActivity.overridePendingTransition(R.anim.slide_up_video_info, R.anim.nochange);
+                                    } else {
+                                        ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
+                                    }
                                 } else {
                                     ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
                                 }
                             } else {
-                                ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
+                                ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
                             }
-                        } else {
-                            ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
                         }
                     }
                 });
@@ -361,6 +385,23 @@ public class GamesFragment extends BaseFragment {
                 return false;
             }
         });
+
+        stickyListHeadersListView.setOnScrollListener(new AbsListView.OnScrollListener() {
+            @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+            @Override
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+                view.setScrollBarSize(0);
+            }
+
+            @Override
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                if (((MainActivity) mActivity).progressDialog != null)
+                    if (((MainActivity) mActivity).progressDialog.isShowing())
+                        ((MainActivity) mActivity).progressDialog.dismiss();
+            }
+
+        });
+
 
         bannerCacheableImageView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -384,27 +425,27 @@ public class GamesFragment extends BaseFragment {
                                 if (videoMap.get("VideoId") != null) {
                                     if (VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).isVideoAvailableInDB(videoMap.get("VideoId").toString())) {
                                         VideoDTO videoDTO = VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getVideoDataByVideoId(videoMap.get("VideoId").toString());
-                                        if (videoDTO != null) {
-                                            if (Utils.isInternetAvailable(mActivity)) {
+                                        if (Utils.isInternetAvailable(mActivity)) {
+                                            if (videoDTO != null) {
                                                 if (videoDTO.getVideoLongUrl() != null) {
-                                                  //  if (videoDTO.getVideoLongUrl().length() > 0 && !videoDTO.getVideoLongUrl().toLowerCase().equals("none")) {
-                                                        String videoCategory = GlobalConstants.GAMES;
-                                                        Intent intent = new Intent(mActivity,
-                                                                VideoInfoActivity.class);
-                                                        intent.putExtra(GlobalConstants.KEY_CATEGORY, videoCategory);
-                                                        intent.putExtra(GlobalConstants.PLAYLIST_REF_ID, videoDTO.getPlaylistReferenceId());
-                                                        intent.putExtra(GlobalConstants.VIDEO_OBJ, videoDTO);
-                                                        startActivity(intent);
-                                                        mActivity.overridePendingTransition(R.anim.slide_up_video_info, R.anim.nochange);
-                                                    } /*else {
+                                                    //  if (videoDTO.getVideoLongUrl().length() > 0 && !videoDTO.getVideoLongUrl().toLowerCase().equals("none")) {
+                                                    String videoCategory = GlobalConstants.GAMES;
+                                                    Intent intent = new Intent(mActivity,
+                                                            VideoInfoActivity.class);
+                                                    intent.putExtra(GlobalConstants.KEY_CATEGORY, videoCategory);
+                                                    intent.putExtra(GlobalConstants.PLAYLIST_REF_ID, videoDTO.getPlaylistReferenceId());
+                                                    intent.putExtra(GlobalConstants.VIDEO_OBJ, videoDTO);
+                                                    startActivity(intent);
+                                                    mActivity.overridePendingTransition(R.anim.slide_up_video_info, R.anim.nochange);
+                                                } /*else {
                                                         ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
                                                     }*/
-                                                } else {
-                                                    ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
-                                                }
                                             } else {
-                                                ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
+                                                ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
                                             }
+                                        } else {
+                                            ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
+                                        }
 
                                     } else {
                                         //Make an API call to get video data
@@ -427,23 +468,25 @@ public class GamesFragment extends BaseFragment {
         stickyListHeadersListView = (StickyListHeadersListView) v
                 .findViewById(R.id.lv_stickyheader);
         stickyListHeadersListView.setFastScrollEnabled(true);
-//        stickyListHeadersListView.setFastScrollAlwaysVisible(true);
-        mBannerProgressBar = (ProgressBar) v.findViewById(R.id.progress_bar);
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
-            mBannerProgressBar.setIndeterminateDrawable(context.getResources().getDrawable(R.drawable.circle_progress_bar_lower));
-        else
-            mBannerProgressBar.setIndeterminateDrawable(ResourcesCompat.getDrawable(context.getResources(), R.drawable.progress_large_material, null));
 
+
+        mBannerProgressBar = (ProgressBar) v.findViewById(R.id.progress_bar);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            mBannerProgressBar.setIndeterminateDrawable(context.getResources().getDrawable(R.drawable.circle_progress_bar_lower));
+        } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
+            mBannerProgressBar.setIndeterminateDrawable(ResourcesCompat.getDrawable(context.getResources(), R.drawable.progress_large_material, null));
+        }
         bannerCacheableImageView = (ImageView) v
                 .findViewById(R.id.imv_opponents_coaches_playe_banner);
         bannerLayout = (LinearLayout) v
                 .findViewById(R.id.ll_banner_block);
 
         progressBar = (ProgressBar) v.findViewById(R.id.progressbar);
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             progressBar.setIndeterminateDrawable(getResources().getDrawable(R.drawable.circle_progress_bar_lower));
-        else
+        } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
             progressBar.setIndeterminateDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.progress_large_material, null));
+        }
 //        progressBar.getIndeterminateDrawable().setColorFilter(Color.parseColor("#CC0000"), android.graphics.PorterDuff.Mode.MULTIPLY);
         tvsearchRecordsNotAvailable = (TextView) v.findViewById(R.id.tvSearchStatus);
         refreshLayout = (PullRefreshLayout) v.findViewById(R.id.refresh_layout);
@@ -456,13 +499,6 @@ public class GamesFragment extends BaseFragment {
             refreshLayout.setLayoutParams(lp);
         }
 
-        /*Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                stickyListHeadersListView.setFastScrollAlwaysVisible(false);
-            }
-        }, 2000);*/
     }
 
     @Override
@@ -472,6 +508,8 @@ public class GamesFragment extends BaseFragment {
 
         SearchManager searchManager = (SearchManager) getActivity().getSystemService(Context.SEARCH_SERVICE);
         final MenuItem menuItem = menu.findItem(R.id.action_search);
+
+        // progressBarItem = menu.findItem(R.id.miActionProgress);
 
         searchView = (SearchView) menuItem.getActionView();
         searchView.setSearchableInfo(searchManager.getSearchableInfo(getActivity().getComponentName()));
@@ -492,15 +530,21 @@ public class GamesFragment extends BaseFragment {
                 ArrayList<VideoDTO> videoList = VaultDatabaseHelper.getInstance(mActivity).getVideoList(GlobalConstants.OKF_GAMES);
                 if (videoList.size() > 0) {
                     isRecordsAvailableInDb = true;
-                    stickyListHeadersListView.setFastScrollAlwaysVisible(true);
-                } else
-                    stickyListHeadersListView.setFastScrollAlwaysVisible(false);
+                }
+//                    stickyListHeadersListView.setFastScrollAlwaysVisible(true);
+//                } else
+//                    stickyListHeadersListView.setFastScrollAlwaysVisible(false);
                 GlobalConstants.SEARCH_VIEW_QUERY = newText;
 
                 if (videoHeaderListAdapter != null) {
                     videoHeaderListAdapter.filter(newText.toLowerCase(Locale
                             .getDefault()));
                     videoHeaderListAdapter.notifyDataSetChanged();
+                }
+
+                //visibility of scroll bar set dynamically list height
+                if (stickyListHeadersListView != null) {
+                    Utils.setVisibilityOfScrollBarHeightForHeader(newText, stickyListHeadersListView);
                 }
 
                 if (!newText.isEmpty()) {
@@ -577,9 +621,17 @@ public class GamesFragment extends BaseFragment {
             }*/
             // it is used to track the ecent of opponennts fragment
             FlurryAgent.onEvent(GlobalConstants.GAMES);
+            if (progressBar != null) {
+                if (gamesVideoList != null && gamesVideoList.size() == 0) {
+                    progressBar.setVisibility(View.VISIBLE);
+                } else {
+                    progressBar.setVisibility(View.GONE);
+                }
+            }
 
         }
     }
+
 
     public class VideoDataTask extends AsyncTask<HashMap, Void, ArrayList<VideoDTO>> {
 
@@ -638,6 +690,11 @@ public class GamesFragment extends BaseFragment {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+
+            if (stickyListHeadersListView != null) {
+                Utils.setDisabledStickyListHeadersListViewScrolling(stickyListHeadersListView);
+            }
+
             refreshLayout.setRefreshing(true);
             if (videoHeaderListAdapter != null) {
                 videoHeaderListAdapter.isPullRefreshInProgress = true;
@@ -734,6 +791,13 @@ public class GamesFragment extends BaseFragment {
                 }
             videoHeaderListAdapter.isPullRefreshInProgress = false;
             refreshLayout.setRefreshing(false);
+
+
+            if (stickyListHeadersListView != null) {
+                Utils.setEnabledStickyListHeadersListViewScrolling(stickyListHeadersListView);
+            }
+
+
         }
     }
 
@@ -744,6 +808,7 @@ public class GamesFragment extends BaseFragment {
 
         @Override
         public void onReceive(Context context, Intent intent) {
+
             gamesVideoList.clear();
             gamesVideoList.addAll(VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getVideoList(GlobalConstants.OKF_GAMES));
 
@@ -770,8 +835,8 @@ public class GamesFragment extends BaseFragment {
                         .getDefault()));
             }
             stickyListHeadersListView.setAdapter(videoHeaderListAdapter);
-
-            if (gamesVideoList.size() == 0 && VideoDataService.isServiceRunning) {
+            System.out.println("tabBannerDTO gamesVideoList " + gamesVideoList.size() + " isServiceRunning " + VideoDataService.isServiceRunning);
+            if (gamesVideoList.size() == 0 /*&& VideoDataService.isServiceRunning*/) {
                 progressBar.setVisibility(View.VISIBLE);
             } else {
                 progressBar.setVisibility(View.GONE);
@@ -783,6 +848,44 @@ public class GamesFragment extends BaseFragment {
                     refreshLayout.setOnRefreshListener(refreshListener);
                 }
             }
+
+            tabBannerDTO = VaultDatabaseHelper.getInstance(getActivity()).getLocalTabBannerDataByTabId(Long.valueOf(tabId));
+            System.out.println("tabBannerDTO game " + tabBannerDTO);
+            if (tabBannerDTO != null) {
+                tabBannerDTO = VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getLocalTabBannerDataByTabId(tabBannerDTO.getTabId());
+                if (tabBannerDTO != null)
+                    Utils.addBannerImagePullToRefresh(bannerCacheableImageView, bannerLayout, tabBannerDTO, mActivity, mBannerProgressBar);
+            }
         }
     }
+
+
+
+
+    private void updateBannerImage() {
+        countDownTimer = new CountDownTimer(GlobalConstants.AUTO_REFRESH_INTERVAL, GlobalConstants.AUTO_REFRESH_INTERVAL) {
+
+            @Override
+            public void onTick(long millisUntilFinished) {
+                tabBannerDTO = VaultDatabaseHelper.getInstance(getActivity()).getLocalTabBannerDataByTabId(Long.valueOf(tabId));
+                if (tabBannerDTO != null) {
+                    tabBannerDTO = VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getLocalTabBannerDataByTabId(tabBannerDTO.getTabId());
+                    if (tabBannerDTO != null) {
+                        Utils.addBannerImagePullToRefresh(bannerCacheableImageView, bannerLayout, tabBannerDTO, mActivity, mBannerProgressBar);
+                    }
+                }
+            }
+
+            @Override
+            public void onFinish() {
+
+                if (countDownTimer != null) {
+                    countDownTimer.start();
+                }
+
+            }
+        }.start();
+    }
+
+
 }

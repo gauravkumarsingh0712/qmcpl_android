@@ -1,0 +1,12 @@
+{
+	"tabName" : "Featured",
+	"tabId" : 12,
+	"tabPosition" : 2,
+	"lastServerTabUpdate" : 123453467890,
+	"bannerUrl" :  "http://www.whs.on2b.com/images/HeaderBG.jpg",
+	"bannerId" :	"112",
+	"lastBannerUpdate" :	12345637890,
+	"isBannerActivated" : "true",
+	"isHyperLinkAvailable" : "true",
+	"actionUrl" : "http://www.google.com"
+}

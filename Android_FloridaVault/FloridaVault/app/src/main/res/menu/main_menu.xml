@@ -1,4 +1,13 @@
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".MainActivity">
+
+    <item
+        android:id="@+id/miActionProgress"
+        android:title="L"
+        android:visible="false"
+        android:actionLayout="@layout/action_view_progress"
+        android:showAsAction="always" />
 
     <item
         android:id="@+id/action_search"
@@ -7,12 +16,16 @@
         android:showAsAction="always"
         android:title="Search"/>
 
-    <item
+
+          <item
         android:id="@+id/action_contact"
         android:showAsAction="never"
         android:title="Support">
         <menu></menu>
-    </item>
+
+
+          </item>
+
 
     <!--<item
         android:id="@+id/action_support"

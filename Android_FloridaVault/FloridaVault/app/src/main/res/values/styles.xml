@@ -57,6 +57,8 @@
         <item name="android:typeface">monospace</item>
         <item name="android:textColorPrimaryInverse">#EAEAEA</item>
 
+
+
     </style>
 
     <style name="MyActionBar" parent="@android:style/Widget.Holo.Light.ActionBar">

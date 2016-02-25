@@ -124,10 +124,11 @@ public class RelatedVideoListAdapter extends BaseAdapter{
                     .findViewById(R.id.tv_video_description);
             viewHolder.spinner = (ProgressBar) convertView.findViewById(R.id.progress_bar);
             if(context != null) {
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
                     viewHolder.spinner.setIndeterminateDrawable(context.getResources().getDrawable(R.drawable.circle_progress_bar_lower));
-                else
+                }else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
                     viewHolder.spinner.setIndeterminateDrawable(ResourcesCompat.getDrawable(context.getResources(), R.drawable.progress_large_material, null));
+                }
             }
             convertView.setTag(viewHolder);
 

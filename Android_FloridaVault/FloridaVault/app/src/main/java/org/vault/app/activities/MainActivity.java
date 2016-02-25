@@ -11,20 +11,24 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.util.Log;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.Menu;
@@ -35,8 +39,11 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -61,6 +68,7 @@ import com.ncsavault.floridavault.R;
 import com.nostra13.universalimageloader.cache.disc.impl.UnlimitedDiscCache;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.utils.MemoryCacheUtils;
 import com.nostra13.universalimageloader.utils.StorageUtils;
 import com.twitter.sdk.android.Twitter;
 import com.twitter.sdk.android.core.Callback;
@@ -81,6 +89,7 @@ import org.vault.app.adapters.TabsFragmentPagerAdapter;
 import org.vault.app.appcontroller.AppController;
 import org.vault.app.database.VaultDatabaseHelper;
 import org.vault.app.dto.TabBannerDTO;
+import org.vault.app.dto.VideoDTO;
 import org.vault.app.fragments.CoachesEraFragment;
 import org.vault.app.fragments.FavoritesFragment;
 import org.vault.app.fragments.FeaturedFragment;
@@ -88,6 +97,7 @@ import org.vault.app.fragments.GamesFragment;
 import org.vault.app.fragments.OpponentsFragment;
 import org.vault.app.fragments.PlayerFragment;
 import org.vault.app.globalconstants.GlobalConstants;
+import org.vault.app.model.LocalModel;
 import org.vault.app.service.VideoDataService;
 import org.vault.app.utils.Utils;
 
@@ -129,6 +139,8 @@ public class MainActivity extends FragmentActivity implements Serializable {
     public static String imageurl;
     public static String description;
     public static String name;
+    public static long videoId;
+    public static String videoSocialUrl;
 
     private static CallbackManager callbackManager;
 
@@ -140,19 +152,27 @@ public class MainActivity extends FragmentActivity implements Serializable {
     TwitterLoginButton twitterLoginButton;
     public ProgressDialog progressDialog;
 
-
     ProfileTracker profileTracker;
+    String message = "You have been joined on Mail Chimp successfully!";
+    String videoUrl;
+    public static boolean isPullToRefreshRunning = false;
 
-
+    public static ProgressBar autoRefreshProgressBar;
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     @Override
     protected void onCreate(Bundle arg0) {
 
         super.onCreate(arg0);
+        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setContentView(R.layout.main_activity);
+
         context = MainActivity.this;
 
+        Bundle bundle = getIntent().getExtras();
+        if (bundle != null) {
+            videoUrl = bundle.getString("videoUrl");
+        }
         CrashManager.initialize(this, GlobalConstants.HOCKEY_APP_ID, null);
 
         if (VaultDatabaseHelper.getInstance(getApplicationContext()).getVideoCount() == 0 && !VideoDataService.isServiceRunning) {
@@ -214,6 +234,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
 
         // ----------adjustPagerIndicator when making transparent to the
         // navigation bar from onwards kitkat----------
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             Utils.addPagerIndicatorBelowActionBar(context, mIndicator);
             Window w = getWindow(); // in Activity's onCreate() for instance
@@ -222,6 +243,9 @@ public class MainActivity extends FragmentActivity implements Serializable {
             w.setFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS,
                     WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         }
+
+        //calculating runtime device width and height
+        setDimensions();
 
         // -------- initializing adapter and indicator-----------------
         initialisePaging();
@@ -296,15 +320,46 @@ public class MainActivity extends FragmentActivity implements Serializable {
             @Override
             protected void onCurrentProfileChanged(Profile oldProfile, Profile currentProfile) {
                 if (currentProfile != null && GlobalConstants.IS_SHARING_ON_FACEBOOK) {
-                    shareVideoUrl(videourl, imageurl, description, name, context);
+                    shareVideoUrl(videoId, videoSocialUrl, imageurl, description, name, context);
                 }
             }
         };
 
+        //  getIntentData();
+        autoRefresh();
+
+
+    }
+
+
+    private void getIntentData() {
+        if (getIntent().getExtras() != null) {
+            boolean intent = getIntent().getExtras().getBoolean("is_success");
+
+            if (intent) {
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        showToastMessage(message);
+                    }
+                }, 2000);
+
+            }
+//            else {
+//                message = "You don't want join on Mail Chimp.";
+//                new Handler().postDelayed(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        showToastMessage(message);
+//                    }
+//                }, 2000);
+//            }
+        }
     }
 
     /**
      * Method used for facebook install or not
+     *
      * @param uri
      * @return
      */
@@ -352,6 +407,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
             Bundle bundle = new Bundle();
             bundle.putString("tabId", String.valueOf(tabBannerDTO.getTabId()));
             bundle.putString("tabName", tabBannerDTO.getTabName());
+            bundle.putString("videoUrl", videoUrl);
 
             if (tabBannerDTO.getTabName().toLowerCase().contains("featured")) {
                 fragments.add(Fragment.instantiate(this, FeaturedFragment.class.getName(), bundle));
@@ -435,8 +491,37 @@ public class MainActivity extends FragmentActivity implements Serializable {
         alertDialog.show();
     }
 
-    public void makeShareDialog(final String videoUrl, final String videoShortUrl, final String imageUrl, final String description, final String name, final Activity context) {
-        View view = context.getLayoutInflater().inflate(R.layout.share_dialog, null);
+    View view;
+    public static LinearLayout linearLayout;
+    View facebookShareView;
+    View twitterShareView;
+    public void makeShareDialog(final long videoId, final String videoSocialUrl, final String videoShortUrl, final String imageUrl, final String description, final String name, final Activity context) {
+
+        //   shareData(videoSocialUrl, imageUrl, description, name);
+        view = findViewById(R.id.sharinglayout);
+
+        linearLayout = (LinearLayout) view.findViewById(R.id.social_sharing_linear_layout);
+
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                animation = AnimationUtils.loadAnimation(MainActivity.this, R.anim.sliding_up_dialog);
+                linearLayout.setAnimation(animation);
+                linearLayout.setVisibility(View.VISIBLE);
+            }
+        }, 300);
+
+//        Handler handlerThread = new Handler();
+//        handlerThread.postDelayed(new Runnable() {
+//            @Override
+//            public void run() {
+//                animation = AnimationUtils.loadAnimation(VideoInfoActivity.this, R.anim.sliding_down_dialog);
+//                linearLayout.setAnimation(animation);
+//                linearLayout.setVisibility(View.GONE);
+//            }
+//        }, 10000);
+
         int Measuredwidth = 0;
         try {
             Point size = new Point();
@@ -453,12 +538,44 @@ public class MainActivity extends FragmentActivity implements Serializable {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        Button flatButtonFacebook = (Button) view.findViewById(R.id.facebookShare);
-        Button flatButtonTwitter = (Button) view.findViewById(R.id.twitterShare);
+//        Button flatButtonFacebook = (Button) view.findViewById(R.id.facebookShare);
+//        Button flatButtonTwitter = (Button) view.findViewById(R.id.twitterShare);
 
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int) (Measuredwidth * 0.40), LinearLayout.LayoutParams.WRAP_CONTENT);
-        flatButtonFacebook.setLayoutParams(lp);
-        flatButtonTwitter.setLayoutParams(lp);
+        ImageView flatButtonFacebook = (ImageView) view.findViewById(R.id.facebookShare);
+        ImageView flatButtonTwitter = (ImageView) view.findViewById(R.id.twitterShare);
+        facebookShareView = (View) view.findViewById(R.id.facebookShareView);
+        twitterShareView = (View) view.findViewById(R.id.twitterShareView);
+
+//        View view = context.getLayoutInflater().inflate(R.layout.share_dialog, null);
+//
+//        int Measuredwidth = 0;
+//        try {
+//            Point size = new Point();
+//            WindowManager w = getWindowManager();
+//
+//
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+//                w.getDefaultDisplay().getSize(size);
+//                Measuredwidth = size.x;
+//            } else {
+//                Display d = w.getDefaultDisplay();
+//                Measuredwidth = d.getWidth();
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//
+//
+//        //        Button flatButtonFacebook = (Button) view.findViewById(R.id.facebookShare);
+////        Button flatButtonTwitter = (Button) view.findViewById(R.id.twitterShare);
+//
+//        ImageView flatButtonFacebook = (ImageView) view.findViewById(R.id.facebookShare);
+//        ImageView flatButtonTwitter = (ImageView) view.findViewById(R.id.twitterShare);
+//
+//
+//        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int) (Measuredwidth * 0.40), LinearLayout.LayoutParams.WRAP_CONTENT);
+//        flatButtonFacebook.setLayoutParams(lp);
+//        flatButtonTwitter.setLayoutParams(lp);
 
 //        flatButtonFacebook.setButtonColor(Color.parseColor("#3B5898"));
 //        flatButtonTwitter.setButtonColor(Color.parseColor("#5EA9DD"));
@@ -509,17 +626,19 @@ public class MainActivity extends FragmentActivity implements Serializable {
         flatButtonFacebook.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                progressDialog.dismiss();
+                // progressDialog.dismiss();
                 if (AppController.getInstance().getUserId() == GlobalConstants.DEFAULT_USER_ID) {
                     showConfirmLoginDialog(GlobalConstants.SHARE_MESSAGE);
                 } else if (Utils.isInternetAvailable(MainActivity.this)) {
                     if (videoShortUrl != null) {
-                        if (videoShortUrl.length() == 0) {
-                            //Toast.makeText(context, "Video Information Not Available To Share", Toast.LENGTH_SHORT).show();
-                            showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
-                        } else {
-                            ((MainActivity) context).shareVideoUrl(videoShortUrl, imageUrl, description, name, context);
-                        }
+//                        if (videoShortUrl.length() == 0) {
+//                            //Toast.makeText(context, "Video Information Not Available To Share", Toast.LENGTH_SHORT).show();
+//                            showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
+//                        } else {
+
+
+                        ((MainActivity) context).shareVideoUrl(videoId, videoSocialUrl, imageUrl, description, name, context);
+//                        }
                     } else {
 //                    Toast.makeText(context, "Video Information Not Available To Share", Toast.LENGTH_SHORT).show();
                         showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
@@ -533,15 +652,16 @@ public class MainActivity extends FragmentActivity implements Serializable {
         flatButtonTwitter.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                progressDialog.dismiss();
+                // progressDialog.dismiss();
                 if (AppController.getInstance().getUserId() == GlobalConstants.DEFAULT_USER_ID) {
                     showConfirmLoginDialog(GlobalConstants.SHARE_MESSAGE);
                 } else if (Utils.isInternetAvailable(MainActivity.this)) {
                     if (videoShortUrl != null) {
-                        if (videoShortUrl.length() == 0) {
-//                        Toast.makeText(context, "Video Information Not Available To Share", Toast.LENGTH_SHORT).show();
-                            showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
-                        } else {
+//                        if (videoShortUrl.length() == 0) {
+////                        Toast.makeText(context, "Video Information Not Available To Share", Toast.LENGTH_SHORT).show();
+//                            showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
+//                        } else
+                        {
                             TwitterSession session = Twitter.getSessionManager().getActiveSession();
                             if (session == null) {
                                 twitterLoginButton.performClick();
@@ -557,7 +677,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
 
                                         TweetComposer.Builder builder = new TweetComposer.Builder(context)
                                                 .text(name + "\n" + description + "\n\n")
-                                                .url(new URL(videoShortUrl));
+                                                .url(new URL("http://0b78b111a9d0410784caa8a634aa3b90.cloudapp.net/Sample.html"));
 
                                         builder.show();
                                     } else if (name != null) {
@@ -570,8 +690,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
 
                                         TweetComposer.Builder builder = new TweetComposer.Builder(context)
                                                 .text(name + "\n\n")
-                                                .url(new URL(videoShortUrl));
-
+                                                .url(new URL("http://0b78b111a9d0410784caa8a634aa3b90.cloudapp.net/Sample.html"));
                                         builder.show();
                                     }
                                 } catch (Exception e) {
@@ -590,12 +709,87 @@ public class MainActivity extends FragmentActivity implements Serializable {
             }
         });
 
-        progressDialog = new ProgressDialog(context);
-        progressDialog.setCanceledOnTouchOutside(false);
-        progressDialog.setCancelable(true);
-        progressDialog.setCanceledOnTouchOutside(true);
-        progressDialog.show();
-        progressDialog.setContentView(view);
+//        progressDialog = new ProgressDialog(context);
+//        progressDialog.setCanceledOnTouchOutside(false);
+//        progressDialog.setCancelable(true);
+//        progressDialog.setCanceledOnTouchOutside(true);
+//        progressDialog.show();
+//        progressDialog.setContentView(view);
+    }
+
+
+    private void shareData(final String videoSocialUrl, final String imageUrl, final String description, final String name) {
+
+//
+//        List<Intent> targetedShareIntents = new ArrayList<Intent>();
+//
+//        Intent facebookIntent = getShareIntent("facebook", "subject", "text",videoSocialUrl,imageUrl,description,name);
+//        if (facebookIntent != null)
+//            targetedShareIntents.add(facebookIntent);
+//
+//        Intent twitterIntent = getShareIntent("com.twitter.android", "subject", "text",videoSocialUrl,imageUrl,description,name);
+//        if (twitterIntent != null)
+//            targetedShareIntents.add(twitterIntent);
+
+        String message = "Text I want to share.";
+        Intent share = new Intent(Intent.ACTION_SEND);
+        share.setType("text/plain");
+        share.putExtra(android.content.Intent.EXTRA_TEXT, message);
+        startActivity(Intent.createChooser(share, "Share text!"));
+
+//        Intent gmailIntent = getShareIntent("gmail", "subject", "text");
+//        if(gmailIntent != null)
+//            targetedShareIntents.add(gmailIntent);
+//
+//        Intent chooser = Intent.createChooser(targetedShareIntents.remove(0), "Share with Friends");
+//
+//        chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, targetedShareIntents.toArray(new Parcelable[]{}));
+//
+//        startActivity(chooser);
+    }
+
+
+    private Intent getShareIntent(String type, String subject, String text, String videoSocialUrl, String imageUrl, String description, String name) {
+        boolean found = false;
+        Intent share = new Intent(android.content.Intent.ACTION_SEND);
+        share.setType("text/plain");
+        share.setType("image/*");
+
+        // gets the list of intents that can be loaded.
+        List<ResolveInfo> resInfo = getPackageManager().queryIntentActivities(share, 0);
+        System.out.println("resinfo: " + resInfo);
+        if (!resInfo.isEmpty()) {
+            for (ResolveInfo info : resInfo) {
+                if (info.activityInfo.packageName.toLowerCase().contains(type) ||
+                        info.activityInfo.name.toLowerCase().contains(type)) {
+
+                    share.putExtra(Intent.EXTRA_SUBJECT, description);
+                    share.putExtra(Intent.EXTRA_SUBJECT, name);
+                    String videoUrl = videoSocialUrl;
+
+                    File videoUrlToShare = new File(videoUrl);
+
+                    Uri videouri = Uri.fromFile(videoUrlToShare);
+                    share.putExtra(Intent.EXTRA_STREAM, videouri);
+                    String imagePath = imageUrl;
+
+                    File imageFileToShare = new File(imagePath);
+
+                    Uri uri = Uri.fromFile(imageFileToShare);
+                    share.putExtra(Intent.EXTRA_STREAM, uri);
+                    share.putExtra(Intent.EXTRA_SUBJECT, subject);
+                    share.putExtra(Intent.EXTRA_TEXT, text);
+                    share.setPackage(info.activityInfo.packageName);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+                return null;
+
+            return share;
+        }
+        return null;
     }
 
     @Override
@@ -605,12 +799,13 @@ public class MainActivity extends FragmentActivity implements Serializable {
         twitterLoginButton.onActivityResult(requestCode, resultCode,
                 data);
 
-//        Toast.makeText(MainActivity.this,"Request Code : "+requestCode,Toast.LENGTH_SHORT).show();
+        //  Toast.makeText(MainActivity.this, "Request Code : " + requestCode, Toast.LENGTH_SHORT).show();
     }
 
-    public void shareVideoUrl(String videourl, String imageurl, String description, String name, final Activity context) {
+    public void shareVideoUrl(final long videoId, String videoSocialurl, String imageurl, String description, String name, final Activity context) {
         try {
             final FacebookCallback<Sharer.Result> shareCallback = new FacebookCallback<Sharer.Result>() {
+
                 @Override
                 public void onCancel() {
                     //Log.d("HelloFacebook", "Canceled");
@@ -628,6 +823,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
                     //showResult(title, alertMessage);
                 }
 
+
                 @Override
                 public void onSuccess(Sharer.Result result) {
                     //Log.d("HelloFacebook", "Success!");
@@ -637,6 +833,16 @@ public class MainActivity extends FragmentActivity implements Serializable {
                     if (!installed)
                         showToastMessage(GlobalConstants.FACEBOOK_POST_SUCCESS_MESSAGE);
                     GlobalConstants.IS_SHARING_ON_FACEBOOK = false;
+
+                    String videoIdData = String.valueOf(videoId);
+
+                    shareInfoTask = new shareInfoTask();
+                    shareInfoTask.execute(videoIdData);
+
+                    /*************** share post data *******************/
+                    /**************execute asan task**********/
+
+                    /************************/
                 /*if (result.getPostId() != null) {
                     String title = "Success";
                     String id = result.getPostId();
@@ -644,6 +850,8 @@ public class MainActivity extends FragmentActivity implements Serializable {
                     showResult(title, alertMessage);
                 }*/
                 }
+
+
             };
 
             GlobalConstants.IS_SHARING_ON_FACEBOOK = true;
@@ -655,6 +863,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
             shareDialog.registerCallback(
                     callbackManager,
                     shareCallback);
+
 
             canPresentShareDialog = ShareDialog.canShow(
                     ShareLinkContent.class);
@@ -669,12 +878,14 @@ public class MainActivity extends FragmentActivity implements Serializable {
             if (imageurl.contains("10.10.10"))
                 imageurl = "http://static.parastorage.com/services/wixapps/2.460.0/javascript/wixapps/apps/blog/images/no-image-icon.png";
 
+
             ShareLinkContent linkContent = new ShareLinkContent.Builder()
                     .setContentTitle(name)
                     .setContentDescription(description)
                     .setImageUrl(Uri.parse(imageurl))
-                    .setContentUrl(Uri.parse(videourl))
+                    .setContentUrl(Uri.parse(videoSocialurl))
                     .build();
+
 
             if (profile != null) {
                 if (canPresentShareDialog) {
@@ -683,11 +894,46 @@ public class MainActivity extends FragmentActivity implements Serializable {
                     ShareApi.share(linkContent, shareCallback);
                 }
             } else {
-                ((MainActivity) context).loginWithFacebook(videourl, imageurl, description, name, context);
+                ((MainActivity) context).loginWithFacebook(videoId, videoSocialurl, imageurl, description, name, context);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private boolean isSuccessfullPost = false;
+
+    private Uri openApp(String str) {
+        Uri targetUrl = Uri.parse("");// Uri.parse(str);
+        // if (isSuccessfullPost)
+        {
+            Toast.makeText(MainActivity.this, "Request Code : ", Toast.LENGTH_SHORT).show();
+            boolean installed = appInstalledOrNot("com.ncsavault.floridavault");
+            if (installed) {
+                //This intent will help you to launch if the package is already installed
+//                LaunchIntent = getPackageManager()
+//                        .getLaunchIntentForPackage("com.ncsavault.floridavault");
+//                startActivity(LaunchIntent);
+//            }
+//            targetUrl =
+//                    AppLinks.getTargetUrlFromInboundIntent(this, LaunchIntent);
+            }
+        }
+        Log.i("targetUrl", "targetUrl123 " + targetUrl.toString());
+        return targetUrl;
+
+    }
+
+    private boolean appInstalledOrNot(String uri) {
+        PackageManager pm = getPackageManager();
+        boolean app_installed;
+        try {
+            pm.getPackageInfo(uri, PackageManager.GET_ACTIVITIES);
+            app_installed = true;
+        } catch (PackageManager.NameNotFoundException e) {
+            app_installed = false;
+        }
+        return app_installed;
     }
 
     public static boolean hasPublishPermission() {
@@ -701,6 +947,20 @@ public class MainActivity extends FragmentActivity implements Serializable {
         super.onResume();
         CrashManager.execute(this, null);
         AppEventsLogger.activateApp(this);
+       // System.out.println("onResume gethideKeyboard");
+       // gethideKeyboard();
+    }
+
+    /**
+     * hiding keyboard
+     */
+    private void gethideKeyboard() {
+        View view = getCurrentFocus();
+        if (view != null) {
+            System.out.println("onResume gethideKeyboard111 ");
+            InputMethodManager imm = (InputMethodManager) getSystemService(Activity.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
     }
 
     @Override
@@ -715,24 +975,28 @@ public class MainActivity extends FragmentActivity implements Serializable {
     public void onBackPressed() {
         // TODO Auto-generated method stub
         super.onBackPressed();
-
         GlobalConstants.SEARCH_VIEW_QUERY = "";
     }
 
 
-    public void loginWithFacebook(String vidurl, String imgurl, String desc, String n, Activity ctx) {
-        videourl = vidurl;
+    public void loginWithFacebook(long videoIds, String vidurl, String imgurl, String desc, String n, Activity ctx) {
         imageurl = imgurl;
         description = desc;
         name = n;
+        videoId = videoIds;
+        videoSocialUrl =vidurl;
 //        Toast.makeText(ctx, "Your are not logged in, please login", Toast.LENGTH_LONG).show();
         LoginManager.getInstance().logInWithReadPermissions(ctx, Arrays.asList("public_profile, email, user_birthday"));
     }
 
-
+    //public static ProgressBar auto_refresh_progress_bar;
     private void initViews() {
         mPager = (ViewPager) findViewById(R.id.pager);
+        // auto_refresh_progress_bar = (ProgressBar) findViewById(R.id.auto_refresh_progress_bar);
         mIndicator = (TitlePageIndicator) findViewById(R.id.indicator);
+        View autoRefreshView = findViewById(R.id.auto_refresh_progress_main);
+        autoRefreshProgressBar = (ProgressBar) autoRefreshView.findViewById(R.id.auto_refresh_progress_bar);
+
         actionBar = getActionBar();
         actionBar.setBackgroundDrawable(new ColorDrawable(Color
                 .parseColor(gryColor)));
@@ -743,7 +1007,9 @@ public class MainActivity extends FragmentActivity implements Serializable {
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        /*SharedPreferences pref = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
+
+
+     /*SharedPreferences pref = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
         long userId = pref.getLong(GlobalConstants.PREF_VAULT_USER_ID_LONG,0);
         boolean isSkipLogin = pref.getBoolean(GlobalConstants.PREF_VAULT_SKIP_LOGIN, false);
         if (userId > 0 && isSkipLogin)  {
@@ -937,6 +1203,34 @@ public class MainActivity extends FragmentActivity implements Serializable {
         }, 2000);
     }
 
+    String postResult;
+    AsyncTask<String, Void, String> shareInfoTask;
+
+    public class shareInfoTask extends AsyncTask<String, Void, String> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected String doInBackground(String... params) {
+            try {
+                postResult = AppController.getInstance().getServiceManager().getVaultService().postSharingInfo(params[0].toString());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            return postResult;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+
+        }
+    }
+
     /*public class ResponseReceiver extends BroadcastReceiver {
         public static final String ACTION_RESP =
                 "com.mamlambo.intent.action.MESSAGE_PROCESSED";
@@ -946,4 +1240,198 @@ public class MainActivity extends FragmentActivity implements Serializable {
 
         }
     }*/
+
+    public void setDimensions() {
+
+        LocalModel localModel = LocalModel.getInstance();
+        Point size = new Point();
+        WindowManager w = getWindowManager();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            w.getDefaultDisplay().getSize(size);
+            localModel.setmDisplayHeight(size.y);
+            localModel.setmDisplayWidth(size.x);
+        } else {
+            Display d = w.getDefaultDisplay();
+            localModel.setmDisplayHeight(d.getHeight());
+            localModel.setmDisplayWidth(d.getWidth());
+        }
+
+    }
+
+    CountDownTimer countDownTimer;
+    public void autoRefresh() {
+        countDownTimer = new CountDownTimer(GlobalConstants.AUTO_REFRESH_INTERVAL, GlobalConstants.AUTO_REFRESH_INTERVAL) {
+
+            public void onTick(long millisUntilFinished) {
+                loadBannerData();
+            }
+
+
+            public void onFinish() {
+                if (countDownTimer != null) {
+                    countDownTimer.start();
+                }
+
+                loadBannerData();
+            }
+
+        }.start();
+    }
+
+
+
+    private AsyncTask<Void, Void, ArrayList<TabBannerDTO>> mBannerTask;
+
+    public void loadBannerData() {
+        System.out.println("loadBannerData");
+        mBannerTask = new AsyncTask<Void, Void, ArrayList<TabBannerDTO>>() {
+
+            @Override
+            protected void onPreExecute() {
+                super.onPreExecute();
+                if (autoRefreshProgressBar != null) {
+                    autoRefreshProgressBar.setVisibility(View.VISIBLE);
+                }
+
+            }
+
+            @Override
+            protected ArrayList<TabBannerDTO> doInBackground(Void... params) {
+
+
+                ArrayList<TabBannerDTO> arrayListBanner = new ArrayList<TabBannerDTO>();
+                Intent broadCastIntent = new Intent();
+                try {
+                    arrayListBanner.addAll(AppController.getInstance().getServiceManager().getVaultService().getAllTabBannerData());
+
+                ArrayList<String> lstUrls = new ArrayList<>();
+
+                File imageFile;
+                for (TabBannerDTO bDTO : arrayListBanner) {
+                    TabBannerDTO localBannerData = VaultDatabaseHelper.getInstance(getApplicationContext()).getLocalTabBannerDataByTabId(bDTO.getTabId());
+                    if (localBannerData != null) {
+                        if ((localBannerData.getBannerModified() != bDTO.getBannerModified()) || (localBannerData.getBannerCreated() != bDTO.getBannerCreated()))
+                        {
+                            VaultDatabaseHelper.getInstance(getApplicationContext()).updateBannerData(bDTO);
+                        }
+                        if (localBannerData.getTabDataModified() != bDTO.getTabDataModified()) {
+                            VaultDatabaseHelper.getInstance(getApplicationContext()).updateTabData(bDTO);
+                            if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.FEATURED).toLowerCase())) {
+                                VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_FEATURED);
+                                lstUrls.add(GlobalConstants.FEATURED_API_URL);
+                                String url = GlobalConstants.FEATURED_API_URL + "userid=" + AppController.getInstance().getUserId();
+                                try {
+                                    arrayListVideos.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                VaultDatabaseHelper.getInstance(getApplicationContext()).insertVideosInDatabase(arrayListVideos);
+                                broadCastIntent.setAction(FeaturedFragment.FeaturedResponseReceiver.ACTION_RESP);
+                            } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.GAMES).toLowerCase())) {
+                                VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_GAMES);
+                                lstUrls.add(GlobalConstants.GAMES_API_URL);
+                                String url = GlobalConstants.GAMES_API_URL + "userid=" + AppController.getInstance().getUserId();
+                                try {
+                                    arrayListVideos.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                VaultDatabaseHelper.getInstance(getApplicationContext()).insertVideosInDatabase(arrayListVideos);
+                                broadCastIntent.setAction(GamesFragment.GamesResponseReceiver.ACTION_RESP);
+                            } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.PLAYERS).toLowerCase())) {
+                                VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_PLAYERS);
+
+                                lstUrls.add(GlobalConstants.PLAYER_API_URL);
+                                String url = GlobalConstants.PLAYER_API_URL + "userid=" + AppController.getInstance().getUserId();
+                                try {
+                                    arrayListVideos.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                VaultDatabaseHelper.getInstance(getApplicationContext()).insertVideosInDatabase(arrayListVideos);
+                                broadCastIntent.setAction(PlayerFragment.PlayerResponseReceiver.ACTION_RESP);
+                            } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.OPPONENTS).toLowerCase())) {
+                                VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_OPPONENT);
+                                lstUrls.add(GlobalConstants.OPPONENT_API_URL);
+                                String url = GlobalConstants.OPPONENT_API_URL + "userid=" + AppController.getInstance().getUserId();
+                                try {
+                                    arrayListVideos.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                VaultDatabaseHelper.getInstance(getApplicationContext()).insertVideosInDatabase(arrayListVideos);
+                                broadCastIntent.setAction(OpponentsFragment.OpponentsResponseReceiver.ACTION_RESP);
+                            } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.COACHES_ERA).toLowerCase())) {
+                                VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_COACH);
+                                lstUrls.add(GlobalConstants.COACH_API_URL);
+                                String url = GlobalConstants.COACH_API_URL + "userid=" + AppController.getInstance().getUserId();
+                                try {
+                                    arrayListVideos.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                VaultDatabaseHelper.getInstance(getApplicationContext()).insertVideosInDatabase(arrayListVideos);
+                                broadCastIntent.setAction(CoachesEraFragment.CoachesResponseReceiver.ACTION_RESP);
+                            }
+                            imageFile = ImageLoader.getInstance().getDiscCache().get(localBannerData.getBannerURL());
+                            if (imageFile.exists()) {
+                                imageFile.delete();
+                            }
+                            MemoryCacheUtils.removeFromCache(localBannerData.getBannerURL(), ImageLoader.getInstance().getMemoryCache());
+                            broadCastIntent.addCategory(Intent.CATEGORY_DEFAULT);
+                            sendBroadcast(broadCastIntent);
+                            arrayListVideos.clear();
+                        }
+                    } else {
+                        VaultDatabaseHelper.getInstance(getApplicationContext()).insertTabBannerData(bDTO);
+                    }
+
+
+                }
+                if (lstUrls.size() == 0) {
+                    int count = VaultDatabaseHelper.getInstance(getApplicationContext()).getTabBannerCount();
+                    if (count > 0) {
+                        lstUrls.add(GlobalConstants.FEATURED_API_URL);
+                        lstUrls.add(GlobalConstants.GAMES_API_URL);
+                        lstUrls.add(GlobalConstants.PLAYER_API_URL);
+                        lstUrls.add(GlobalConstants.OPPONENT_API_URL);
+                        lstUrls.add(GlobalConstants.COACH_API_URL);
+                    }
+                }
+                AppController.getInstance().setAPI_URLS(lstUrls);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(ArrayList<TabBannerDTO> bannerDTOs) {
+                super.onPostExecute(bannerDTOs);
+
+                try {
+                    VideoDataService.isServiceRunning = false;
+                    stopService(new Intent(MainActivity.this, VideoDataService.class));
+                    System.out.println("tabBannerDTO MainActivity ");
+                    // new startAutoRefresh().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                    //  startService(new Intent(MainActivity.this, VideoDataService.class));
+
+                            if (autoRefreshProgressBar != null) {
+                                autoRefreshProgressBar.setVisibility(View.GONE);
+                            }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        mBannerTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+
+    ArrayList<VideoDTO> arrayListVideos = new ArrayList<VideoDTO>();
+
 }

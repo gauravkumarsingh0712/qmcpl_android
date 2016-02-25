@@ -12,6 +12,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
@@ -21,8 +22,9 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.MediaStore;
+import android.provider.Settings;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.view.ViewPager;
 import android.view.Display;
@@ -56,8 +58,6 @@ import com.facebook.share.Sharer;
 import com.facebook.share.model.ShareLinkContent;
 import com.facebook.share.widget.ShareDialog;
 import com.flurry.android.FlurryAgent;
-import com.ncsavault.floridavault.LoginEmailActivity;
-import com.ncsavault.floridavault.R;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
@@ -69,6 +69,8 @@ import com.twitter.sdk.android.core.TwitterException;
 import com.twitter.sdk.android.core.TwitterSession;
 import com.twitter.sdk.android.core.identity.TwitterLoginButton;
 import com.twitter.sdk.android.tweetcomposer.TweetComposer;
+import com.ncsavault.floridavault.LoginEmailActivity;
+import com.ncsavault.floridavault.R;
 import com.viewpagerindicator.CirclePageIndicator;
 
 import org.vault.app.adapters.PagerAdapter;
@@ -82,6 +84,7 @@ import org.vault.app.globalconstants.GlobalConstants;
 import org.vault.app.service.VideoDataService;
 import org.vault.app.utils.Utils;
 
+import java.io.InputStream;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -91,7 +94,7 @@ import java.util.Vector;
 /**
  * Created by aqeeb.pathan on 09-09-2015.
  */
-public class VideoInfoActivity extends FragmentActivity {
+public class VideoInfoActivity extends PermissionActivity {
 
     //Declare fields required
     private VideoDTO videoObject;
@@ -130,7 +133,10 @@ public class VideoInfoActivity extends FragmentActivity {
     private Vector<Fragment> fragments;
     private PagerAdapter mPagerAdapter;
     private boolean isVideoCompleted;
-
+    private RelativeLayout viewPagerRelativeView;
+    private LinearLayout shareVideoLayout;
+    private boolean askAgainForMustPermissions = false;
+    private boolean goToSettingsScreen = false;
     @Override
     protected void onStart() {
         super.onStart();
@@ -144,6 +150,19 @@ public class VideoInfoActivity extends FragmentActivity {
         setContentView(R.layout.video_info_layout);
         context = VideoInfoActivity.this;
         isVideoCompleted = false;
+
+        try {
+            //Marshmallow permissions for read phone.
+            if (haveAllMustPermissions(readPhonePermissions, PERMISSION_REQUEST_MUST)) {
+                initlizeAllVideoInfoActivityData();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void initlizeAllVideoInfoActivityData() {
         initializeFacebookUtil();
         initViews();
         setDimensions();
@@ -172,7 +191,97 @@ public class VideoInfoActivity extends FragmentActivity {
 
         initData();
         initListener();
+    }
 
+    @Override
+    public void onPermissionResult(int requestCode, boolean isGranted, Object extras) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_MUST:
+                if (isGranted) {
+                    //perform action here
+                    System.out.println("i am here Gaurav222");
+                    initlizeAllVideoInfoActivityData();
+                } else {
+                    System.out.println("i am here Gaurav333");
+                    if (!askAgainForMustPermissions) {
+                        askAgainForMustPermissions = true;
+                        System.out.println("i am here Gaurav444");
+                        // Toast.makeText(this, "Please provide all the Permissions to Make the App work for you.", Toast.LENGTH_LONG).show();
+                        //haveAllMustPermissions();
+                        showPermissionsConfirmationDialog(GlobalConstants.UGA_VAULT_RWAD_PHONE_STATE_PERMISSION);
+                    } else if (!goToSettingsScreen) {
+                        goToSettingsScreen = true;
+                        System.out.println("i am here Gaurav555");
+
+                        showPermissionsConfirmationDialog(GlobalConstants.UGA_VAULT_RWAD_PHONE_STATE_PERMISSION);
+
+                    } else {
+                        showPermissionsConfirmationDialog(GlobalConstants.UGA_VAULT_RWAD_PHONE_STATE_PERMISSION);
+                    }
+
+                }
+                break;
+        }
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            if (isBackToSplashScreen) {
+                isBackToSplashScreen = false;
+                if (haveAllMustPermissions()) {
+                    initlizeAllVideoInfoActivityData();
+                }
+            }
+        }
+    }
+
+
+    public void showPermissionsConfirmationDialog(String message) {
+
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        alertDialogBuilder.setTitle("Permission Denied");
+        alertDialogBuilder
+                .setMessage(message);
+
+
+        alertDialogBuilder.setPositiveButton("Go to Settings",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface arg0, int arg1) {
+                        //Utils.getInstance().registerWithGCM(mActivity);
+                        goToSettings();
+
+                    }
+                });
+        alertDialogBuilder.setNegativeButton("Cancel",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        // alertDialog.dismiss();
+                        showPermissionsConfirmationDialog(GlobalConstants.UGA_VAULT_RWAD_PHONE_STATE_PERMISSION);
+                    }
+                });
+
+        alertDialog = alertDialogBuilder.create();
+        alertDialog.setCancelable(false);
+        alertDialog.setCanceledOnTouchOutside(false);
+        alertDialog.show();
+        Button nbutton = alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+        nbutton.setTextColor(getResources().getColor(R.color.green));
+        Button pbutton = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        pbutton.setTextColor(getResources().getColor(R.color.green));
+    }
+
+
+    private boolean isBackToSplashScreen = false;
+
+    public void goToSettings() {
+        Intent myAppSettings = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName()));
+        myAppSettings.addCategory(Intent.CATEGORY_DEFAULT);
+        myAppSettings.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivityForResult(myAppSettings, 400);
     }
 
     public int getScreenOrientation() {
@@ -211,6 +320,81 @@ public class VideoInfoActivity extends FragmentActivity {
                 videoView.seekTo((int) prevVideoTime);
                 System.out.println("Current Position : " + videoView.getCurrentPosition());
             }
+
+        try {
+            boolean installedFbApp = checkIfAppInstalled("com.facebook.katana");
+            boolean installedTwitterApp = checkIfAppInstalled("com.twitter.android");
+
+            if (facebookShareView != null && facebookShareView.getVisibility() == View.VISIBLE && installedFbApp) {
+                facebookShareView.setVisibility(View.GONE);
+                if (flatButtonFacebook != null && flatButtonFacebook.getVisibility() == View.GONE) {
+                    flatButtonFacebook.setVisibility(View.VISIBLE);
+                    if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                        makeShareDialog();
+                    }
+
+                }
+            }
+            if (facebookShareView != null && facebookShareView.getVisibility() == View.VISIBLE && !installedFbApp) {
+                if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                    makeShareDialog();
+                }
+
+            }
+            if (twitterShareView != null && twitterShareView.getVisibility() == View.VISIBLE && !installedTwitterApp) {
+                if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                    makeShareDialog();
+                }
+            }
+
+            if (twitterShareView != null && twitterShareView.getVisibility() == View.VISIBLE && installedTwitterApp) {
+                twitterShareView.setVisibility(View.GONE);
+                if (flatButtonTwitter != null && flatButtonTwitter.getVisibility() == View.GONE) {
+                    flatButtonTwitter.setVisibility(View.VISIBLE);
+                    if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                        makeShareDialog();
+                    }
+                }
+            }
+
+            if (flatButtonFacebook != null && flatButtonFacebook.getVisibility() == View.VISIBLE && !installedFbApp) {
+                flatButtonFacebook.setVisibility(View.GONE);
+                if (facebookShareView != null && facebookShareView.getVisibility() == View.GONE) {
+                    facebookShareView.setVisibility(View.VISIBLE);
+                    if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                        makeShareDialog();
+                    }
+                }
+            }
+
+            if (flatButtonTwitter != null && flatButtonTwitter.getVisibility() == View.VISIBLE && !installedTwitterApp) {
+                flatButtonTwitter.setVisibility(View.GONE);
+                if (twitterShareView != null && twitterShareView.getVisibility() == View.GONE) {
+                    twitterShareView.setVisibility(View.VISIBLE);
+                    if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                        linearLayout.setVisibility(View.GONE);
+                        if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                            makeShareDialog();
+                        }
+                    }
+                }
+            }
+
+            if (flatButtonFacebook != null && flatButtonFacebook.getVisibility() == View.VISIBLE && installedFbApp) {
+                if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                    makeShareDialog();
+                }
+            }
+            if (flatButtonTwitter != null && flatButtonTwitter.getVisibility() == View.VISIBLE && installedTwitterApp) {
+                if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                    makeShareDialog();
+                }
+            }
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -236,10 +420,37 @@ public class VideoInfoActivity extends FragmentActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        callbackManager.onActivityResult(requestCode, resultCode, data);
-        twitterLoginButton.onActivityResult(requestCode, resultCode,
-                data);
+        if (callbackManager != null) {
+            callbackManager.onActivityResult(requestCode, resultCode, data);
+        }
+        if (twitterLoginButton != null) {
+            twitterLoginButton.onActivityResult(requestCode, resultCode,
+                    data);
+        }
+
+        if (requestCode == 400) {
+            isBackToSplashScreen = true;
+        }
+
+        if (requestCode == 100) {
+            // Toast.makeText(VideoInfoActivity.this, "Request Code : ", Toast.LENGTH_SHORT).show();
+            boolean installedFbApp = checkIfAppInstalled("com.facebook.katana");
+            boolean installedTwitterApp = checkIfAppInstalled("com.twitter.android");
+
+            if (facebookShareView != null && facebookShareView.getVisibility() == View.VISIBLE && installedFbApp) {
+                facebookShareView.setVisibility(View.GONE);
+            }
+            if (twitterShareView != null && twitterShareView.getVisibility() == View.VISIBLE && installedTwitterApp) {
+                twitterShareView.setVisibility(View.GONE);
+            }
+
+            if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                linearLayout.setVisibility(View.GONE);
+                makeShareDialog();
+            }
+        }
     }
+
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -250,6 +461,9 @@ public class VideoInfoActivity extends FragmentActivity {
             rlActionStrip.setVisibility(View.GONE);
             rlVideoNameStrip.setVisibility(View.GONE);
             circleIndicator.setVisibility(View.GONE);
+            if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                linearLayout.setVisibility(View.GONE);
+            }
 
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
             getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -279,6 +493,9 @@ public class VideoInfoActivity extends FragmentActivity {
         rlActionStrip.setVisibility(View.GONE);
         rlVideoNameStrip.setVisibility(View.GONE);
         circleIndicator.setVisibility(View.GONE);
+        if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+            linearLayout.setVisibility(View.GONE);
+        }
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
@@ -319,6 +536,7 @@ public class VideoInfoActivity extends FragmentActivity {
         tvVideoName = (TextView) findViewById(R.id.tv_video_name);
         imgToggleButton = (ImageView) findViewById(R.id.imgToggleButton);
         viewPager = (ViewPager) findViewById(R.id.pager);
+        viewPagerRelativeView = (RelativeLayout) findViewById(R.id.relative_view_pager);
         circleIndicator = (CirclePageIndicator) findViewById(R.id.indicator);
         circleIndicator.setPageColor(getResources().getColor(R.color.app_dark_grey));
         circleIndicator.setStrokeColor(Color.parseColor("#999999"));
@@ -327,11 +545,12 @@ public class VideoInfoActivity extends FragmentActivity {
         llVideoLoader = (LinearLayout) findViewById(R.id.ll_video_loader);
 
         bufferProgressBar = (ProgressBar) findViewById(R.id.progressbar);
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             bufferProgressBar.setIndeterminateDrawable(getResources().getDrawable(R.drawable.circle_progress_bar_lower));
-        else
+        } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
             bufferProgressBar.setIndeterminateDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.progress_large_material, null));
-
+        }
+        shareVideoLayout = (LinearLayout) findViewById(R.id.share_video_layout);
         imgVideoClose = (ImageView) findViewById(R.id.img_video_close);
         imgVideoShare = (ImageView) findViewById(R.id.img_video_share);
         imgVideoStillUrl = (ImageView) findViewById(R.id.image_video_still);
@@ -432,7 +651,7 @@ public class VideoInfoActivity extends FragmentActivity {
             @Override
             public boolean onError(MediaPlayer mp, int what, int extra) {
                 llVideoLoader.setVisibility(View.GONE);
-                showToastMessage("Unable to play video");
+                showToastMessageForBanner("Unable to play video");
                 videoView.stopPlayback();
                 mVideoControlHandler.removeCallbacks(videoRunning);
                 return true;
@@ -497,6 +716,10 @@ public class VideoInfoActivity extends FragmentActivity {
                             mController.setVisibility(View.INVISIBLE);
                         }
                     }, 1000);
+
+                    if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                        linearLayout.setVisibility(View.GONE);
+                    }
                 }
                 return false;
             }
@@ -507,13 +730,13 @@ public class VideoInfoActivity extends FragmentActivity {
             @Override
             public void onCompletion(MediaPlayer mp) {
                 // TODO Auto-generated method stub
-               // isFirstTime = true;
+                // isFirstTime = true;
                 isVideoCompleted = true;
                 imgVideoStillUrl.setVisibility(View.VISIBLE);
                 mVideoControlHandler.removeCallbacks(videoRunning);
 
-              //  mp.reset();
-                 videoView.stopPlayback();
+                //  mp.reset();
+                videoView.stopPlayback();
 
                 if (mController != null) {
                     mController.removeAllViews();
@@ -558,11 +781,32 @@ public class VideoInfoActivity extends FragmentActivity {
             }
         });
 
-        imgVideoShare.setOnClickListener(new View.OnClickListener() {
+        shareVideoLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 //                Toast.makeText(VideoInfoActivity.this, "Share Button Clicked", Toast.LENGTH_LONG).show();
+
+                boolean installedFbApp = checkIfAppInstalled("com.facebook.katana");
+                boolean installedTwitterApp = checkIfAppInstalled("com.twitter.android");
+
+                System.out.println("installed app : " + installedFbApp + " twitter " + installedTwitterApp);
+//                if (!installedFbApp && !installedTwitterApp) {
+//
+//                    if (videoView != null) {
+//                        if (videoView.isPlaying()) {
+//                            videoView.pause();
+//                        }
+//                    }
+//                    String PlayStoreUrl = "https://play.google.com/store?hl=en";
+//                    showConfirmSharingDialog("Please installed facebook App and Twitter App for sharing with your friends.", PlayStoreUrl);
+//                } else {
+                //  new ShareTwitter().execute();
+
                 makeShareDialog();
+//                }
+
+
+
             }
         });
 
@@ -616,11 +860,24 @@ public class VideoInfoActivity extends FragmentActivity {
                         mPostTask.execute();
                     }
                 } else {
-                    ((MainActivity) context).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
+                    showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
                     imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
                 }
             }
         });
+
+        viewPagerRelativeView.setOnClickListener(new View.OnClickListener()
+
+                                                 {
+                                                     @Override
+                                                     public void onClick(View v) {
+                                                         if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                                                             linearLayout.setVisibility(View.GONE);
+                                                         }
+                                                     }
+                                                 }
+
+        );
     }
 
 
@@ -750,6 +1007,39 @@ public class VideoInfoActivity extends FragmentActivity {
         }, 2000);
     }
 
+    public void showToastMessageForBanner(String message) {
+        View includedLayout = findViewById(R.id.llToast);
+        // Handler handler = new Handler();
+        final TextView text = (TextView) includedLayout.findViewById(R.id.tv_toast_message);
+        text.setText(message);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            animation = AnimationUtils.loadAnimation(this,
+                    R.anim.abc_fade_in);
+
+            text.setAnimation(animation);
+            text.setVisibility(View.VISIBLE);
+        } else {
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    text.setVisibility(View.VISIBLE);
+                }
+            }, 50);
+        }
+
+
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                animation = AnimationUtils.loadAnimation(VideoInfoActivity.this,
+                        R.anim.abc_fade_out);
+
+                text.setAnimation(animation);
+                text.setVisibility(View.GONE);
+            }
+        }, 2000);
+    }
+
     public void getScreenDimensions() {
 
         Point size = new Point();
@@ -796,14 +1086,37 @@ public class VideoInfoActivity extends FragmentActivity {
                     .getSerializableExtra(GlobalConstants.VIDEO_OBJ);
             videoCategory = intent
                     .getStringExtra(GlobalConstants.KEY_CATEGORY);
+
+            if (videoObject != null) {
+                new ShareTwitter().execute();
+            }
         }
     }
 
-
-
-
+    private View view;
+    private Uri imageUri = null;
+    public static LinearLayout linearLayout;
+    private ImageView facebookShareView;
+    private ImageView twitterShareView;
+    private ImageView flatButtonFacebook;
+    private ImageView flatButtonTwitter;
     public void makeShareDialog() {
-        View view = context.getLayoutInflater().inflate(R.layout.share_dialog, null);
+        boolean installedFbApp = checkIfAppInstalled("com.facebook.katana");
+        boolean installedTwitterApp = checkIfAppInstalled("com.twitter.android");
+        view = findViewById(R.id.sharinglayout);
+
+        linearLayout = (LinearLayout) view.findViewById(R.id.social_sharing_linear_layout);
+
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                animation = AnimationUtils.loadAnimation(VideoInfoActivity.this, R.anim.sliding_up_dialog);
+                linearLayout.setAnimation(animation);
+                linearLayout.setVisibility(View.VISIBLE);
+            }
+        }, 500);
+
         int Measuredwidth = 0;
         try {
             Point size = new Point();
@@ -820,12 +1133,11 @@ public class VideoInfoActivity extends FragmentActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        Button flatButtonFacebook = (Button) view.findViewById(R.id.facebookShare);
-        Button flatButtonTwitter = (Button) view.findViewById(R.id.twitterShare);
 
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int) (Measuredwidth * 0.40), LinearLayout.LayoutParams.WRAP_CONTENT);
-        flatButtonFacebook.setLayoutParams(lp);
-        flatButtonTwitter.setLayoutParams(lp);
+        flatButtonFacebook = (ImageView) view.findViewById(R.id.facebookShare);
+        flatButtonTwitter = (ImageView) view.findViewById(R.id.twitterShare);
+        facebookShareView = (ImageView) view.findViewById(R.id.facebookShareView);
+        twitterShareView = (ImageView) view.findViewById(R.id.twitterShareView);
 
         twitterLoginButton = (TwitterLoginButton) view.findViewById(R.id.twitter_login_button_share);
 
@@ -837,20 +1149,24 @@ public class VideoInfoActivity extends FragmentActivity {
 
                         Intent intent = new TweetComposer.Builder(VideoInfoActivity.this)
                                 .text(videoObject.getVideoName() + "\n" + videoObject.getVideoLongDescription() + "\n\n")
-                                .url(new URL(videoObject.getVideoShortUrl()))
+                                .url(new URL(videoObject.getVideoSocialUrl()))
+                                .image(imageUri)
                                 .createIntent();
-
                         startActivityForResult(intent, 100);
                     } else if (videoObject.getVideoName() != null) {
+
                         Intent intent = new TweetComposer.Builder(VideoInfoActivity.this)
                                 .text(videoObject.getVideoName() + "\n\n")
-                                .url(new URL(videoObject.getVideoShortUrl()))
+                                .url(new URL(videoObject.getVideoSocialUrl()))
+                                .image(imageUri)
                                 .createIntent();
 
                         startActivityForResult(intent, 100);
                     }
 
-
+                    if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                        linearLayout.setVisibility(View.GONE);
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -863,80 +1179,143 @@ public class VideoInfoActivity extends FragmentActivity {
             }
         });
 
-        flatButtonFacebook.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                progressDialog.dismiss();
-                if (AppController.getInstance().getUserId() == GlobalConstants.DEFAULT_USER_ID) {
-                    showConfirmLoginDialog(GlobalConstants.SHARE_MESSAGE);
-                } else if (Utils.isInternetAvailable(VideoInfoActivity.this)) {
-                    if (videoObject.getVideoShortUrl() != null) {
-                        if (videoObject.getVideoShortUrl().length() == 0) {
-                            showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
-                        } else {
+        if (!installedFbApp) {
+
+            facebookShareView.setVisibility(View.VISIBLE);
+            flatButtonFacebook.setVisibility(View.GONE);
+            facebookShareView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (videoView != null) {
+                        if (videoView.isPlaying()) {
                             videoView.pause();
-                            shareVideoUrlFacebook(videoObject.getVideoShortUrl(), videoObject.getVideoStillUrl(), videoObject.getVideoLongDescription(), videoObject.getVideoName(), context);
+                        }
+                    }
+                    String facebookPlayStoreUrl = "https://play.google.com/store/apps/details?id=com.facebook.katana&hl=en";
+                    showConfirmSharingDialog("You have not installed Facebook App. Would you like to install now?", facebookPlayStoreUrl);
+                }
+            });
+
+
+        } else {
+            facebookShareView.setVisibility(View.GONE);
+            flatButtonFacebook.setVisibility(View.VISIBLE);
+            flatButtonFacebook.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    //   progressDialog.dismiss();
+                    if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                        linearLayout.setVisibility(View.GONE);
+                    }
+                    if (AppController.getInstance().getUserId() == GlobalConstants.DEFAULT_USER_ID) {
+                        showConfirmLoginDialog(GlobalConstants.SHARE_MESSAGE);
+                    } else if (Utils.isInternetAvailable(VideoInfoActivity.this)) {
+                        if (videoObject.getVideoSocialUrl() != null) {
+                            if (videoObject.getVideoSocialUrl().length() == 0) {
+                                showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
+                            } else {
+                                videoView.pause();
+                                shareVideoUrlFacebook(videoObject.getVideoId(), videoObject.getVideoSocialUrl(), videoObject.getVideoStillUrl(), videoObject.getVideoLongDescription(), videoObject.getVideoName(), context);
+                            }
+                        } else {
+                            showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
                         }
                     } else {
-                        showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
+                        showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
                     }
-                } else {
-                    showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
                 }
-            }
-        });
+            });
+        }
+        if (!installedTwitterApp) {
 
-        flatButtonTwitter.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                progressDialog.dismiss();
-                if (AppController.getInstance().getUserId() == GlobalConstants.DEFAULT_USER_ID) {
-                    showConfirmLoginDialog(GlobalConstants.SHARE_MESSAGE);
-                } else if (Utils.isInternetAvailable(VideoInfoActivity.this)) {
-                    if (videoObject.getVideoShortUrl() != null) {
-                        if (videoObject.getVideoShortUrl().length() == 0) {
-                            showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
-                        } else {
+            twitterShareView.setVisibility(View.VISIBLE);
+            flatButtonTwitter.setVisibility(View.GONE);
+            twitterShareView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (videoView != null) {
+                        if (videoView.isPlaying()) {
                             videoView.pause();
-                            TwitterSession session = Twitter.getSessionManager().getActiveSession();
-                            if (session == null) {
-                                twitterLoginButton.performClick();
+                        }
+                    }
+                    String twitterPlayStoreUrl = "https://play.google.com/store/apps/details?id=com.twitter.android&hl=en";
+                    showConfirmSharingDialog("You have not installed Twitter App. Would you like to install now?", twitterPlayStoreUrl);
+                }
+            });
+
+
+        } else {
+
+            twitterShareView.setVisibility(View.GONE);
+            flatButtonTwitter.setVisibility(View.VISIBLE);
+            flatButtonTwitter.setOnClickListener(new View.OnClickListener() {
+                @TargetApi(Build.VERSION_CODES.KITKAT)
+                @Override
+                public void onClick(View v) {
+                    //  progressDialog.dismiss();
+                    if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                        linearLayout.setVisibility(View.GONE);
+                    }
+                    if (AppController.getInstance().getUserId() == GlobalConstants.DEFAULT_USER_ID) {
+                        showConfirmLoginDialog(GlobalConstants.SHARE_MESSAGE);
+                    } else if (Utils.isInternetAvailable(VideoInfoActivity.this)) {
+                        if (videoObject.getVideoSocialUrl() != null) {
+                            if (videoObject.getVideoSocialUrl().length() == 0) {
+                                showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
                             } else {
-                                try {
-                                    if (videoObject.getVideoName() != null && videoObject.getVideoLongDescription() != null) {
+                                videoView.pause();
+                                TwitterSession session = Twitter.getSessionManager().getActiveSession();
+                                if (session == null) {
+                                    twitterLoginButton.performClick();
+                                } else {
+                                    try {
+                                        if (videoObject.getVideoName() != null && videoObject.getVideoLongDescription() != null) {
 
-                                        TweetComposer.Builder builder = new TweetComposer.Builder(context)
-                                                .text(videoObject.getVideoName() + "\n" + videoObject.getVideoLongDescription() + "\n\n")
-                                                .url(new URL(videoObject.getVideoShortUrl()));
+                                            try {
+                                                TweetComposer.Builder builder = new TweetComposer.Builder(context)
+                                                        .text(videoObject.getVideoName() + "\n\n")
+                                                        .url(new URL(videoObject.getVideoSocialUrl()))
+                                                        .image(imageUri);
 
-                                        builder.show();
-                                    } else if (videoObject.getVideoName() != null) {
-                                        TweetComposer.Builder builder = new TweetComposer.Builder(context)
-                                                .text(videoObject.getVideoName() + "\n\n")
-                                                .url(new URL(videoObject.getVideoShortUrl()));
+                                                builder.show();
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
+                                            }
 
-                                        builder.show();
+                                        } else if (videoObject.getVideoName() != null) {
+
+                                            try {
+                                                TweetComposer.Builder builder = new TweetComposer.Builder(context)
+                                                        .text(videoObject.getVideoName() + "\n\n")
+                                                        .url(new URL(videoObject.getVideoSocialUrl()))
+                                                        .image(imageUri);
+
+                                                builder.show();
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
                                     }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
                                 }
                             }
+                        } else {
+                            showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
                         }
                     } else {
-                        showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
+                        showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
                     }
-                } else {
-                    showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
                 }
-            }
-        });
+            });
+        }
 
-        progressDialog = new ProgressDialog(context);
-        progressDialog.setCanceledOnTouchOutside(false);
-        progressDialog.setCancelable(true);
-        progressDialog.setCanceledOnTouchOutside(true);
-        progressDialog.show();
-        progressDialog.setContentView(view);
+//        progressDialog = new ProgressDialog(context);
+//        progressDialog.setCanceledOnTouchOutside(false);
+//        progressDialog.setCancelable(true);
+//        progressDialog.setCanceledOnTouchOutside(true);
+//        progressDialog.show();
+//        progressDialog.setContentView(view);
     }
 
     public void stopVideoEvents() {
@@ -1040,7 +1419,42 @@ public class VideoInfoActivity extends FragmentActivity {
         alertDialog.show();
     }
 
-    public void shareVideoUrlFacebook(String videourl, String imageurl, String description, String name, final Activity context) {
+    public void showConfirmSharingDialog(String message, final String playStoreUrl) {
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(context);
+        alertDialogBuilder
+                .setMessage(message);
+        alertDialogBuilder.setTitle("Alert");
+        alertDialogBuilder.setPositiveButton("Install",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface arg0, int arg1) {
+
+                        if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                            linearLayout.setVisibility(View.GONE);
+                        }
+
+                        Intent intent = new Intent(Intent.ACTION_VIEW);
+                        intent.setData(Uri.parse(playStoreUrl));
+                        startActivityForResult(intent, 100);
+
+                    }
+                });
+
+        alertDialogBuilder.setNegativeButton("Cancel",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface arg0, int arg1) {
+                        alertDialog.dismiss();
+                    }
+                });
+
+        alertDialog = alertDialogBuilder.create();
+        alertDialog.setCancelable(false);
+        alertDialog.setCanceledOnTouchOutside(false);
+        alertDialog.show();
+    }
+
+    public void shareVideoUrlFacebook(final long videoId, String videourl, String imageurl, String description, String name, final Activity context) {
         try {
             final FacebookCallback<Sharer.Result> shareCallback = new FacebookCallback<Sharer.Result>() {
                 @Override
@@ -1065,6 +1479,15 @@ public class VideoInfoActivity extends FragmentActivity {
                     if (!installed)
                         showToastMessage(GlobalConstants.FACEBOOK_POST_SUCCESS_MESSAGE);
                     GlobalConstants.IS_SHARING_ON_FACEBOOK = false;
+
+                    if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                        linearLayout.setVisibility(View.GONE);
+                    }
+
+                    String videoIdData = String.valueOf(videoId);
+
+//                    shareInfoTask = new shareInfoTask();
+//                    shareInfoTask.execute(videoIdData);
                 }
             };
 
@@ -1104,6 +1527,34 @@ public class VideoInfoActivity extends FragmentActivity {
         }
     }
 
+    String postResultData;
+    AsyncTask<String, Void, String> shareInfoTask;
+
+    public class shareInfoTask extends AsyncTask<String, Void, String> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected String doInBackground(String... params) {
+            try {
+                postResultData = AppController.getInstance().getServiceManager().getVaultService().postSharingInfo(params[0].toString());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            return postResultData;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+
+        }
+    }
+
     public static boolean hasPublishPermission() {
         AccessToken accessToken = AccessToken.getCurrentAccessToken();
         return accessToken != null && accessToken.getPermissions().contains("publish_actions");
@@ -1115,6 +1566,22 @@ public class VideoInfoActivity extends FragmentActivity {
     }
 
     private boolean checkIfFacebookAppInstalled(String uri) {
+        PackageManager pm = getPackageManager();
+        boolean app_installed = false;
+        try {
+            pm.getPackageInfo(uri, PackageManager.GET_ACTIVITIES);
+            app_installed = true;
+            //Check if the Facebook app is disabled
+            ApplicationInfo ai = getPackageManager().getApplicationInfo(uri, 0);
+            app_installed = ai.enabled;
+        } catch (PackageManager.NameNotFoundException e) {
+            app_installed = false;
+        }
+
+        return app_installed;
+    }
+
+    private boolean checkIfAppInstalled(String uri) {
         PackageManager pm = getPackageManager();
         boolean app_installed = false;
         try {
@@ -1166,10 +1633,42 @@ public class VideoInfoActivity extends FragmentActivity {
             @Override
             protected void onCurrentProfileChanged(Profile oldProfile, Profile currentProfile) {
                 if (currentProfile != null && GlobalConstants.IS_SHARING_ON_FACEBOOK) {
-                    shareVideoUrlFacebook(videoObject.getVideoShortUrl(), videoObject.getVideoStillUrl(), videoObject.getVideoLongDescription(), videoObject.getVideoName(), context);
+                    shareVideoUrlFacebook(videoObject.getVideoId(), videoObject.getVideoSocialUrl(), videoObject.getVideoStillUrl(), videoObject.getVideoLongDescription(), videoObject.getVideoName(), context);
                 }
             }
         };
     }
+
+    private class ShareTwitter extends AsyncTask<Void, Void, Uri> {
+
+        protected Uri doInBackground(Void... arg0) {
+            Uri imageUri = null;
+            try {
+                if (videoObject.getVideoStillUrl() != null) {
+                    InputStream is = new URL(videoObject.getVideoStillUrl().trim()).openStream();
+                    Bitmap bitmap = BitmapFactory.decodeStream(is);
+
+                    String path = MediaStore.Images.Media.insertImage(getContentResolver(), bitmap, "Title", null);
+                    imageUri = Uri.parse(path);
+                } else {
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            return imageUri;
+        }
+
+        protected void onPostExecute(Uri result) {
+            try {
+                imageUri = result;
+
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        }
+    }
+
 
 }

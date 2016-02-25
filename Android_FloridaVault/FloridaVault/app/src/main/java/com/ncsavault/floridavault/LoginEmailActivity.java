@@ -790,4 +790,6 @@ public class LoginEmailActivity extends BaseActivity {
         alertDialog.setCanceledOnTouchOutside(false);
         alertDialog.show();
     }
+
+
 }

@@ -7,6 +7,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.content.res.ResourcesCompat;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -84,11 +85,11 @@ public class VideoInfoPagerFragment extends BaseFragment {
         scrollView = (ScrollView) view.findViewById(R.id.scroll_view);
         progressBar = (ProgressBar) view.findViewById(R.id.progressbar);
 
-        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             progressBar.setIndeterminateDrawable(getResources().getDrawable(R.drawable.circle_progress_bar_lower));
-        else
+        } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
             progressBar.setIndeterminateDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.progress_large_material, null));
-
+        }
         tvRecordsStatus = (TextView) view.findViewById(R.id.tv_records_status);
 
     }
@@ -99,7 +100,7 @@ public class VideoInfoPagerFragment extends BaseFragment {
             llRelatedVideos.setVisibility(View.GONE);
             scrollView.setVisibility(View.VISIBLE);
             tvVideoLongDescription.setText(videoObject.getVideoLongDescription());
-        }else {
+        } else {
             scrollView.setVisibility(View.GONE);
             llRelatedVideos.setVisibility(View.VISIBLE);
             relatedVideosTask = new FetchRelatedRecords();
@@ -133,6 +134,31 @@ public class VideoInfoPagerFragment extends BaseFragment {
                     }
                 } else {
                     ((VideoInfoActivity) getActivity()).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
+                }
+
+                if (VideoInfoActivity.linearLayout != null) {
+                    VideoInfoActivity.linearLayout.setVisibility(View.GONE);
+                }
+            }
+
+        });
+
+        scrollView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (VideoInfoActivity.linearLayout != null) {
+                    VideoInfoActivity.linearLayout.setVisibility(View.GONE);
+                }
+                return false;
+            }
+        });
+
+
+        llRelatedVideos.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (VideoInfoActivity.linearLayout != null) {
+                    VideoInfoActivity.linearLayout.setVisibility(View.GONE);
                 }
             }
         });

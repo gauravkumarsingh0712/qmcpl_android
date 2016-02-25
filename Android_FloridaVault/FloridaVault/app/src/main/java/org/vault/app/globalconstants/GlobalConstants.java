@@ -7,9 +7,9 @@ public class GlobalConstants {
 
 
     /*******************IMPORTANT CONSTANTS THAT CHANGES IN DIFFERENT VAULT APPS********************
-    ***********************************************************************************************/
+     ***********************************************************************************************/
 
-    //Florida Vault Twitter App Keys
+    //UGA Vault Twitter App Keys
     public static final String TWITTER_CONSUMER_KEY = "8PmUOfrzsYO96shEwi8mFtAiU";
     public static final String TWITTER_CONSUMER_SECRET = "qRPfHL1Y492jhzH2s1zICH4JM0IzqtFQgQ9wuEWCgyiFGLEh9H";
 
@@ -17,6 +17,8 @@ public class GlobalConstants {
     public static final String APP_NAME = "floridavault";
     public static final String APP_VERSION = "1.1";
     public static final String DEVICE_TYPE = "Android";
+    public static final String APP_FULL_NAME = "Florida Vault";
+    public static final String APP_SCHOOL_NAME = "FLORIDA";
 
     // --------Banner image url-----------
     public static final String URL_FEATUREDBANNER = "http://www.ncsavault.com/banner/ufl/gfeatured.png";
@@ -68,8 +70,9 @@ public class GlobalConstants {
 
     public static final String HOCKEY_APP_ID = "f30a2af7738666c02c23f62eff102df4";
 
+    public static final String MAIL_CHIMP_LIST_ID = "d29c4e46b0";
     /***********************************************************************************************
-    ***********************************************************************************************/
+     ***********************************************************************************************/
 
     // ------- Key's-------
     public static final String KEY_VIDEONAME = "name";
@@ -77,7 +80,7 @@ public class GlobalConstants {
     public static final String RELATED_VIDEO_CATEGORY = "Related Videos";
 
     //Production Url
-    public static final String BASE_URL = "http://vaultservices.cloudapp.net/api";
+     public static final String BASE_URL = "http://vaultservices.cloudapp.net/api";
 
     //Staging Url
    // public static final String BASE_URL = "http://0b78b111a9d0410784caa8a634aa3b90.cloudapp.net/api";
@@ -98,6 +101,7 @@ public class GlobalConstants {
     public static final String GET_ALL_TAB_BANNER_DATA_URL = BASE_URL + "/NavigationTab/ListTabsInfo";
     public static final String GET_TAB_BANNER_DATA_URL = BASE_URL + "/NavigationTab/ListTabsInfo";
     public static final String GET_VIDEO_DATA_FROM_BANNER = BASE_URL + "/NavigationTab/ListVideoPlaylistInfo";
+    public static final String SOCIAL_SHARING_INFO = BASE_URL + "/FavoriteTab/PostSocialSharingInfo";
 
     //User specific API calls
     public static final String VALIDATE_EMAIL_URL = BASE_URL + "/MobileUsers/validateEmail?emailID=";
@@ -109,6 +113,7 @@ public class GlobalConstants {
     public static final String GET_USER_DATA_URL = BASE_URL + "/MobileUsers/getUserProfileData";
     public static final String VALIDATE_SOCIAL_LOGIN_URL = BASE_URL + "/MobileUsers/ValidateEmailAndStatus";
     public static final String CHANGE_PASSWORD_URL = BASE_URL + "/MobileUsers/PostChangePass";
+    public static final String POST_MAIL_CHIMP_DATA = BASE_URL + "/MobileUsers/PostMailChimpData";
 
     public static boolean IS_RETURNED_FROM_PLAYER = false;
 
@@ -152,6 +157,7 @@ public class GlobalConstants {
 
     public static final String PREF_VAULT_SKIP_LOGIN = "is_skip_login";
     public static final String PREF_PULL_OPTION_HEADER = "is_option_header_shown";
+    public static final String PREF_JOIN_MAIL_CHIMP = "is_option_join_mail_chimp";
 
     //Sub menu items name
     public static final String SUPPORT_TEXT = "Support";
@@ -167,8 +173,8 @@ public class GlobalConstants {
             GlobalConstants.PLAYERS, GlobalConstants.COACHES_ERA, GlobalConstants.OPPONENTS,
             GlobalConstants.FAVORITES};
     public static final String[] tabsDbIdentifierList = new String[]{GlobalConstants.OKF_FEATURED,
-         GlobalConstants.OKF_PLAYERS, GlobalConstants.OKF_COACH, GlobalConstants.OKF_OPPONENT,
-         GlobalConstants.FAVORITES};
+            GlobalConstants.OKF_PLAYERS, GlobalConstants.OKF_COACH, GlobalConstants.OKF_OPPONENT,
+            GlobalConstants.FAVORITES};
     public static final String[] tabType = new String[]{"EdgeToEdge", "Wide", "EdgeToEdge", "Wide", "Wide"};
 
     // ------- fonts path--------
@@ -210,5 +216,17 @@ public class GlobalConstants {
     public static final String DISPLAY_MESSAGE_ACTION =
             "Display Message";
 
-    public static final String EXTRA_MESSAGE = "message";
+    public static final String DO_YOU_WANT_TO_JOIN_OUR_MAILING_LIST = "We won't spam you, or sell your email. We simply want to keep informed about whats going on at FLORIDA VAULT.\n";
+
+    private static final int SECOND = 1000;
+    private static final int MINUTE = 60 * SECOND;
+    private static final int HOUR = 60 * MINUTE;
+    private static final int DAY = 24 * HOUR;
+    public static final int AUTO_REFRESH_INTERVAL = MINUTE*2;//HOUR *2;
+
+    public static final String MAIL_CHIMP_API_KEY = "297de1306cfcfc857f795c416220301a-us12";
+
+    public static final String UGA_VAULT_PERMISSION = "Allow Florida Vault to access photos,media,files and location on your device. Please go to app settings and allow permissions.";
+    public static final String UGA_VAULT_RWAD_PHONE_STATE_PERMISSION = "Allow Florida Vault to access read phone state on your device. Please go to app settings and allow permission.";
+
 }

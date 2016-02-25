@@ -1,0 +1,62 @@
+[
+{
+	"tabName" : "Featured",
+	"tabId" : 11,
+	"tabPosition" : 1,
+	"lastServerTabUpdate" : 141553412390,
+	"bannerUrl" :  "http://www.theblogboutique.com/wp-content/uploads/2009/11/simply-solids-turquoise.png",
+	"bannerId" :	"111",
+	"lastBannerUpdate" :	243422866788,
+	"isBannerActivated" : "true",
+	"isHyperLinkAvailable" : "true",
+	"actionUrl" : "http://10.1.1.39:8080/timesheet/showTimesheetDetails.do"
+},
+{
+	"tabName" : "Games",
+	"tabId" : 12,
+	"tabPosition" : 2,
+	"lastServerTabUpdate" : 123585723590,
+	"bannerUrl" :  "http://www.whs.on2b.com/images/HeaderBG.jpg",
+	"bannerId" :	"112",
+	"lastBannerUpdate" :	12356567890,
+	"isBannerActivated" : "true",
+	"isHyperLinkAvailable" : "true",
+	"actionUrl" : "http://10.1.1.39:8080/timesheet/showTimesheetDetails.do"
+},
+{
+	"tabName" : "Players",
+	"tabId" : 13,
+	"tabPosition" : 3,
+	"lastServerTabUpdate" : 123652357890,
+	"bannerUrl" :  "http://theblogboutique.com/wp-content/uploads/2011/02/Red-header-background-C40000.jpg",
+	"bannerId" :	"113",
+	"lastBannerUpdate" :	1234512367890,
+	"isBannerActivated" : "true",
+	"isHyperLinkAvailable" : "true",
+	"actionUrl" : "http://www.google.com"
+},
+{
+	"tabName" : "Opponents",
+	"tabId" : 14,
+	"tabPosition" : 4,
+	"lastServerTabUpdate" : 1234567890,
+	"bannerUrl" :  "http://blog.travellerspoint.com/img/1/bg-header.jpg",
+	"bannerId" :	"114",
+	"lastBannerUpdate" :	123454567890,
+	"isBannerActivated" : "true",
+	"isHyperLinkAvailable" : "true",
+	"actionUrl" : "http://www.google.com"
+},
+{
+	"tabName" : "Coaches Era",
+	"tabId" : 15,
+	"tabPosition" : 5,
+	"lastServerTabUpdate" : 1234567890,
+	"bannerUrl" :  "http://www.theblogboutique.com/wp-content/uploads/2009/11/simply-solids-turquoise.png",
+	"bannerId" :	"115",
+	"lastBannerUpdate" :	1234567890,
+	"isBannerActivated" : "true",
+	"isHyperLinkAvailable" : "true",
+	"actionUrl" : "http://www.google.com"
+}
+]

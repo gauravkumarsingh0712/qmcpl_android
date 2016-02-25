@@ -1,0 +1,12 @@
+{
+	"tabName" : "Featured",
+	"tabId" : 13,
+	"tabPosition" : 3,
+	"lastServerTabUpdate" : 1234567890,
+	"bannerUrl" :  "http://blog.travellerspoint.com/img/1/bg-header.jpg",
+	"bannerId" :	"113",
+	"lastBannerUpdate" :	1234567890,
+	"isBannerActivated" : "true",
+	"isHyperLinkAvailable" : "true",
+	"actionUrl" : "http://www.google.com"
+}

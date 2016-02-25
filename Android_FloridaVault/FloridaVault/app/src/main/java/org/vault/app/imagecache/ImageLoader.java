@@ -11,7 +11,6 @@ import android.view.Display;
 import android.view.WindowManager;
 import android.widget.ImageView;
 
-
 import com.ncsavault.floridavault.R;
 
 import org.vault.app.utils.Utils;

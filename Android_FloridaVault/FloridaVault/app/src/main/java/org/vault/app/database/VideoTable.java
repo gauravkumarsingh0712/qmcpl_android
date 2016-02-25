@@ -35,6 +35,7 @@ public class VideoTable {
     public static final String KEY_PLAYLIST_LONG_DESC = "playlist_long_desc";
     public static final String KEY_PLAYLIST_TAGS = "playlist_tags";
     public static final String KEY_PLAYLIST_REFERENCE_ID = "playlist_reference_id";
+    public static final String KEY_VIDEO_SOCIAL_URL = "video_social_url";
 
     public static final String CREATE_VIDEO_TABLE = "CREATE TABLE "
             + VIDEO_TABLE + "(" + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," + KEY_VIDEO_ID + " INTEGER," + KEY_VIDEO_NAME
@@ -43,7 +44,7 @@ public class VideoTable {
             + KEY_VIDEO_THUMB_URL + " TEXT," + KEY_VIDEO_STILL_URL + " TEXT," + KEY_VIDEO_COVER_URL + " TEXT," + KEY_VIDEO_WIDE_STILL_URL + " TEXT," + KEY_VIDEO_BADGE_URL + " TEXT," + KEY_VIDEO_DURATION
             + " INTEGER," + KEY_VIDEO_TAGS + " TEXT," + KEY_VIDEO_IS_FAVORITE + " INTEGER," + KEY_VIDEO_INDEX + " INTEGER,"
             + KEY_PLAYLIST_NAME + " TEXT," + KEY_PLAYLIST_ID + " INTEGER," + KEY_PLAYLIST_THUMB_URL
-            + " TEXT," + KEY_PLAYLIST_SHORT_DESC + " TEXT," + KEY_PLAYLIST_LONG_DESC + " TEXT," + KEY_PLAYLIST_TAGS + " TEXT," + KEY_PLAYLIST_REFERENCE_ID + " TEXT" + ")";
+            + " TEXT," + KEY_PLAYLIST_SHORT_DESC + " TEXT," + KEY_PLAYLIST_LONG_DESC + " TEXT," + KEY_PLAYLIST_TAGS + " TEXT," + KEY_PLAYLIST_REFERENCE_ID + " TEXT," + KEY_VIDEO_SOCIAL_URL + " TEXT" + ")";
 
     // ------ Raw queries-----------
 

@@ -25,6 +25,25 @@
             android:scaleType="centerCrop"/>
 
         <RelativeLayout
+            android:id="@+id/share_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingRight="15dp"
+            android:paddingTop="10dp">
+
+            <!--<ImageView-->
+                <!--android:id="@+id/imgShareButton"-->
+                <!--android:layout_width="50dp"-->
+                <!--android:layout_height="50dp"-->
+                <!--android:layout_alignParentRight="true"-->
+                <!--android:adjustViewBounds="true"-->
+                <!--android:background="@drawable/share"-->
+                <!--android:scaleType="centerCrop"-->
+                <!--android:visibility="visible" />-->
+
+        </RelativeLayout>
+
+        <RelativeLayout
             android:id="@+id/rl_video_detail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

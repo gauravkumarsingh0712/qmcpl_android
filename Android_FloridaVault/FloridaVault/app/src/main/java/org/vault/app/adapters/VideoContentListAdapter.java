@@ -24,12 +24,12 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.android.volley.toolbox.ImageLoader;
-import com.ncsavault.floridavault.LoginEmailActivity;
-import com.ncsavault.floridavault.R;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
+import com.ncsavault.floridavault.LoginEmailActivity;
+import com.ncsavault.floridavault.R;
 
 import org.vault.app.activities.MainActivity;
 import org.vault.app.appcontroller.AppController;
@@ -104,6 +104,7 @@ public class VideoContentListAdapter extends BaseAdapter {
     @Override
     public int getCount() {
         // TODO Auto-generated method stub
+        System.out.println("arrayListVideoDTOs.size() : "+arrayListVideoDTOs.size());
         return arrayListVideoDTOs.size();
     }
 
@@ -136,6 +137,8 @@ public class VideoContentListAdapter extends BaseAdapter {
                 viewHolder.tvVideoDescription = (TextView) convertView
                         .findViewById(R.id.tv_video_description);
             }
+//            viewHolder.imgShareButton = (ImageView) convertView
+//                    .findViewById(R.id.imgShareButton);
             viewHolder.thumbnailImageView = (ImageView) convertView
                     .findViewById(R.id.imgVideoThumbNail);
             viewHolder.tvVideoName = (TextView) convertView
@@ -145,10 +148,11 @@ public class VideoContentListAdapter extends BaseAdapter {
             viewHolder.imgToggleButton = (ImageView) convertView.findViewById(R.id.imgToggleButton);
 
             viewHolder.progressBar = (ProgressBar) convertView.findViewById(R.id.progress_bar);
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
                 viewHolder.progressBar.setIndeterminateDrawable(context.getResources().getDrawable(R.drawable.circle_progress_bar_lower));
-            else
+            }else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
                 viewHolder.progressBar.setIndeterminateDrawable(ResourcesCompat.getDrawable(context.getResources(), R.drawable.progress_large_material, null));
+            }
 
             convertView.setTag(viewHolder);
 
@@ -252,6 +256,14 @@ public class VideoContentListAdapter extends BaseAdapter {
                 notifyDataSetChanged();
             }
         });
+
+//        viewHolder.imgShareButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                ((MainActivity) context).makeShareDialog(arrayListVideoDTOs.get(pos).getVideoId(), arrayListVideoDTOs.get(pos).getVideoSocialUrl(), arrayListVideoDTOs.get(pos).getVideoShortUrl(), arrayListVideoDTOs.get(pos).getVideoStillUrl(), arrayListVideoDTOs.get(pos).getVideoLongDescription(), arrayListVideoDTOs.get(pos).getVideoName(), context);
+//                // notifyDataSetChanged();
+//            }
+//        });
     }
 
     public void markFavoriteStatus(final int pos) {
@@ -368,7 +380,7 @@ public class VideoContentListAdapter extends BaseAdapter {
     }
 
     public static class ViewHolder {
-        ImageView thumbnailImageView, imgToggleButton;
+        ImageView thumbnailImageView, imgToggleButton, imgShareButton;
         TextView tvVideoName, tvVideoDuration, tvVideoDescription;
         FrameLayout frmVideoItem;
         ProgressBar progressBar;
@@ -394,5 +406,6 @@ public class VideoContentListAdapter extends BaseAdapter {
         }
         notifyDataSetChanged();
     }
+
 
 }

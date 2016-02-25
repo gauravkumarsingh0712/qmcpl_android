@@ -25,12 +25,12 @@ import android.widget.RelativeLayout;
 import android.widget.SectionIndexer;
 import android.widget.TextView;
 
-import com.ncsavault.floridavault.LoginEmailActivity;
-import com.ncsavault.floridavault.R;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
+import com.ncsavault.floridavault.LoginEmailActivity;
+import com.ncsavault.floridavault.R;
 
 import org.vault.app.activities.MainActivity;
 import org.vault.app.appcontroller.AppController;
@@ -82,7 +82,9 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
         this.listSearch = new ArrayList<VideoDTO>();
         viewType = type;
         this.listSearch.addAll(arrayListVideos);
+
         layoutInflater = LayoutInflater.from(this.context);
+
         getScreenDimensions();
         this.showLetters = showLetters;
         this.isGames = isGames;
@@ -150,6 +152,8 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
                 viewHolder.tvVideoDescription = (TextView) convertView
                         .findViewById(R.id.tv_video_description);
             }
+//            viewHolder.imgShareButton = (ImageView) convertView
+//                    .findViewById(R.id.imgShareButton);
             viewHolder.thumbnailImageView = (ImageView) convertView
                     .findViewById(R.id.imgVideoThumbNail);
             viewHolder.tvVideoName = (TextView) convertView
@@ -159,11 +163,11 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
             viewHolder.imgToggleButton = (ImageView) convertView.findViewById(R.id.imgToggleButton);
 
             viewHolder.progressBar = (ProgressBar) convertView.findViewById(R.id.progress_bar);
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
                 viewHolder.progressBar.setIndeterminateDrawable(context.getResources().getDrawable(R.drawable.circle_progress_bar_lower));
-            else
+            } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
                 viewHolder.progressBar.setIndeterminateDrawable(ResourcesCompat.getDrawable(context.getResources(), R.drawable.progress_large_material, null));
-
+            }
             /*viewHolder.toggleButtonStar.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, final boolean isChecked) {
@@ -210,13 +214,17 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
     @Override
     public int getSectionForPosition(int position) {
         // TODO Auto-generated method stub
-        if(showLetters) {
-            for (int i = 0; i < mSectionIndices.length; i++) {
-                if (position < mSectionIndices[i]) {
-                    return i - 1;
+        try {
+            if (showLetters) {
+                for (int i = 0; i < mSectionIndices.length; i++) {
+                    if (position < mSectionIndices[i]) {
+                        return i - 1;
+                    }
                 }
+                return mSectionIndices.length - 1;
             }
-            return mSectionIndices.length - 1;
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return 0;
     }
@@ -344,6 +352,14 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
                 notifyDataSetChanged();
             }
         });
+
+//        viewHolder.imgShareButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                ((MainActivity) context).makeShareDialog(arrayListVideoDTOs.get(pos).getVideoId(), arrayListVideoDTOs.get(pos).getVideoSocialUrl(), arrayListVideoDTOs.get(pos).getVideoShortUrl(), arrayListVideoDTOs.get(pos).getVideoStillUrl(), arrayListVideoDTOs.get(pos).getVideoLongDescription(), arrayListVideoDTOs.get(pos).getVideoName(), context);
+//                //  notifyDataSetChanged();
+//            }
+//        });
 
     }
 
@@ -555,7 +571,7 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
     }
 
     public static class ViewHolder {
-        ImageView thumbnailImageView, imgToggleButton;
+        ImageView thumbnailImageView, imgToggleButton, imgShareButton;
         TextView tvVideoName, tvVideoDuration, tvVideoDescription;
         FrameLayout frmVideoItem;
         ProgressBar progressBar;

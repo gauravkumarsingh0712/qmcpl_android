@@ -20,6 +20,7 @@ import com.ncsavault.floridavault.R;
 import org.json.JSONObject;
 import org.vault.app.appcontroller.AppController;
 import org.vault.app.globalconstants.GlobalConstants;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -305,9 +306,9 @@ public class ContactActivity extends BaseActivity {
         String successMessage = "";
         long userID = AppController.getInstance().getUserId();
         if(userID == GlobalConstants.DEFAULT_USER_ID)
-            successMessage = "Thank you. Ticket #"+taskId+" has been created. Someone from Florida Vault will reply to you via your registered email,  "+ edEmail.getText().toString() +". We appreciate you taking the time to contact us. -The Florida Vault";
+            successMessage = "Thank you. Ticket #" + taskId + " has been created. Someone from " + GlobalConstants.APP_FULL_NAME + " will reply to you via your registered email,  " + edEmail.getText().toString() + ". We appreciate you taking the time to contact us. -The " + GlobalConstants.APP_FULL_NAME;
         else
-            successMessage = "Thank you. Ticket #"+taskId+" has been created. Someone from Florida Vault will reply to you via your registered email,  "+ AppController.getInstance().getEmailAddress()+". We appreciate you taking the time to contact us. -The Florida Vault";
+            successMessage = "Thank you. Ticket #" + taskId + " has been created. Someone from " + GlobalConstants.APP_FULL_NAME + " will reply to you via your registered email,  " + AppController.getInstance().getEmailAddress() + ". We appreciate you taking the time to contact us. -The " + GlobalConstants.APP_FULL_NAME;
         AlertDialog alertDialog = null;
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(ContactActivity.this);
         alertDialogBuilder

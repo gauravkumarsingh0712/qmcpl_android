@@ -1,7 +1,5 @@
 package org.vault.app.serviceimpl;
 
-import android.content.res.AssetManager;
-import android.provider.Settings;
 import android.util.Base64;
 import android.util.Log;
 
@@ -29,6 +27,7 @@ import org.vault.app.database.VaultDatabaseHelper;
 import org.vault.app.dto.APIResponse;
 import org.vault.app.dto.AssigneeDto;
 import org.vault.app.dto.FavoritePostData;
+import org.vault.app.dto.MailChimpData;
 import org.vault.app.dto.NotificationData;
 import org.vault.app.dto.TabBannerDTO;
 import org.vault.app.dto.TaskDto;
@@ -98,6 +97,8 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
     private static final String KEY_VIDEO_WIDE_STILL_URL = "videoWideStillUrl";
     private static final String KEY_VIDEO_BADGE_URL = "videoBadgeUrl";
     private static final String KEY_VIDEO_INDEX = "videoIndex";
+    private static final String KEY_VIDEO_SOCIAL_URL = "videoSocialUrl";
+
 
     public VaultApiCallImpl(ServiceManager serviceManager) {
         super(serviceManager);
@@ -128,7 +129,6 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
                 JSONObject obj = jsonArray.getJSONObject(i);
                 vidObj = new VideoDTO();
 
-
                 vidObj.setVideoDuration(!obj.isNull(KEY_VIDEO_DURATION) ? obj.getLong(KEY_VIDEO_DURATION) : 0);
                 vidObj.setPlaylistId(!obj.isNull(KEY_PLAYLIST_ID) ? obj.getLong(KEY_PLAYLIST_ID) : 0);
                 vidObj.setPlaylistName(!obj.isNull(KEY_PLAYLIST_NAME) ? obj.getString(KEY_PLAYLIST_NAME) : "");
@@ -151,6 +151,7 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
                 vidObj.setPlaylistThumbnailUrl(!obj.isNull(KEY_PLAYLIST_THUMBNAIL_URL) ? obj.getString(KEY_PLAYLIST_THUMBNAIL_URL) : "");
                 vidObj.setPlaylistLongDescription(!obj.isNull(KEY_PLAYLIST_LONG_DESCRIPTION) ? obj.getString(KEY_PLAYLIST_LONG_DESCRIPTION) : "");
                 vidObj.setPlaylistShortDescription(!obj.isNull(KEY_PLAYLIST_SHORT_DESCRIPTION) ? obj.getString(KEY_PLAYLIST_SHORT_DESCRIPTION) : "");
+                vidObj.setVideoSocialUrl(!obj.isNull(KEY_VIDEO_SOCIAL_URL) ? obj.getString(KEY_VIDEO_SOCIAL_URL) : "");
 
                 vidObj.setVideoIsFavorite(!obj.isNull(KEY_VIDEO_IS_FAVORITE) && obj.getBoolean(KEY_VIDEO_IS_FAVORITE));
                 if (VaultDatabaseHelper.getInstance(AppController.getInstance().getApplicationContext()).isVideoAvailableInDB(vidObj.getVideoId(), vidObj.getPlaylistReferenceId())) {
@@ -174,6 +175,7 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
             e.printStackTrace();
         }*/
 
+        System.out.println("Size of video list : " + videoList.size());
         VideoDTO vidObj;
         for (Iterator<VideoDTO> it = videoList.iterator(); it.hasNext(); ) {
             vidObj = it.next();
@@ -231,22 +233,58 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
             // receive response as inputStream
             inputStream = httpResponse.getEntity().getContent();
 
-			/*if (httpResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-                String json = getStringFromInputStream(inputStream);
-				String errMsg = "";
-				JSONObject errJson;
-				try {
-					errJson = new JSONObject(json);
-					errMsg = errJson.getString("errMsg");
-				} catch (JSONException e) {
-					e.printStackTrace();
-					errMsg = json;
-				}
 
-				if (TextUtils.isEmpty(errMsg)
-						|| errMsg.trim().equalsIgnoreCase("null"))
-					errMsg = "Error";
-			}*/
+            if (inputStream != null) {
+                try {
+                    String result = getStringFromInputStream(inputStream);
+                    return result;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // convert inputstream to string
+
+
+        return null;
+    }
+
+    @Override
+    public String postSharingInfo(String videoId) throws BusinessException {
+
+        // String postData = String.valueOf(videoId);
+        String postStr;
+        try {
+            BasicHttpParams httpParameters = new BasicHttpParams();
+            HttpConnectionParams.setConnectionTimeout(httpParameters, 60000);
+            HttpConnectionParams.setSoTimeout(httpParameters, 60000);
+
+            // create HttpClient
+            HttpClient httpClient = new DefaultHttpClient(httpParameters);
+            InputStream inputStream = null;
+            HttpPost httpPost = new HttpPost(GlobalConstants.SOCIAL_SHARING_INFO + "?videoId=" + videoId);
+            httpPost.setHeader("Accept", "application/json");
+            httpPost.setHeader("Content-type", "application/json");
+            httpPost.setHeader("appID", String.valueOf(GlobalConstants.APP_ID));
+            httpPost.setHeader("appVersion", GlobalConstants.APP_VERSION);
+            httpPost.setHeader("deviceType", GlobalConstants.DEVICE_TYPE);
+//            if (postData != null) {
+//                postStr = new Gson().toJson(postData);
+//                StringEntity stringEntity = new StringEntity(postStr);
+//                System.out.println("Json String For Favorite Status Change : " + postStr);
+//                httpPost.setEntity(new StringEntity(postStr, HTTP.UTF_8));
+//            }
+            HttpResponse httpResponse = httpClient.execute(httpPost);
+
+            // receive response as inputStream
+            inputStream = httpResponse.getEntity().getContent();
+
+
             if (inputStream != null) {
                 try {
                     String result = getStringFromInputStream(inputStream);
@@ -475,6 +513,61 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
 
         return null;
     }
+
+    /**
+     * Request for storing User data on server with POST request
+     *
+     * @param mailChimpData
+     * @return
+     * @throws org.vault.app.service.BusinessException
+     */
+    @Override
+    public String postMailChimpData(MailChimpData mailChimpData) throws BusinessException {
+        BasicHttpParams httpParameters = new BasicHttpParams();
+        HttpConnectionParams.setConnectionTimeout(httpParameters, 60000);
+        HttpConnectionParams.setSoTimeout(httpParameters, 60000);
+
+        // create HttpClient
+        HttpClient httpClient = new DefaultHttpClient(httpParameters);
+        InputStream inputStream = null;
+
+        HttpPost httpPost = new HttpPost(GlobalConstants.POST_MAIL_CHIMP_DATA);
+        httpPost.setHeader("Accept", "application/json");
+        httpPost.setHeader("Content-type", "application/json");
+        httpPost.setHeader("appID", String.valueOf(GlobalConstants.APP_ID));
+        httpPost.setHeader("appVersion", GlobalConstants.APP_VERSION);
+        httpPost.setHeader("deviceType", GlobalConstants.DEVICE_TYPE);
+        String postStr;
+        try {
+            if (mailChimpData != null) {
+                postStr = new Gson().toJson(mailChimpData);
+                StringEntity stringEntity = new StringEntity(postStr);
+                System.out.println("Json String For POST User Data : " + postStr);
+                httpPost.setEntity(new StringEntity(postStr, HTTP.UTF_8));
+            }
+            HttpResponse httpResponse = httpClient.execute(httpPost);
+
+            // receive response as inputStream
+            inputStream = httpResponse.getEntity().getContent();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // convert inputstream to string
+        if (inputStream != null) {
+            try {
+                String result = getStringFromInputStream(inputStream);
+                return result;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return null;
+    }
+
 
 
     /**

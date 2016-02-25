@@ -29,6 +29,7 @@ public class VideoDTO implements Serializable {
     private String playlistLongDescription;
     private String playlistTags;
     private String playlistReferenceId;
+    private String videoSocialUrl;
 
     public long getVideoId() {
         return videoId;
@@ -204,6 +205,14 @@ public class VideoDTO implements Serializable {
 
     public void setPlaylistLongDescription(String playlistLongDescription) {
         this.playlistLongDescription = playlistLongDescription;
+    }
+
+    public String getVideoSocialUrl() {
+        return videoSocialUrl;
+    }
+
+    public void setVideoSocialUrl(String videoSocialUrl) {
+        this.videoSocialUrl = videoSocialUrl;
     }
 
 }
