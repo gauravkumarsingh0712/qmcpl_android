@@ -122,6 +122,7 @@ public class GamesFragment extends BaseFragment {
     public void onResume() {
         // TODO Auto-generated method stub
         super.onResume();
+        try {
         if (videoHeaderListAdapter != null)
             videoHeaderListAdapter.notifyDataSetChanged();
         if (progressBar != null && refreshLayout != null) {
@@ -132,12 +133,17 @@ public class GamesFragment extends BaseFragment {
         }
 
         if (gamesVideoList != null && gamesVideoList.size() == 0) {
-            progressBar.setVisibility(View.VISIBLE);
+            if(GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+                progressBar.setVisibility(View.VISIBLE);
+            }
         } else {
             progressBar.setVisibility(View.GONE);
         }
 
         gethideKeyboard();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -706,15 +712,14 @@ public class GamesFragment extends BaseFragment {
         protected ArrayList<VideoDTO> doInBackground(Void... params) {
             ArrayList<VideoDTO> arrList = new ArrayList<VideoDTO>();
             try {
-                String url = GlobalConstants.GAMES_API_URL + "page=0&userId=" + AppController.getInstance().getUserId();
-                arrList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
+                        String url = GlobalConstants.GAMES_API_URL + "userId=" + AppController.getInstance().getUserId();
+                        arrList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
+                        if (arrList.size() > 0) {
+                            VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_GAMES);
+                            VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).insertVideosInDatabase(arrList);
+                        }
 
-                if (arrList.size() > 0) {
-                    VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).removeRecordsByTab("OKFGames");
-                    VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).insertVideosInDatabase(arrList);
-                }
 
-                //Update Banner Data
                 if (tabBannerDTO != null) {
                     TabBannerDTO serverObj = AppController.getInstance().getServiceManager().getVaultService().getTabBannerDataById(tabBannerDTO.getTabBannerId(), tabBannerDTO.getTabKeyword(), tabBannerDTO.getTabId());
                     if (serverObj != null) {
@@ -728,8 +733,9 @@ public class GamesFragment extends BaseFragment {
                             VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).updateTabBannerData(serverObj);
                             isBannerUpdated = true;
                         }
+                        }
                     }
-                }
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -740,6 +746,7 @@ public class GamesFragment extends BaseFragment {
         @Override
         protected void onPostExecute(final ArrayList<VideoDTO> result) {
             super.onPostExecute(result);
+            try {
             if (result.size() > 0) {
                 gamesVideoList.clear();
 
@@ -797,7 +804,9 @@ public class GamesFragment extends BaseFragment {
                 Utils.setEnabledStickyListHeadersListViewScrolling(stickyListHeadersListView);
             }
 
-
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -809,6 +818,7 @@ public class GamesFragment extends BaseFragment {
         @Override
         public void onReceive(Context context, Intent intent) {
 
+            try {
             gamesVideoList.clear();
             gamesVideoList.addAll(VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getVideoList(GlobalConstants.OKF_GAMES));
 
@@ -837,7 +847,11 @@ public class GamesFragment extends BaseFragment {
             stickyListHeadersListView.setAdapter(videoHeaderListAdapter);
             System.out.println("tabBannerDTO gamesVideoList " + gamesVideoList.size() + " isServiceRunning " + VideoDataService.isServiceRunning);
             if (gamesVideoList.size() == 0 /*&& VideoDataService.isServiceRunning*/) {
-                progressBar.setVisibility(View.VISIBLE);
+                if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+
+                } else {
+                    progressBar.setVisibility(View.VISIBLE);
+                }
             } else {
                 progressBar.setVisibility(View.GONE);
             }
@@ -856,7 +870,13 @@ public class GamesFragment extends BaseFragment {
                 if (tabBannerDTO != null)
                     Utils.addBannerImagePullToRefresh(bannerCacheableImageView, bannerLayout, tabBannerDTO, mActivity, mBannerProgressBar);
             }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+
+
     }
 
 

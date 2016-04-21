@@ -10,6 +10,7 @@ import java.util.ArrayList;
 public interface VaultApiInterface {
 
     public ArrayList<VideoDTO> getVideosListFromServer(String url) throws BusinessException;
+    public VideoDTO getVideosDataFromServer(String url) throws BusinessException;
     public String postFavoriteStatus(long userId, long videoId, long playListId, boolean status) throws BusinessException;
     public String postSharingInfo(String videoId) throws BusinessException;
     public String validateEmail(String emailId) throws BusinessException;

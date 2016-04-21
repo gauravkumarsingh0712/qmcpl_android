@@ -49,17 +49,21 @@ public class VideoDataService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         isServiceRunning = true;
+        try {
         lstUrls.addAll(AppController.getInstance().getAPI_URLS());
+        System.out.println("tabBannerDTO service ");
         if (Utils.isInternetAvailable(AppController.getInstance().getApplicationContext())) {
             Thread thread = new Thread() {
                 @Override
                 public void run() {
                     for (String apiUrl : lstUrls) {
+                        System.out.println("tabBannerDTO thread " + isServiceRunning);
                         if (Utils.isInternetAvailable(AppController.getInstance().getApplicationContext())) {
                             if (isServiceRunning) {
                                 String url = apiUrl + "userid=" + AppController.getInstance().getUserId();
                                 try {
                                     arrayListVideos.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
+                                    System.out.println("Size of list after calling " + apiUrl + " : " + arrayListVideos.size());
                                 } catch (Exception e) {
                                     status = false;
                                     e.printStackTrace();
@@ -70,7 +74,7 @@ public class VideoDataService extends Service {
                                 Intent broadCastIntent = new Intent();
                                 if (url.toLowerCase().contains("featured"))
                                     broadCastIntent.setAction(FeaturedFragment.FeaturedResponseReceiver.ACTION_RESP);
-                                else if(url.toLowerCase().contains("games"))
+                                else if (url.toLowerCase().contains("games"))
                                     broadCastIntent.setAction(GamesFragment.GamesResponseReceiver.ACTION_RESP);
                                 else if (url.toLowerCase().contains("player"))
                                     broadCastIntent.setAction(PlayerFragment.PlayerResponseReceiver.ACTION_RESP);
@@ -82,6 +86,7 @@ public class VideoDataService extends Service {
                                 broadCastIntent.addCategory(Intent.CATEGORY_DEFAULT);
                                 sendBroadcast(broadCastIntent);
                                 arrayListVideos.clear();
+                                System.out.println("tabBannerDTO thread end ");
                             }
                         } else {
                             isServiceRunning = false;
@@ -96,6 +101,10 @@ public class VideoDataService extends Service {
             };
             thread.start();
 
+        }
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         return Service.START_NOT_STICKY;

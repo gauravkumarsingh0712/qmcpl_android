@@ -28,7 +28,6 @@ import android.util.TypedValue;
 import android.view.Display;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
@@ -36,13 +35,11 @@ import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.CompoundButton;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -240,10 +237,10 @@ public class Utils {
                                     Display d = w.getDefaultDisplay();
                                     measuredWidth = d.getWidth();
                                 }
-                                int aspectHeight = (measuredWidth * 3) / 16;
-
-                                FrameLayout.LayoutParams rLp = new FrameLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, aspectHeight);
-                                layout.setLayoutParams(rLp);
+//                                int aspectHeight = (measuredWidth * 3) / 16;
+//
+//                                FrameLayout.LayoutParams rLp = new FrameLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, aspectHeight);
+//                                layout.setLayoutParams(rLp);
 
                                 bannerCacheableImageView.setVisibility(View.VISIBLE);
                             }
@@ -283,7 +280,7 @@ public class Utils {
 
                             @Override
                             public void onLoadingComplete(String s, View view, Bitmap bitmap) {
-                               progressBar.setVisibility(View.GONE);
+                                progressBar.setVisibility(View.GONE);
                                 Point size = new Point();
                                 WindowManager w = context.getWindowManager();
                                 int measuredWidth = 0;
@@ -295,10 +292,10 @@ public class Utils {
                                     Display d = w.getDefaultDisplay();
                                     measuredWidth = d.getWidth();
                                 }
-                                int aspectHeight = (measuredWidth * 3) / 16;
-
-                                FrameLayout.LayoutParams rLp = new FrameLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, aspectHeight);
-                                llBlock.setLayoutParams(rLp);
+//                                int aspectHeight = (measuredWidth * 3) / 16;
+//
+//                                FrameLayout.LayoutParams rLp = new FrameLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, aspectHeight);
+//                                llBlock.setLayoutParams(rLp);
                                 bannerCacheableImageView.setVisibility(View.VISIBLE);
                             }
 
@@ -315,32 +312,37 @@ public class Utils {
 
 
     public static void addImageByCaching(final ImageView bannerCacheableImageView, String url) {
-        DisplayImageOptions imgLoadingOptions = new DisplayImageOptions.Builder()
-                .cacheOnDisk(true).resetViewBeforeLoading(true)
-                .cacheInMemory(true)
-                .bitmapConfig(Bitmap.Config.RGB_565)
-                .imageScaleType(ImageScaleType.EXACTLY)
-                .build();
-        com.nostra13.universalimageloader.core.ImageLoader.getInstance().displayImage(url,
-                bannerCacheableImageView, imgLoadingOptions, new ImageLoadingListener() {
-                    @Override
-                    public void onLoadingStarted(String s, View view) {
-                    }
 
-                    @Override
-                    public void onLoadingFailed(String s, View view, FailReason failReason) {
-                        bannerCacheableImageView.setVisibility(View.GONE);
-                    }
+        try {
+            DisplayImageOptions imgLoadingOptions = new DisplayImageOptions.Builder()
+                    .cacheOnDisk(true).resetViewBeforeLoading(true)
+                    .cacheInMemory(true)
+                    .bitmapConfig(Bitmap.Config.RGB_565)
+                    .imageScaleType(ImageScaleType.EXACTLY)
+                    .build();
+            com.nostra13.universalimageloader.core.ImageLoader.getInstance().displayImage(url,
+                    bannerCacheableImageView, imgLoadingOptions, new ImageLoadingListener() {
+                        @Override
+                        public void onLoadingStarted(String s, View view) {
+                        }
 
-                    @Override
-                    public void onLoadingComplete(String s, View view, Bitmap bitmap) {
-                    }
+                        @Override
+                        public void onLoadingFailed(String s, View view, FailReason failReason) {
+                            bannerCacheableImageView.setVisibility(View.GONE);
+                        }
 
-                    @Override
-                    public void onLoadingCancelled(String s, View view) {
-                        bannerCacheableImageView.setVisibility(View.GONE);
-                    }
-                });
+                        @Override
+                        public void onLoadingComplete(String s, View view, Bitmap bitmap) {
+                        }
+
+                        @Override
+                        public void onLoadingCancelled(String s, View view) {
+                            bannerCacheableImageView.setVisibility(View.GONE);
+                        }
+                    });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -445,7 +447,7 @@ public class Utils {
 
                 @Override
                 protected Void doInBackground(Void... params) {
-                    Log.i("MainActivity", "Device Registration Id : = " + regId);
+                    Log.i("Utills", "Device Registration Id : = " + regId);
                     String deviceId = Settings.Secure.getString(mActivity.getApplicationContext().getContentResolver(),
                             Settings.Secure.ANDROID_ID);
                     String result = AppController.getInstance().getServiceManager().getVaultService().sendPushNotificationRegistration(GlobalConstants.PUSH_REGISTER_URL,
@@ -746,104 +748,82 @@ public class Utils {
         return videoMap;
     }
 
-    /**
-     * Method used for get list view height dynamically
-     *
-     * @param listView
-     * @return
-     */
-    public static int getTotalHeightofNormalListView(ListView listView) {
-        int totalHeight = 0;
-        try {
-            ListAdapter mAdapter = listView.getAdapter();
-
-            for (int i = 0; i < mAdapter.getCount(); i++) {
-                View mView = mAdapter.getView(i, null, listView);
-
-                mView.measure(
-                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-
-                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-
-                totalHeight += mView.getMeasuredHeight();
-                if (LocalModel.getInstance().getmDisplayHeight() < totalHeight) {
-                    break;
-                }
-                Log.w("HEIGHT" + i, String.valueOf(totalHeight));
-
-            }
-
-            ViewGroup.LayoutParams params = listView.getLayoutParams();
-            params.height = totalHeight
-                    + (listView.getDividerHeight() * (mAdapter.getCount() - 1));
-            listView.setLayoutParams(params);
-            listView.requestLayout();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return totalHeight;
-
-    }
 
     public static void setVisibilityOfScrollBarHeightForNormalList(Activity activity,String newText, ListView listView) {
 //        LocalModel localModel = LocalModel.getInstance();
-//        localModel.setmListViewHeight(getTotalHeightofNormalListView(listView));
-        int count = VaultDatabaseHelper.getInstance(activity.getApplicationContext()).getFavoriteCount();
-      //  System.out.println("getmListViewHeight : "+localModel.getmListViewHeight()+" : "+localModel.getmDisplayHeight());
-        if (count < 6) {
-            listView.setFastScrollAlwaysVisible(false);
-            listView.setVerticalScrollBarEnabled(false);
-            listView.setFastScrollEnabled(false);
-
-        } else {
-            listView.setFastScrollAlwaysVisible(true);
-            listView.setVerticalScrollBarEnabled(true);
-            listView.setFastScrollEnabled(true);
-        }
-
-        if (newText.equals("")) {
-            listView.setFastScrollAlwaysVisible(true);
-            listView.setVerticalScrollBarEnabled(true);
-            listView.setFastScrollEnabled(true);
-        }
+//        localModel.setmListViewHeight(calculateHeight(listView));
+//        int count = VaultDatabaseHelper.getInstance(activity.getApplicationContext()).getFavoriteCount();
+//      //  System.out.println("getmListViewHeight : "+localModel.getmListViewHeight()+" : "+localModel.getmDisplayHeight());
+//        if (count < 6) {
+//            listView.setFastScrollAlwaysVisible(false);
+//            listView.setVerticalScrollBarEnabled(false);
+//            listView.setFastScrollEnabled(false);
+//
+//        } else {
+//            listView.setFastScrollAlwaysVisible(true);
+//            listView.setVerticalScrollBarEnabled(true);
+//            listView.setFastScrollEnabled(true);
+//        }
+//
+//        if (newText.equals("")) {
+//            listView.setFastScrollAlwaysVisible(true);
+//            listView.setVerticalScrollBarEnabled(true);
+//            listView.setFastScrollEnabled(true);
+//        }
     }
 
     public static void setDisabledStickyListHeadersListViewScrolling(StickyListHeadersListView stickyListHeadersListView) {
-        stickyListHeadersListView.setOnTouchListener(new View.OnTouchListener() {
-
-            public boolean onTouch(View v, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                    return true; // Indicates that this has been handled by you and will not be forwarded further.
-                }
-                return false;
-            }
-        });
-
-        if (stickyListHeadersListView != null) {
-            stickyListHeadersListView.setFastScrollEnabled(false);
-            stickyListHeadersListView.setVerticalScrollBarEnabled(false);
-            stickyListHeadersListView.setFastScrollAlwaysVisible(false);
-        }
+//        stickyListHeadersListView.setOnTouchListener(new View.OnTouchListener() {
+//
+//            public boolean onTouch(View v, MotionEvent event) {
+//                if (event.getAction() == MotionEvent.ACTION_MOVE) {
+//                    return true; // Indicates that this has been handled by you and will not be forwarded further.
+//                }
+//                return false;
+//            }
+//        });
+//
+//        if (stickyListHeadersListView != null) {
+//            stickyListHeadersListView.setFastScrollEnabled(false);
+//            stickyListHeadersListView.setVerticalScrollBarEnabled(false);
+//            stickyListHeadersListView.setFastScrollAlwaysVisible(false);
+//        }
 
     }
 
     public static void setEnabledStickyListHeadersListViewScrolling(StickyListHeadersListView stickyListHeadersListView) {
-        stickyListHeadersListView.setOnTouchListener(new View.OnTouchListener() {
-            // Setting on Touch Listener for handling the touch inside ScrollView
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                // Disallow the touch request for parent scroll on touch of child view
-                v.setEnabled(true);
-                return false;
-            }
-        });
+//        stickyListHeadersListView.setOnTouchListener(new View.OnTouchListener() {
+//            // Setting on Touch Listener for handling the touch inside ScrollView
+//            @Override
+//            public boolean onTouch(View v, MotionEvent event) {
+//                // Disallow the touch request for parent scroll on touch of child view
+//                v.setEnabled(true);
+//                return false;
+//            }
+//        });
+//
+//        if (stickyListHeadersListView != null) {
+//            stickyListHeadersListView.setFastScrollEnabled(true);
+//            stickyListHeadersListView.setVerticalScrollBarEnabled(true);
+//            stickyListHeadersListView.setFastScrollAlwaysVisible(true);
+//        }
 
-        if (stickyListHeadersListView != null) {
-            stickyListHeadersListView.setFastScrollEnabled(true);
-            stickyListHeadersListView.setVerticalScrollBarEnabled(true);
-            stickyListHeadersListView.setFastScrollAlwaysVisible(true);
+    }
+
+    public static int calculateHeight(ListView list) {
+
+        int height = 0;
+
+        for (int i = 0; i < list.getCount(); i++) {
+            View childView = list.getAdapter().getView(i, null, list);
+            childView.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+            height+= childView.getMeasuredHeight();
         }
 
+        //dividers height
+        height += list.getDividerHeight() * list.getCount();
+
+        return height;
     }
 
     /**
@@ -889,26 +869,26 @@ public class Utils {
 
     public static void setVisibilityOfScrollBarHeightForHeader(String newText, StickyListHeadersListView stickyListHeadersListView) {
 
-        LocalModel localModel = LocalModel.getInstance();
-        localModel.setmListViewHeight(getTotalHeightofListViewForHeaderList(stickyListHeadersListView));
-
-        if (localModel.getmListViewHeight() < localModel.getmDisplayHeight()) {
-            stickyListHeadersListView.setFastScrollAlwaysVisible(false);
-            stickyListHeadersListView.setVerticalScrollBarEnabled(false);
-            stickyListHeadersListView.setFastScrollEnabled(false);
-
-        } else {
-            stickyListHeadersListView.setFastScrollAlwaysVisible(true);
-            stickyListHeadersListView.setVerticalScrollBarEnabled(true);
-            stickyListHeadersListView.setFastScrollEnabled(true);
-
-        }
-
-        if (newText.equals("")) {
-            stickyListHeadersListView.setFastScrollAlwaysVisible(true);
-            stickyListHeadersListView.setVerticalScrollBarEnabled(true);
-            stickyListHeadersListView.setFastScrollEnabled(true);
-        }
+//        LocalModel localModel = LocalModel.getInstance();
+//        localModel.setmListViewHeight(getTotalHeightofListViewForHeaderList(stickyListHeadersListView));
+//
+//        if (localModel.getmListViewHeight() < localModel.getmDisplayHeight()) {
+//            stickyListHeadersListView.setFastScrollAlwaysVisible(false);
+//            stickyListHeadersListView.setVerticalScrollBarEnabled(false);
+//            stickyListHeadersListView.setFastScrollEnabled(false);
+//
+//        } else {
+//            stickyListHeadersListView.setFastScrollAlwaysVisible(true);
+//            stickyListHeadersListView.setVerticalScrollBarEnabled(true);
+//            stickyListHeadersListView.setFastScrollEnabled(true);
+//
+//        }
+//
+//        if (newText.equals("")) {
+//            stickyListHeadersListView.setFastScrollAlwaysVisible(true);
+//            stickyListHeadersListView.setVerticalScrollBarEnabled(true);
+//            stickyListHeadersListView.setFastScrollEnabled(true);
+//        }
     }
 
     public void showConfirmLoginDialog(final Activity context, String message, final String firstName, final String lastName, final String emailId) {

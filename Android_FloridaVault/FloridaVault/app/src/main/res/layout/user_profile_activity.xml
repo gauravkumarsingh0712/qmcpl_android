@@ -111,8 +111,16 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="10dp"
                             android:gravity="center_horizontal"
-                            android:orientation="horizontal">
+                            android:orientation="horizontal"
+                            android:weightSum="2">
 
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="10dp"
+                                android:layout_weight="1"
+                                android:gravity="center_horizontal"
+                                android:orientation="horizontal">
                             <TextView
                                 android:id="@+id/tvFirstName"
                                 android:layout_width="wrap_content"
@@ -120,8 +128,33 @@
                                 android:textColor="#454546"
                                 android:layout_marginTop="10dp"
                                 android:gravity="center_horizontal"
+                                android:padding="3dp"
                                 android:textSize="24sp" />
 
+                                <EditText
+                                    android:id="@+id/ed_first_name"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:background="@null"
+                                    android:hint="First Name"
+                                    android:imeOptions="actionNext"
+                                    android:inputType="textCapWords"
+                                    android:maxLength="20"
+                                    android:padding="3dp"
+                                    android:singleLine="true"
+                                    android:textColor="#454546"
+                                    android:textColorHint="#80454546"
+                                    android:textSize="20sp"
+                                    android:visibility="gone" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="10dp"
+                                android:layout_weight="1"
+                                android:gravity="center_horizontal"
+                                android:orientation="horizontal">
                             <TextView
                                 android:id="@+id/tvLastName"
                                 android:layout_width="wrap_content"
@@ -130,38 +163,29 @@
                                 android:layout_marginLeft="5dp"
                                 android:layout_marginTop="10dp"
                                 android:gravity="center_horizontal"
+                                android:padding="3dp"
                                 android:textSize="24sp" />
 
-                            <EditText
-                                android:id="@+id/ed_first_name"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:hint="First Name"
-                                android:textColor="#454546"
-                                android:textColorHint="#80454546"
-                                android:textSize="20sp"
-                                android:maxLength="20"
-                                android:inputType="textCapWords"
-                                android:singleLine="true"
-                                android:background="@null"
-                                android:imeOptions="actionNext"
-                                android:visibility="gone" />
 
-                            <EditText
-                                android:id="@+id/ed_last_name"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:hint="Last Name"
-                                android:layout_marginLeft="15dp"
-                                android:textColor="#454546"
-                                android:textColorHint="#80454546"
-                                android:textSize="20sp"
-                                android:maxLength="20"
-                                android:inputType="textCapWords"
-                                android:singleLine="true"
-                                android:background="@null"
-                                android:imeOptions="actionNext"
-                                android:visibility="gone" />
+                                <EditText
+                                    android:id="@+id/ed_last_name"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginLeft="15dp"
+                                    android:background="@null"
+                                    android:hint="Last Name"
+                                    android:imeOptions="actionNext"
+                                    android:inputType="textCapWords"
+                                    android:maxLength="20"
+                                    android:padding="3dp"
+                                    android:singleLine="true"
+                                    android:textColor="#454546"
+                                    android:textColorHint="#80454546"
+                                    android:textSize="20sp"
+                                    android:visibility="gone" />
+
+                            </LinearLayout>
+
                         </LinearLayout>
 
                         <TextView

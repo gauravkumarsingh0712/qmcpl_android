@@ -23,7 +23,7 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
     private static VaultDatabaseHelper sInstance;
 
     // ------ Database Version----------
-    public static final int DATABASE_VERSION = 2;
+    public static final int DATABASE_VERSION = 3;
     private static String DATABASE_PATH = "";
 
     // ----- Database Name------------
@@ -297,7 +297,6 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
                 } while (cursor.moveToNext());
             }
             cursor.close();
-            System.out.println("arrayListVideoDTOs.size()getVideoList : "+videoDTOsArrayList.size());
             return videoDTOsArrayList;
         } catch (Exception e) {
             e.printStackTrace();
@@ -681,7 +680,6 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
                 //if video is not available in database, execute INSERT
                 if (!isVideoAvailableInDB(videoDTO.getVideoId(), videoDTO.getPlaylistReferenceId())) {
                     if(videoDTO.getVideoShortDescription() != null && videoDTO.getVideoName() != null) {
-                        System.out.println("service arrayListVideoDTOs.size()insert : ");
                         initialValues = new ContentValues();
                         initialValues.put(VideoTable.KEY_VIDEO_ID, videoDTO.getVideoId());
                         initialValues.put(VideoTable.KEY_VIDEO_NAME, videoDTO.getVideoName());
@@ -715,8 +713,6 @@ public class VaultDatabaseHelper extends SQLiteOpenHelper {
                         checkVideoAvailabilityInOtherPlaylistAndUpdate(videoDTO);
                     }
                 }else{      // Perform UPDATE query on available record
-                    System.out.println("service arrayListVideoDTOs.size()update : ");
-
                     ContentValues updateExistingVideo = new ContentValues();
                     updateExistingVideo.put(VideoTable.KEY_VIDEO_ID, videoDTO.getVideoId());
                     updateExistingVideo.put(VideoTable.KEY_VIDEO_NAME, videoDTO.getVideoName());

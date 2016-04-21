@@ -13,6 +13,7 @@ public class LocalModel {
     private String firstName;
     private String lastName;
     private String emailId;
+    private String videoId;
 
     public String getEmailId() {
         return emailId;
@@ -28,6 +29,14 @@ public class LocalModel {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    public String getVideoId() {
+        return videoId;
+    }
+
+    public void setVideoId(String videoId) {
+        this.videoId = videoId;
     }
 
     public String getFirstName() {

@@ -9,6 +9,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Handler;
 import android.support.v4.content.res.ResourcesCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -112,7 +113,7 @@ public class FavoritesFragment extends BaseFragment {
         try {
             favoriteVideoList.clear();
             favoriteVideoList.addAll(VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getFavouriteVideosArrayList());
-
+            System.out.println("favoriteVideoList size getFavoriteDataFromDataBase : " + favoriteVideoList.size());
             Collections.sort(favoriteVideoList, new Comparator<VideoDTO>() {
 
                 @Override
@@ -125,6 +126,7 @@ public class FavoritesFragment extends BaseFragment {
 
             videoListAdapter = new VideoContentListAdapter(favoriteVideoList, mActivity, 2, true);
             listViewFavouriteVideos.setAdapter(videoListAdapter);
+            videoListAdapter.notifyDataSetChanged();
             if (VideoDataService.isServiceRunning) {
                 if (favoriteVideoList.size() == 0) {
                     if (progressBar.isShown()) {
@@ -176,9 +178,7 @@ public class FavoritesFragment extends BaseFragment {
                             }
                         }
                     }
-                    if (favoriteVideoList.size() < 7) {
-                        //  listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
-                    }
+
                 }
 
                 @Override
@@ -226,32 +226,31 @@ public class FavoritesFragment extends BaseFragment {
     public void onResume() {
         // TODO Auto-generated method stub
         super.onResume();
-        System.out.println("favorite onResume 111");
+        try {
         if (GlobalConstants.SEARCH_VIEW_QUERY.isEmpty() || GlobalConstants.IS_RETURNED_FROM_PLAYER) {
             if (mActivity != null) {
                 favoriteVideoList.clear();
                 favoriteVideoList.addAll(VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getFavouriteVideosArrayList());
-
+                System.out.println("favoriteVideoList size onResume: " + favoriteVideoList.size());
                 videoListAdapter = new VideoContentListAdapter(
                         favoriteVideoList, mActivity, 2, true);
                 listViewFavouriteVideos.setAdapter(videoListAdapter);
-
                 listViewFavouriteVideos.setFastScrollEnabled(true);
+                videoListAdapter.notifyDataSetChanged();
             }
             isFreshDataLoading = false;
             if (VideoDataService.isServiceRunning) {
                 if (favoriteVideoList.size() == 0) {
                     if (progressBar.isShown()) {
-                        System.out.println("favorite isServiceRunning");
                         progressBar.setVisibility(View.VISIBLE);
                         tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
                     } else {
                         progressBar.setVisibility(View.GONE);
-                        // tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
+                       // tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
                     }
                 } else {
                     progressBar.setVisibility(View.GONE);
-                    // tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
+                   // tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
                 }
 
             } else {
@@ -279,6 +278,7 @@ public class FavoritesFragment extends BaseFragment {
 
         if (videoListAdapter != null) {
             videoListAdapter.listSearch.clear();
+            System.out.println("favoriteVideoList size listSearch : " + favoriteVideoList.size());
             videoListAdapter.listSearch.addAll(favoriteVideoList);
             videoListAdapter.filter(GlobalConstants.SEARCH_VIEW_QUERY.toLowerCase(Locale
                     .getDefault()));
@@ -319,6 +319,9 @@ public class FavoritesFragment extends BaseFragment {
         }.start();
 
         gethideKeyboard();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -531,6 +534,7 @@ public class FavoritesFragment extends BaseFragment {
             // it is used to track the ecent of opponennts fragment
             FlurryAgent.onEvent(GlobalConstants.FAVORITES);
             if (VideoDataService.isServiceRunning) {
+                if (progressBar != null) {
                 if (favoriteVideoList.size() == 0) {
                     if (progressBar.isShown()) {
                         System.out.println("favorite isServiceRunning");
@@ -544,16 +548,21 @@ public class FavoritesFragment extends BaseFragment {
                     progressBar.setVisibility(View.GONE);
                     // tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
                 }
+                }
 
             } else {
-                if (favoriteVideoList.size() == 0) {
-                    progressBar.setVisibility(View.GONE);
-                    tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
-                    listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
-                } else {
-                    //progressBar.setVisibility(View.VISIBLE);
-                    tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
-                    listViewFavouriteVideos.setFastScrollAlwaysVisible(true);
+                if (tvsearchRecordsNotAvailable != null && listViewFavouriteVideos != null) {
+                    if (progressBar != null && favoriteVideoList.size() == 0) {
+                        progressBar.setVisibility(View.GONE);
+                        tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
+                        listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
+                    } else {
+                        //progressBar.setVisibility(View.VISIBLE);
+
+                        tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
+                        listViewFavouriteVideos.setFastScrollAlwaysVisible(true);
+
+                    }
                 }
             }
             countDownTimer = new CountDownTimer(1000, 200) {
@@ -571,11 +580,13 @@ public class FavoritesFragment extends BaseFragment {
                     if (countDownTimer != null) {
                         countDownTimer.cancel();
                     }
-                    LocalModel localModel = LocalModel.getInstance();
-                    localModel.setmListViewHeight(calculateHeight(listViewFavouriteVideos));
+                    if (listViewFavouriteVideos != null) {
+                        LocalModel localModel = LocalModel.getInstance();
+                        localModel.setmListViewHeight(calculateHeight(listViewFavouriteVideos));
 
-                    if (localModel.getmListViewHeight() < localModel.getmDisplayHeight()) {
-                        listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
+                        if (localModel.getmListViewHeight() < localModel.getmDisplayHeight()) {
+                            listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
+                        }
                     }
                 }
             }.start();
@@ -596,6 +607,15 @@ public class FavoritesFragment extends BaseFragment {
         searchView = (SearchView) menuItem.getActionView();
         searchView.setSearchableInfo(searchManager.getSearchableInfo(getActivity().getComponentName()));
         searchView.setIconified(true);
+
+        searchView.setOnSearchClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mActivity.getActionBar().setDisplayUseLogoEnabled(false);
+                mActivity.getActionBar().setIcon(R.drawable.actionbaricon);
+            }
+        });
+
 
         searchView.setOnQueryTextListener(new OnQueryTextListener() {
 
@@ -629,7 +649,7 @@ public class FavoritesFragment extends BaseFragment {
 
                 GlobalConstants.SEARCH_VIEW_QUERY = newText;
                 //set Visibility of scroll bar runtime
-                Utils.setVisibilityOfScrollBarHeightForNormalList(mActivity,newText, listViewFavouriteVideos);
+                Utils.setVisibilityOfScrollBarHeightForNormalList(mActivity, newText, listViewFavouriteVideos);
 
                 if (!newText.isEmpty()) {
                     //check for size after filtering, record availability in db and service running
@@ -681,6 +701,10 @@ public class FavoritesFragment extends BaseFragment {
                         tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
                         listViewFavouriteVideos.setFastScrollAlwaysVisible(true);
                     }
+                }
+
+                if (mActivity != null) {
+                    mActivity.getActionBar().setDisplayUseLogoEnabled(true);
                 }
                 return false;
             }
@@ -751,123 +775,150 @@ public class FavoritesFragment extends BaseFragment {
         @Override
         protected void onPostExecute(ArrayList<VideoDTO> result) {
             super.onPostExecute(result);
-            if (result.size() > 0) {
-                VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).setAllFavoriteStatusToFalse();
-                for (VideoDTO vidDto : result) {
-                    if (VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).checkVideoAvailability(vidDto.getVideoId())) {
-                        VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).setFavoriteFlag(1, vidDto.getVideoId());
+            try {
+                if (result.size() > 0) {
+                    VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).setAllFavoriteStatusToFalse();
+                    for (VideoDTO vidDto : result) {
+                        if (VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).checkVideoAvailability(vidDto.getVideoId())) {
+                            VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).setFavoriteFlag(1, vidDto.getVideoId());
+                        }
                     }
-                }
-                favoriteVideoList.clear();
-                favoriteVideoList.addAll(VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getFavouriteVideosArrayList());
+                    favoriteVideoList.clear();
+                    favoriteVideoList.addAll(VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getFavouriteVideosArrayList());
+                    System.out.println("favoriteVideoList size onpost : " + favoriteVideoList.size());
+                    Collections.sort(favoriteVideoList, new Comparator<VideoDTO>() {
 
-                Collections.sort(favoriteVideoList, new Comparator<VideoDTO>() {
+                        @Override
+                        public int compare(VideoDTO lhs, VideoDTO rhs) {
+                            // TODO Auto-generated method stub
+                            return lhs.getVideoName().toLowerCase()
+                                    .compareTo(rhs.getVideoName().toLowerCase());
+                        }
+                    });
 
-                    @Override
-                    public int compare(VideoDTO lhs, VideoDTO rhs) {
-                        // TODO Auto-generated method stub
-                        return lhs.getVideoName().toLowerCase()
-                                .compareTo(rhs.getVideoName().toLowerCase());
+                    if (videoListAdapter != null)
+                        videoListAdapter.notifyDataSetChanged();
+                    else {
+                        videoListAdapter = new VideoContentListAdapter(favoriteVideoList, mActivity, 2, true);
+                        listViewFavouriteVideos.setAdapter(videoListAdapter);
+                        videoListAdapter.notifyDataSetChanged();
                     }
-                });
+                    videoListAdapter.listSearch.clear();
+                    videoListAdapter.listSearch.addAll(result);
 
-                if (videoListAdapter != null)
-                    videoListAdapter.notifyDataSetChanged();
-                else {
-                    videoListAdapter = new VideoContentListAdapter(favoriteVideoList, mActivity, 2, true);
-                    listViewFavouriteVideos.setAdapter(videoListAdapter);
-                }
-                videoListAdapter.listSearch.clear();
-                videoListAdapter.listSearch.addAll(result);
+                    System.out.println("favoriteVideoList size onpost111 : " + favoriteVideoList.size() + " result " + result.size());
 
-                if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
-                    videoListAdapter.filter(GlobalConstants.SEARCH_VIEW_QUERY.toLowerCase(Locale
-                            .getDefault()));
-                    videoListAdapter.notifyDataSetChanged();
-                }
+                    if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+                        videoListAdapter.filter(GlobalConstants.SEARCH_VIEW_QUERY.toLowerCase(Locale
+                                .getDefault()));
+                        videoListAdapter.notifyDataSetChanged();
+                    }
 
-                if (VideoDataService.isServiceRunning) {
-                    if (favoriteVideoList.size() == 0) {
-                        progressBar.setVisibility(View.VISIBLE);
-                        tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
+                    if (VideoDataService.isServiceRunning) {
+                        if (favoriteVideoList.size() == 0) {
+                            progressBar.setVisibility(View.VISIBLE);
+                            tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
+                        } else {
+                            progressBar.setVisibility(View.GONE);
+                        }
                     } else {
+                        if (favoriteVideoList.size() == 0) {
+                            tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
+                            listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
+                        } else {
+                            tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
+                            listViewFavouriteVideos.setFastScrollAlwaysVisible(true);
+                        }
+                    }
+                    if (videoListAdapter.getCount() == 0) {
+                        tvsearchRecordsNotAvailable.setText("No favorites have been saved");
+                        tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
                         progressBar.setVisibility(View.GONE);
+                        listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
                     }
                 } else {
-                    if (favoriteVideoList.size() == 0) {
-                        tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
-                        listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
-                    } else {
-                        tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
-                        listViewFavouriteVideos.setFastScrollAlwaysVisible(true);
+                    if (favoriteVideoList != null) {
+                        favoriteVideoList.clear();
                     }
+                    if (videoListAdapter != null) {
+                        videoListAdapter.notifyDataSetChanged();
+                    }
+
                 }
-                if (videoListAdapter.getCount() == 0) {
+                if (favoriteVideoList.size() == 0) {
                     tvsearchRecordsNotAvailable.setText("No favorites have been saved");
                     tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
                     progressBar.setVisibility(View.GONE);
                     listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
                 }
-            } else {
-                if (favoriteVideoList != null) {
-                    favoriteVideoList.clear();
+                if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+                    tvsearchRecordsNotAvailable.setText("No Records Found");
                 }
-                if (videoListAdapter != null) {
-                    videoListAdapter.notifyDataSetChanged();
+                videoListAdapter.isPullRefreshInProgress = false;
+                refreshLayout.setRefreshing(false);
+
+                if (listViewFavouriteVideos != null) {
+                    if (favoriteVideoList.size() == 0) {
+
+                    } else {
+                        listViewFavouriteVideos.setEnabled(true);
+                        listViewFavouriteVideos.setFastScrollAlwaysVisible(true);
+                        listViewFavouriteVideos.setVerticalScrollBarEnabled(true);
+                        listViewFavouriteVideos.setFastScrollEnabled(true);
+
+                        LocalModel localModel = LocalModel.getInstance();
+                        localModel.setmListViewHeight(calculateHeight(listViewFavouriteVideos));
+
+                        if (localModel.getmListViewHeight() < localModel.getmDisplayHeight()) {
+                            listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
+                        }
+                    }
                 }
-
-            }
-            if (favoriteVideoList.size() == 0) {
-                tvsearchRecordsNotAvailable.setText("No favorites have been saved");
-                tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
-                progressBar.setVisibility(View.GONE);
-                listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
-            }
-            if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
-                tvsearchRecordsNotAvailable.setText("No Records Found");
-            }
-            videoListAdapter.isPullRefreshInProgress = false;
-            refreshLayout.setRefreshing(false);
-
-            if (listViewFavouriteVideos != null) {
-                listViewFavouriteVideos.setEnabled(true);
-                listViewFavouriteVideos.setFastScrollAlwaysVisible(true);
-                listViewFavouriteVideos.setVerticalScrollBarEnabled(true);
-                listViewFavouriteVideos.setFastScrollEnabled(true);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
 
     private AutoRefreshTask autoRefreshTask;
     CountDownTimer countDownTimer;
+    Handler autoRefreshHandler = new Handler();
     private void autoRefresh() {
         if (Utils.isInternetAvailable(mActivity.getApplicationContext())) {
 
 
-            countDownTimer = new CountDownTimer(GlobalConstants.AUTO_REFRESH_INTERVAL, GlobalConstants.AUTO_REFRESH_INTERVAL) {
-
-                public void onTick(long millisUntilFinished) {
-
-                    //here you can have your logic to set text to edittext
-                    autoRefreshTask = new AutoRefreshTask();
-                    autoRefreshTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-
-                }
-
-                public void onFinish() {
-                    if (countDownTimer != null) {
-                        countDownTimer.start();
-                    }
-                }
-
-            }.start();
-
+//            countDownTimer = new CountDownTimer(GlobalConstants.AUTO_REFRESH_INTERVAL, GlobalConstants.AUTO_REFRESH_INTERVAL) {
+//
+//                public void onTick(long millisUntilFinished) {
+//
+//                    //here you can have your logic to set text to edittext
+//                    autoRefreshTask = new AutoRefreshTask();
+//                    autoRefreshTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+//
+//                }
+//
+//                public void onFinish() {
+//                    if (countDownTimer != null) {
+//                        countDownTimer.start();
+//                    }
+//                }
+//
+//            }.start();
+            autoRefreshHandler.postDelayed(autoRefreshRun, GlobalConstants.AUTO_REFRESH_INTERVAL);
 
         } else {
             ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
         }
     }
 
+    private Runnable autoRefreshRun = new Runnable() {
+        @Override
+        public void run() {
+
+            autoRefreshTask = new AutoRefreshTask();
+            autoRefreshTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }
+    };
 
 
     public class AutoRefreshTask extends AsyncTask<Void, Void, ArrayList<VideoDTO>> {
@@ -898,83 +949,92 @@ public class FavoritesFragment extends BaseFragment {
         @Override
         protected void onPostExecute(ArrayList<VideoDTO> result) {
             super.onPostExecute(result);
-            if (result.size() > 0) {
-                VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).setAllFavoriteStatusToFalse();
-                for (VideoDTO vidDto : result) {
-                    if (VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).checkVideoAvailability(vidDto.getVideoId())) {
-                        VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).setFavoriteFlag(1, vidDto.getVideoId());
+
+            try {
+                if (result.size() > 0) {
+                    VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).setAllFavoriteStatusToFalse();
+                    for (VideoDTO vidDto : result) {
+                        if (VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).checkVideoAvailability(vidDto.getVideoId())) {
+                            VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).setFavoriteFlag(1, vidDto.getVideoId());
+                        }
                     }
-                }
-                favoriteVideoList.clear();
-                favoriteVideoList.addAll(VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getFavouriteVideosArrayList());
+                    favoriteVideoList.clear();
+                    favoriteVideoList.addAll(VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getFavouriteVideosArrayList());
 
-                Collections.sort(favoriteVideoList, new Comparator<VideoDTO>() {
+                    Collections.sort(favoriteVideoList, new Comparator<VideoDTO>() {
 
-                    @Override
-                    public int compare(VideoDTO lhs, VideoDTO rhs) {
-                        // TODO Auto-generated method stub
-                        return lhs.getVideoName().toLowerCase()
-                                .compareTo(rhs.getVideoName().toLowerCase());
+                        @Override
+                        public int compare(VideoDTO lhs, VideoDTO rhs) {
+                            // TODO Auto-generated method stub
+                            return lhs.getVideoName().toLowerCase()
+                                    .compareTo(rhs.getVideoName().toLowerCase());
+                        }
+                    });
+
+                    if (videoListAdapter != null)
+                        videoListAdapter.notifyDataSetChanged();
+                    else {
+                        videoListAdapter = new VideoContentListAdapter(favoriteVideoList, mActivity, 2, true);
+                        listViewFavouriteVideos.setAdapter(videoListAdapter);
                     }
-                });
+                    videoListAdapter.listSearch.clear();
+                    videoListAdapter.listSearch.addAll(result);
 
-                if (videoListAdapter != null)
-                    videoListAdapter.notifyDataSetChanged();
-                else {
-                    videoListAdapter = new VideoContentListAdapter(favoriteVideoList, mActivity, 2, true);
-                    listViewFavouriteVideos.setAdapter(videoListAdapter);
-                }
-                videoListAdapter.listSearch.clear();
-                videoListAdapter.listSearch.addAll(result);
+                    if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+                        videoListAdapter.filter(GlobalConstants.SEARCH_VIEW_QUERY.toLowerCase(Locale
+                                .getDefault()));
+                        videoListAdapter.notifyDataSetChanged();
+                    }
 
-                if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
-                    videoListAdapter.filter(GlobalConstants.SEARCH_VIEW_QUERY.toLowerCase(Locale
-                            .getDefault()));
-                    videoListAdapter.notifyDataSetChanged();
-                }
-
-                if (VideoDataService.isServiceRunning) {
-                    if (favoriteVideoList.size() == 0) {
-                        progressBar.setVisibility(View.VISIBLE);
-                        tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
+                    if (VideoDataService.isServiceRunning) {
+                        if (favoriteVideoList.size() == 0) {
+                            progressBar.setVisibility(View.VISIBLE);
+                            tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
+                        } else {
+                            progressBar.setVisibility(View.GONE);
+                        }
                     } else {
+                        if (favoriteVideoList.size() == 0) {
+                            tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
+                            listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
+                        } else {
+                            tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
+                            listViewFavouriteVideos.setFastScrollAlwaysVisible(true);
+                        }
+                    }
+                    if (videoListAdapter.getCount() == 0) {
+                        tvsearchRecordsNotAvailable.setText("No favorites have been saved");
+                        tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
                         progressBar.setVisibility(View.GONE);
+                        listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
+
                     }
                 } else {
-                    if (favoriteVideoList.size() == 0) {
-                        tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
-                        listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
-                    } else {
-                        tvsearchRecordsNotAvailable.setVisibility(View.INVISIBLE);
-                        listViewFavouriteVideos.setFastScrollAlwaysVisible(true);
+                    if (favoriteVideoList != null) {
+                        favoriteVideoList.clear();
                     }
+                    if (videoListAdapter != null) {
+                        videoListAdapter.notifyDataSetChanged();
+                    }
+
                 }
-                if (videoListAdapter.getCount() == 0) {
+                if (favoriteVideoList.size() == 0) {
                     tvsearchRecordsNotAvailable.setText("No favorites have been saved");
                     tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
                     progressBar.setVisibility(View.GONE);
                     listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
+
                 }
-            } else {
-                if (favoriteVideoList != null) {
-                    favoriteVideoList.clear();
-                }
-                if (videoListAdapter != null) {
-                    videoListAdapter.notifyDataSetChanged();
+                if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+                    tvsearchRecordsNotAvailable.setText("No Records Found");
                 }
 
-            }
-            if (favoriteVideoList.size() == 0) {
-                tvsearchRecordsNotAvailable.setText("No favorites have been saved");
-                tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
-                progressBar.setVisibility(View.GONE);
-                listViewFavouriteVideos.setFastScrollAlwaysVisible(false);
-            }
-            if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
-                tvsearchRecordsNotAvailable.setText("No Records Found");
-            }
+                videoListAdapter.isPullRefreshInProgress = false;
+                autoRefreshHandler.postDelayed(autoRefreshRun, GlobalConstants.AUTO_REFRESH_INTERVAL);
 
-            videoListAdapter.isPullRefreshInProgress = false;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
         }
     }

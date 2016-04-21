@@ -57,7 +57,8 @@ public abstract class PermissionActivity extends FragmentActivity {
     private String[] mustPermissions =
             {
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.GET_ACCOUNTS
 
             };
 
@@ -142,7 +143,7 @@ public abstract class PermissionActivity extends FragmentActivity {
      * @return
      */
     protected boolean haveAllMustPermissions() {
-        System.out.println("i am here Gaurav");
+
         this.permissionRequestCode = PERMISSION_REQUEST_MUST;
 
         ArrayList<String> permissionsNotAvail = new ArrayList<String>();

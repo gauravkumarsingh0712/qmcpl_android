@@ -137,6 +137,7 @@ public class LoginPasswordActivity extends BaseActivity {
         edUsername = (EditText) findViewById(R.id.ed_username);
         edFirstName = (EditText) findViewById(R.id.ed_first_name);
         edLastName = (EditText) findViewById(R.id.ed_last_name);
+
         edAgeOptional = (EditText) findViewById(R.id.ed_age_optional);
         edAgeOptional.setInputType(InputType.TYPE_NULL);
 
@@ -517,15 +518,21 @@ public class LoginPasswordActivity extends BaseActivity {
 
     private boolean isValidPassword(String pass) {
         if (pass != null && pass.length() >= 6) {
+            if (pass.contains(" ")) {
+                showToastMessage("Please enter vaild password");
+                return false;
+            }
             return true;
         }
-        if (pass != null)
-            if (pass.length() == 0)
+        if (pass != null) {
+            if (pass.length() == 0) {
 //                    edPassword.setError("Password not entered");
                 showToastMessage("Password not entered");
-            else if (pass.length() < 6)
+            } else if (pass.length() < 6) {
 //                    edPassword.setError("Minimum 6 characters required!");
                 showToastMessage("Password should contain minimum 6 characters!");
+            }
+        }
         return false;
     }
 
@@ -700,8 +707,8 @@ public class LoginPasswordActivity extends BaseActivity {
                             if (responseUser.getIsRegisteredUser().equals("N") && !AppController.getInstance().getMailChimpRegisterUser()) {
                                 AppController.getInstance().setMailChimpRegisterUser(true);
                                 pDialog.dismiss();
-                                mFirstName = AppController.getInstance().getFirstName().toString();
-                                mLastName = AppController.getInstance().getLastName().toString();
+                                mFirstName = AppController.getInstance().getFirstName().toString().substring(0, 1).toUpperCase() + AppController.getInstance().getFirstName().toString().substring(1);//AppController.getInstance().getFirstName().toString();
+                                mLastName = AppController.getInstance().getLastName().toString().substring(0, 1).toUpperCase() + AppController.getInstance().getFirstName().toString().substring(1);
                                 mEmailId = AppController.getInstance().getEmailAddress().toString();
                                 mUserId = AppController.getInstance().getUserId();
                                 showConfirmLoginDialog(GlobalConstants.DO_YOU_WANT_TO_JOIN_OUR_MAILING_LIST, mFirstName, mLastName, mEmailId, mUserId);
@@ -722,6 +729,7 @@ public class LoginPasswordActivity extends BaseActivity {
                     e.printStackTrace();
                     stopService(new Intent(LoginPasswordActivity.this, VideoDataService.class));
                     VaultDatabaseHelper.getInstance(getApplicationContext()).removeAllRecords();
+                    Toast.makeText(LoginPasswordActivity.this,"error : "+e.getMessage(),Toast.LENGTH_LONG).show();
                     pDialog.dismiss();
                 }
                 mFetchingTask = null;
@@ -1226,12 +1234,10 @@ public class LoginPasswordActivity extends BaseActivity {
         alertDialog.setCanceledOnTouchOutside(false);
         alertDialog.show();
         Button nbutton = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
-        nbutton.setPadding(0, 0, 30, 0);
         nbutton.setAllCaps(false);
         nbutton.setTextColor(Color.GRAY);
         Button pbutton = alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE);
         pbutton.setTextColor(getResources().getColor(R.color.apptheme_color));
-        pbutton.setPadding(0, 0, 180, 0);
         pbutton.setAllCaps(false);
     }
 
@@ -1246,7 +1252,7 @@ public class LoginPasswordActivity extends BaseActivity {
         }
         mergeFields.addField("FNAME", firstName);
         mergeFields.addField("LNAME", lastName);
-        mergeFields.addField("PLATEFORM", GlobalConstants.DEVICE_TYPE);
+        mergeFields.addField("PLATFORM", GlobalConstants.DEVICE_TYPE);
         mergeFields.addField("SCHOOL", GlobalConstants.APP_SCHOOL_NAME);
 
         // ListMethods listMethods = new ListMethods(getResources().getText(R.string.mc_api_key));

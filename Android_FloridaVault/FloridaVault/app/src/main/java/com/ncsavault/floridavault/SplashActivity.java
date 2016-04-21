@@ -40,9 +40,14 @@ import org.vault.app.activities.PermissionActivity;
 import org.vault.app.appcontroller.AppController;
 import org.vault.app.database.VaultDatabaseHelper;
 import org.vault.app.dto.TabBannerDTO;
+import org.vault.app.dto.VideoDTO;
+import org.vault.app.fragments.CoachesEraFragment;
+import org.vault.app.fragments.FeaturedFragment;
+import org.vault.app.fragments.GamesFragment;
+import org.vault.app.fragments.OpponentsFragment;
+import org.vault.app.fragments.PlayerFragment;
 import org.vault.app.globalconstants.GlobalConstants;
 import org.vault.app.service.VideoDataService;
-import org.vault.app.shimmer.ShimmerFrameLayout;
 import org.vault.app.utils.Utils;
 
 import java.io.File;
@@ -55,7 +60,6 @@ import java.util.ArrayList;
  */
 public class SplashActivity extends PermissionActivity {
 
-    private ShimmerFrameLayout mShimmerViewContainer;
     public static final String tag = SplashActivity.class.getSimpleName();
     Profile fbProfile;
     private AsyncTask<Void, Void, ArrayList<TabBannerDTO>> mBannerTask;
@@ -74,14 +78,36 @@ public class SplashActivity extends PermissionActivity {
         hashKey();
         Uri uri = getIntent().getData();
         if (uri != null) {
-
             String videoUrl = String.valueOf(uri);
-            videoUrl = videoUrl.substring(11);
-            String[] videoParams = videoUrl.split("=");
-            videoUrlData = videoParams[1];
-            System.out.println("videoUrl : " + videoParams[1]);
+
+            if(videoUrl.toLowerCase().contains("floridavault")) {
+                videoUrl = videoUrl.substring(11);
+                String[] videoParams = videoUrl.split("=");
+                videoUrlData = videoParams[1];
+                System.out.println("videoUrl : " + videoParams[1]);
+            }else if(videoUrl.toLowerCase().contains("vaultservices"))
+            {
+                videoUrl = videoUrl.substring(7);
+                String[] videoParams = videoUrl.split("/");
+                if(videoParams.length > 0) {
+                    String str = videoParams[3].toString();
+                    String[] values = str.split("\\.");
+                    videoUrlData = values[0];
+                }
+
+            }else if(videoUrl.toLowerCase().contains("0b78b111a9d0410784caa8a634aa3b90"))
+            {
+                videoUrl = videoUrl.substring(7);
+                String[] videoParams = videoUrl.split("/");
+                if(videoParams.length > 0) {
+                    String str = videoParams[3].toString();
+                    String[] values = str.split("\\.");
+                    videoUrlData = values[0];
+                }
+            }
 
         }
+
 
         setContentView(R.layout.splash_activity);
         File cacheDir = StorageUtils.getCacheDirectory(SplashActivity.this);
@@ -142,19 +168,15 @@ public class SplashActivity extends PermissionActivity {
             case PERMISSION_REQUEST_MUST:
                 if (isGranted) {
                     //perform action here
-                    System.out.println("i am here Gaurav222");
                     initViews();
                     startApp();
                 } else {
-                    System.out.println("i am here Gaurav333");
                     if (!askAgainForMustPermissions) {
                         askAgainForMustPermissions = true;
-                        System.out.println("i am here Gaurav444");
                         // Toast.makeText(this, "Please provide all the Permissions to Make the App work for you.", Toast.LENGTH_LONG).show();
                         haveAllMustPermissions();
                     } else if (!goToSettingsScreen) {
                         goToSettingsScreen = true;
-                        System.out.println("i am here Gaurav555");
 
                         showPermissionsConfirmationDialog(GlobalConstants.UGA_VAULT_PERMISSION);
 
@@ -168,142 +190,258 @@ public class SplashActivity extends PermissionActivity {
         }
     }
 
-
+    ArrayList<VideoDTO> arrayListVideos = new ArrayList<VideoDTO>();
     public void loadBannerData() {
         mBannerTask = new AsyncTask<Void, Void, ArrayList<TabBannerDTO>>() {
 
             @Override
             protected void onPreExecute() {
+
                 super.onPreExecute();
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Profile fbProfile = Profile.getCurrentProfile();
+                            SharedPreferences pref = AppController.getInstance().getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
+                            long userId = pref.getLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, 0);
+
+                            if (fbProfile != null || userId > 0) {
+//                            Toast.makeText(SplashActivity.this, "Going to Main Activity", Toast.LENGTH_LONG).show();
+                                Intent intent = new Intent(SplashActivity.this, MainActivity.class);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                if (videoUrlData != null) {
+                                    intent.putExtra("videoUrl", videoUrlData);
+                                }
+                                startActivity(intent);
+                                overridePendingTransition(R.anim.slideup, R.anim.nochange);
+                                finish();
+                                if (!VideoDataService.isServiceRunning)
+                                    startService(new Intent(SplashActivity.this, VideoDataService.class));
+                            } else {
+                                VaultDatabaseHelper.getInstance(SplashActivity.this).removeAllTabBannerData();
+                                Intent intent = new Intent(SplashActivity.this, LoginEmailActivity.class);
+                                startActivity(intent);
+                                overridePendingTransition(R.anim.slideup, R.anim.nochange);
+                                finish();
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }, 3000);
             }
 
             @Override
             protected ArrayList<TabBannerDTO> doInBackground(Void... params) {
-                try {
                 ArrayList<TabBannerDTO> arrayListBanner = new ArrayList<TabBannerDTO>();
+                Intent broadCastIntent = new Intent();
                 try {
                     arrayListBanner.addAll(AppController.getInstance().getServiceManager().getVaultService().getAllTabBannerData());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                ArrayList<String> lstUrls = new ArrayList<>();
 
-                File imageFile;
-                for (TabBannerDTO bDTO : arrayListBanner) {
-                    TabBannerDTO localBannerData = VaultDatabaseHelper.getInstance(getApplicationContext()).getLocalTabBannerDataByTabId(bDTO.getTabId());
-                    if (localBannerData != null) {
-                        if ((localBannerData.getBannerModified() != bDTO.getBannerModified()) || (localBannerData.getBannerCreated() != bDTO.getBannerCreated())) {
-                            VaultDatabaseHelper.getInstance(getApplicationContext()).updateBannerData(bDTO);
-                        }
-                        if (localBannerData.getTabDataModified() != bDTO.getTabDataModified()) {
-                            VaultDatabaseHelper.getInstance(getApplicationContext()).updateTabData(bDTO);
-                            if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.FEATURED).toLowerCase())) {
-                                VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_FEATURED);
-                                lstUrls.add(GlobalConstants.FEATURED_API_URL);
-                            } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.GAMES).toLowerCase())) {
-                                VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_GAMES);
-                                lstUrls.add(GlobalConstants.GAMES_API_URL);
-                            } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.PLAYERS).toLowerCase())) {
-                                VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_PLAYERS);
-                                lstUrls.add(GlobalConstants.PLAYER_API_URL);
-                            } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.OPPONENTS).toLowerCase())) {
-                                VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_OPPONENT);
-                                lstUrls.add(GlobalConstants.OPPONENT_API_URL);
-                            } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.COACHES_ERA).toLowerCase())) {
-                                VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_COACH);
-                                lstUrls.add(GlobalConstants.COACH_API_URL);
+                    ArrayList<String> lstUrls = new ArrayList<>();
+
+                    File imageFile;
+                    for (TabBannerDTO bDTO : arrayListBanner) {
+                        TabBannerDTO localBannerData = VaultDatabaseHelper.getInstance(getApplicationContext()).getLocalTabBannerDataByTabId(bDTO.getTabId());
+                        if (localBannerData != null) {
+                            if ((localBannerData.getBannerModified() != bDTO.getBannerModified()) || (localBannerData.getBannerCreated() != bDTO.getBannerCreated())) {
+                                VaultDatabaseHelper.getInstance(getApplicationContext()).updateBannerData(bDTO);
                             }
-                            imageFile = ImageLoader.getInstance().getDiscCache().get(localBannerData.getBannerURL());
-                            if (imageFile.exists()) {
-                                imageFile.delete();
+                            if (localBannerData.getTabDataModified() != bDTO.getTabDataModified()) {
+                                VaultDatabaseHelper.getInstance(getApplicationContext()).updateTabData(bDTO);
+                                if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.FEATURED).toLowerCase())) {
+
+                                    VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_FEATURED);
+                                    lstUrls.add(GlobalConstants.FEATURED_API_URL);
+                                    String url = GlobalConstants.FEATURED_API_URL + "userid=" + AppController.getInstance().getUserId();
+                                    try {
+                                        arrayListVideos.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                    VaultDatabaseHelper.getInstance(getApplicationContext()).insertVideosInDatabase(arrayListVideos);
+                                    broadCastIntent.setAction(FeaturedFragment.FeaturedResponseReceiver.ACTION_RESP);
+                                } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.GAMES).toLowerCase())) {
+
+                                    VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_GAMES);
+                                    lstUrls.add(GlobalConstants.GAMES_API_URL);
+                                    String url = GlobalConstants.GAMES_API_URL + "userid=" + AppController.getInstance().getUserId();
+                                    try {
+                                        arrayListVideos.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                    VaultDatabaseHelper.getInstance(getApplicationContext()).insertVideosInDatabase(arrayListVideos);
+                                    broadCastIntent.setAction(GamesFragment.GamesResponseReceiver.ACTION_RESP);
+                                } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.PLAYERS).toLowerCase())) {
+
+                                    VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_PLAYERS);
+
+                                    lstUrls.add(GlobalConstants.PLAYER_API_URL);
+                                    String url = GlobalConstants.PLAYER_API_URL + "userid=" + AppController.getInstance().getUserId();
+                                    try {
+                                        arrayListVideos.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                    VaultDatabaseHelper.getInstance(getApplicationContext()).insertVideosInDatabase(arrayListVideos);
+                                    broadCastIntent.setAction(PlayerFragment.PlayerResponseReceiver.ACTION_RESP);
+                                } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.OPPONENTS).toLowerCase())) {
+
+                                    VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_OPPONENT);
+                                    lstUrls.add(GlobalConstants.OPPONENT_API_URL);
+                                    String url = GlobalConstants.OPPONENT_API_URL + "userid=" + AppController.getInstance().getUserId();
+                                    try {
+                                        arrayListVideos.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                    VaultDatabaseHelper.getInstance(getApplicationContext()).insertVideosInDatabase(arrayListVideos);
+                                    broadCastIntent.setAction(OpponentsFragment.OpponentsResponseReceiver.ACTION_RESP);
+                                } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.COACHES_ERA).toLowerCase())) {
+
+                                    VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_COACH);
+                                    lstUrls.add(GlobalConstants.COACH_API_URL);
+                                    String url = GlobalConstants.COACH_API_URL + "userid=" + AppController.getInstance().getUserId();
+                                    try {
+                                        arrayListVideos.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                    VaultDatabaseHelper.getInstance(getApplicationContext()).insertVideosInDatabase(arrayListVideos);
+                                    broadCastIntent.setAction(CoachesEraFragment.CoachesResponseReceiver.ACTION_RESP);
+                                }
+                                imageFile = ImageLoader.getInstance().getDiscCache().get(localBannerData.getBannerURL());
+                                if (imageFile.exists()) {
+                                    imageFile.delete();
+                                }
+                                MemoryCacheUtils.removeFromCache(localBannerData.getBannerURL(), ImageLoader.getInstance().getMemoryCache());
+                                broadCastIntent.addCategory(Intent.CATEGORY_DEFAULT);
+                                sendBroadcast(broadCastIntent);
+                                arrayListVideos.clear();
                             }
-                            MemoryCacheUtils.removeFromCache(localBannerData.getBannerURL(), ImageLoader.getInstance().getMemoryCache());
+                        } else {
+                            VaultDatabaseHelper.getInstance(getApplicationContext()).insertTabBannerData(bDTO);
                         }
-                    } else {
-                        VaultDatabaseHelper.getInstance(getApplicationContext()).insertTabBannerData(bDTO);
+
                     }
-                }
-                if (lstUrls.size() == 0) {
-                    int count = VaultDatabaseHelper.getInstance(getApplicationContext()).getTabBannerCount();
-                    if (count > 0) {
-                        lstUrls.add(GlobalConstants.FEATURED_API_URL);
-                        lstUrls.add(GlobalConstants.GAMES_API_URL);
-                        lstUrls.add(GlobalConstants.PLAYER_API_URL);
-                        lstUrls.add(GlobalConstants.OPPONENT_API_URL);
-                        lstUrls.add(GlobalConstants.COACH_API_URL);
+                    if (lstUrls.size() == 0) {
+                        int count = VaultDatabaseHelper.getInstance(getApplicationContext()).getTabBannerCount();
+                        if (count > 0) {
+                            lstUrls.add(GlobalConstants.FEATURED_API_URL);
+                            lstUrls.add(GlobalConstants.GAMES_API_URL);
+                            lstUrls.add(GlobalConstants.PLAYER_API_URL);
+                            lstUrls.add(GlobalConstants.OPPONENT_API_URL);
+                            lstUrls.add(GlobalConstants.COACH_API_URL);
+
+//                            if (!VideoDataService.isServiceRunning)
+//                                startService(new Intent(SplashActivity.this, VideoDataService.class));
+                        }
                     }
-                }
-                AppController.getInstance().setAPI_URLS(lstUrls);
-                /*try {
-                    Random randomNumber;
-                    for (int i = 0; i <= 100; i++) {
-                        Thread.sleep(75);
-                        randomNumber = new Random();
-                        if(i == 10)
-                            changePercent(randomNumber.nextInt(10 - 1 + 1) + 1);
-                        if(i == 20)
-                            changePercent(randomNumber.nextInt(20 - 11 + 1)+11);
-                        if(i == 30)
-                            changePercent(randomNumber.nextInt(30 - 21 + 1)+21);
-                        if(i == 40)
-                            changePercent(randomNumber.nextInt(40 - 31 + 1)+31);
-                        if(i == 50)
-                            changePercent(randomNumber.nextInt(50 - 41 + 1)+41);
-                        if(i == 60)
-                            changePercent(randomNumber.nextInt(60 - 51 + 1)+51);
-                        if(i == 70)
-                            changePercent(randomNumber.nextInt(70 - 61 + 1)+61);
-                        if(i == 80)
-                            changePercent(randomNumber.nextInt(80 - 71 + 1)+71);
-                        if(i == 90)
-                            changePercent(randomNumber.nextInt(90 - 81 + 1)+81);
-                        if(i == 100)
-                            changePercent(i);
-                    }
-                    Thread.sleep(4000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }*/
+                    AppController.getInstance().setAPI_URLS(lstUrls);
+
                 } catch (Exception e) {
                     e.printStackTrace();
-                    showToastMessage("Connection Time Out Exception.");
                 }
-                return null;
+                return arrayListBanner;
             }
 
             @Override
             protected void onPostExecute(ArrayList<TabBannerDTO> bannerDTOs) {
                 super.onPostExecute(bannerDTOs);
-
-                try {
-                    Profile fbProfile = Profile.getCurrentProfile();
-                    SharedPreferences pref = AppController.getInstance().getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
-                    long userId = pref.getLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, 0);
-
-                    if (fbProfile != null || userId > 0) {
-//                        Toast.makeText(SplashActivity.this, "Going to Main Activity", Toast.LENGTH_LONG).show();
-                        Intent intent = new Intent(SplashActivity.this, MainActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-                        intent.putExtra("videoUrl", videoUrlData);
-                        startActivity(intent);
-                        overridePendingTransition(R.anim.slideup, R.anim.nochange);
-                        finish();
-                        if (!VideoDataService.isServiceRunning)
-                            startService(new Intent(SplashActivity.this, VideoDataService.class));
-                    } else {
-                        VaultDatabaseHelper.getInstance(SplashActivity.this).removeAllTabBannerData();
-                        Intent intent = new Intent(SplashActivity.this, LoginEmailActivity.class);
-                        startActivity(intent);
-                        overridePendingTransition(R.anim.slideup, R.anim.nochange);
-                        finish();
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+//                try {
+//
+//                    // getBannerAndTabData(bannerDTOs);
+//
+//                    Profile fbProfile = Profile.getCurrentProfile();
+//                    SharedPreferences pref = AppController.getInstance().getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
+//                    long userId = pref.getLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, 0);
+//
+//                    if (fbProfile != null || userId > 0) {
+////                        Toast.makeText(SplashActivity.this, "Going to Main Activity", Toast.LENGTH_LONG).show();
+//                        Intent intent = new Intent(SplashActivity.this, MainActivity.class);
+//                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+//                        if (videoUrlData != null) {
+//                            intent.putExtra("videoUrl", videoUrlData);
+//                        }
+//                        startActivity(intent);
+//                        overridePendingTransition(R.anim.slideup, R.anim.nochange);
+//                        finish();
+////                        if (!VideoDataService.isServiceRunning )
+////                            startService(new Intent(SplashActivity.this, VideoDataService.class));
+//                    } else {
+//                        VaultDatabaseHelper.getInstance(SplashActivity.this).removeAllTabBannerData();
+//                        Intent intent = new Intent(SplashActivity.this, LoginEmailActivity.class);
+//                        if (videoUrlData != null) {
+//                            intent.putExtra("videoUrl", videoUrlData);
+//                        }
+//                        startActivity(intent);
+//                        overridePendingTransition(R.anim.slideup, R.anim.nochange);
+//                        finish();
+//                    }
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
             }
         };
 
         mBannerTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+
+    private void getBannerAndTabData(ArrayList<TabBannerDTO> arrayListBanner) {
+        ArrayList<String> lstUrls = new ArrayList<>();
+
+        File imageFile;
+        for (TabBannerDTO bDTO : arrayListBanner) {
+            TabBannerDTO localBannerData = VaultDatabaseHelper.getInstance(getApplicationContext()).getLocalTabBannerDataByTabId(bDTO.getTabId());
+            if (localBannerData != null) {
+                if ((localBannerData.getBannerModified() != bDTO.getBannerModified()) || (localBannerData.getBannerCreated() != bDTO.getBannerCreated())) {
+                    VaultDatabaseHelper.getInstance(getApplicationContext()).updateBannerData(bDTO);
+                }
+                if (localBannerData.getTabDataModified() != bDTO.getTabDataModified()) {
+                    VaultDatabaseHelper.getInstance(getApplicationContext()).updateTabData(bDTO);
+                    if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.FEATURED).toLowerCase())) {
+                        VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_FEATURED);
+                        lstUrls.add(GlobalConstants.FEATURED_API_URL);
+                    } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.GAMES).toLowerCase())) {
+                        VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_GAMES);
+                        lstUrls.add(GlobalConstants.GAMES_API_URL);
+                    } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.PLAYERS).toLowerCase())) {
+                        VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_PLAYERS);
+                        lstUrls.add(GlobalConstants.PLAYER_API_URL);
+                    } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.OPPONENTS).toLowerCase())) {
+                        VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_OPPONENT);
+                        lstUrls.add(GlobalConstants.OPPONENT_API_URL);
+                    } else if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.COACHES_ERA).toLowerCase())) {
+                        VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_COACH);
+                        lstUrls.add(GlobalConstants.COACH_API_URL);
+                    }
+                    imageFile = ImageLoader.getInstance().getDiscCache().get(localBannerData.getBannerURL());
+                    if (imageFile.exists()) {
+                        imageFile.delete();
+                    }
+                    MemoryCacheUtils.removeFromCache(localBannerData.getBannerURL(), ImageLoader.getInstance().getMemoryCache());
+                    System.out.println("gettting data end111");
+                }
+            } else {
+                VaultDatabaseHelper.getInstance(getApplicationContext()).insertTabBannerData(bDTO);
+            }
+        }
+        if (lstUrls.size() == 0) {
+            int count = VaultDatabaseHelper.getInstance(getApplicationContext()).getTabBannerCount();
+            if (count > 0) {
+                lstUrls.add(GlobalConstants.FEATURED_API_URL);
+                lstUrls.add(GlobalConstants.GAMES_API_URL);
+                lstUrls.add(GlobalConstants.PLAYER_API_URL);
+                lstUrls.add(GlobalConstants.OPPONENT_API_URL);
+                lstUrls.add(GlobalConstants.COACH_API_URL);
+            }
+        }
+        AppController.getInstance().setAPI_URLS(lstUrls);
+        System.out.println("gettting data end");
     }
 
     private void startApp() {
@@ -325,7 +463,9 @@ public class SplashActivity extends PermissionActivity {
 //                            Toast.makeText(SplashActivity.this, "Going to Main Activity", Toast.LENGTH_LONG).show();
                             Intent intent = new Intent(SplashActivity.this, MainActivity.class);
                             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-                            intent.putExtra("videoUrl",videoUrlData);
+                            if (videoUrlData != null) {
+                                intent.putExtra("videoUrl", videoUrlData);
+                            }
                             startActivity(intent);
                             overridePendingTransition(R.anim.slideup, R.anim.nochange);
                             finish();
@@ -380,7 +520,7 @@ public class SplashActivity extends PermissionActivity {
     private void hashKey() {
         try {
             PackageInfo info = getPackageManager().getPackageInfo(
-                    "com.ugavault.android",
+                    "com.ncsavault.floridavault",
                     PackageManager.GET_SIGNATURES);
             for (Signature signature : info.signatures) {
                 MessageDigest md = MessageDigest.getInstance("SHA");

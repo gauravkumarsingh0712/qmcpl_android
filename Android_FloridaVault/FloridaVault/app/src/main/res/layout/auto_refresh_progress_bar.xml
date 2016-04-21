@@ -11,7 +11,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:indeterminate="false"
-        android:indeterminateDrawable="@drawable/circle_progress_bar_lower"
         android:visibility="gone" />
 
 

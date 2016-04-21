@@ -119,7 +119,7 @@ public class VideoInfoActivity extends PermissionActivity {
     private CirclePageIndicator circleIndicator;
     private ProgressBar bufferProgressBar;
     private ImageView imgVideoClose, imgVideoShare, imgVideoStillUrl;
-    private LinearLayout llVideoLoader;
+    public static LinearLayout llVideoLoader,bufferLinearLayout;
 
     //UI Elements and fields for Social Sharing
     private static CallbackManager callbackManager;
@@ -137,6 +137,9 @@ public class VideoInfoActivity extends PermissionActivity {
     private LinearLayout shareVideoLayout;
     private boolean askAgainForMustPermissions = false;
     private boolean goToSettingsScreen = false;
+    private boolean isTouchScreen = true;
+
+
     @Override
     protected void onStart() {
         super.onStart();
@@ -145,12 +148,14 @@ public class VideoInfoActivity extends PermissionActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFormat(PixelFormat.TRANSLUCENT);
         setContentView(R.layout.video_info_layout);
         context = VideoInfoActivity.this;
         isVideoCompleted = false;
-
+        System.out.println("VideoInfoActivity111111 onCreate");
+        getIntentData();
         try {
             //Marshmallow permissions for read phone.
             if (haveAllMustPermissions(readPhonePermissions, PERMISSION_REQUEST_MUST)) {
@@ -181,46 +186,51 @@ public class VideoInfoActivity extends PermissionActivity {
         try {
             Thread thread = new Thread();
             thread.sleep(500);
+
+            if (getScreenOrientation() == 1) {
+                performAnimations();
+            } else {
+                moveToFullscreen();
+            }
+
+            initData();
+            initListener();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        if (getScreenOrientation() == 1)
-            performAnimations();
-        else
-            moveToFullscreen();
-
-        initData();
-        initListener();
     }
 
     @Override
     public void onPermissionResult(int requestCode, boolean isGranted, Object extras) {
-        switch (requestCode) {
-            case PERMISSION_REQUEST_MUST:
-                if (isGranted) {
-                    //perform action here
-                    System.out.println("i am here Gaurav222");
-                    initlizeAllVideoInfoActivityData();
-                } else {
-                    System.out.println("i am here Gaurav333");
-                    if (!askAgainForMustPermissions) {
-                        askAgainForMustPermissions = true;
-                        System.out.println("i am here Gaurav444");
-                        // Toast.makeText(this, "Please provide all the Permissions to Make the App work for you.", Toast.LENGTH_LONG).show();
-                        //haveAllMustPermissions();
-                        showPermissionsConfirmationDialog(GlobalConstants.UGA_VAULT_RWAD_PHONE_STATE_PERMISSION);
-                    } else if (!goToSettingsScreen) {
-                        goToSettingsScreen = true;
-                        System.out.println("i am here Gaurav555");
 
-                        showPermissionsConfirmationDialog(GlobalConstants.UGA_VAULT_RWAD_PHONE_STATE_PERMISSION);
-
+        try {
+            switch (requestCode) {
+                case PERMISSION_REQUEST_MUST:
+                    if (isGranted) {
+                        //perform action here
+                        initlizeAllVideoInfoActivityData();
                     } else {
-                        showPermissionsConfirmationDialog(GlobalConstants.UGA_VAULT_RWAD_PHONE_STATE_PERMISSION);
-                    }
+                        if (!askAgainForMustPermissions) {
+                            askAgainForMustPermissions = true;
+                            System.out.println("i am here Gaurav444");
+                            // Toast.makeText(this, "Please provide all the Permissions to Make the App work for you.", Toast.LENGTH_LONG).show();
+                            //haveAllMustPermissions();
+                            showPermissionsConfirmationDialog(GlobalConstants.UGA_VAULT_RWAD_PHONE_STATE_PERMISSION);
+                        } else if (!goToSettingsScreen) {
+                            goToSettingsScreen = true;
 
-                }
-                break;
+                            showPermissionsConfirmationDialog(GlobalConstants.UGA_VAULT_RWAD_PHONE_STATE_PERMISSION);
+
+                        } else {
+                            showPermissionsConfirmationDialog(GlobalConstants.UGA_VAULT_RWAD_PHONE_STATE_PERMISSION);
+                        }
+
+                    }
+                    break;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -305,23 +315,30 @@ public class VideoInfoActivity extends PermissionActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        if (videoView != null)
-            if (videoView.isPlaying())
-                videoView.pause();
+        try {
+            if (videoView != null)
+                if (videoView.isPlaying())
+                    videoView.pause();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (videoView != null)
-            if (!videoView.isPlaying()) {
-//                bufferProgressBar.setVisibility(View.VISIBLE);
-                mController.setVisibility(View.INVISIBLE);
-                videoView.seekTo((int) prevVideoTime);
-                System.out.println("Current Position : " + videoView.getCurrentPosition());
-            }
-
         try {
+            if (videoView != null)
+                if (!videoView.isPlaying()) {
+//                bufferLinearLayout.setVisibility(View.VISIBLE);
+                    bufferProgressBar.setVisibility(View.VISIBLE);
+                    mController.setVisibility(View.INVISIBLE);
+                    videoView.seekTo((int) prevVideoTime);
+                    videoView.setKeepScreenOn(true);
+                    videoView.start();
+                }
+
+
             boolean installedFbApp = checkIfAppInstalled("com.facebook.katana");
             boolean installedTwitterApp = checkIfAppInstalled("com.twitter.android");
 
@@ -391,7 +408,6 @@ public class VideoInfoActivity extends PermissionActivity {
                 }
             }
 
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -413,7 +429,15 @@ public class VideoInfoActivity extends PermissionActivity {
         super.onDestroy();
         if (videoCategory != null) {
             // -----stopping the flurry event of video-----------
-            FlurryAgent.endTimedEvent(videoCategory);
+            try {
+                FlurryAgent.endTimedEvent(videoCategory);
+
+                if (videoView != null && mVideoControlHandler != null && videoRunning != null) {
+                    mVideoControlHandler.removeCallbacks(videoRunning);
+                }
+            } catch (Exception e) {
+
+            }
         }
     }
 
@@ -512,14 +536,15 @@ public class VideoInfoActivity extends PermissionActivity {
 
         rlParentLayout.setVisibility(View.VISIBLE);*/
 
-
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
                 animation = AnimationUtils.loadAnimation(VideoInfoActivity.this, R.anim.slidedown_header);
-                rlVideoNameStrip.setAnimation(animation);
-                rlVideoNameStrip.setVisibility(View.VISIBLE);
+                if (rlVideoNameStrip != null && animation != null) {
+                    rlVideoNameStrip.setAnimation(animation);
+                    rlVideoNameStrip.setVisibility(View.VISIBLE);
+                }
             }
         }, 300);
 
@@ -528,6 +553,7 @@ public class VideoInfoActivity extends PermissionActivity {
     }
 
     void initViews() {
+
         rlVideoNameStrip = (RelativeLayout) findViewById(R.id.rl_header);
         rlActionStrip = (RelativeLayout) findViewById(R.id.rl_header);
         rlParentLayout = (RelativeLayout) findViewById(R.id.rl_parent_layout);
@@ -543,29 +569,31 @@ public class VideoInfoActivity extends PermissionActivity {
         circleIndicator.setFillColor(Color.parseColor("#999999"));
 
         llVideoLoader = (LinearLayout) findViewById(R.id.ll_video_loader);
-
+        bufferLinearLayout = (LinearLayout) findViewById(R.id.buffer_layout);
+        bufferLinearLayout.setVisibility(View.GONE);
         bufferProgressBar = (ProgressBar) findViewById(R.id.progressbar);
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             bufferProgressBar.setIndeterminateDrawable(getResources().getDrawable(R.drawable.circle_progress_bar_lower));
         } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
             bufferProgressBar.setIndeterminateDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.progress_large_material, null));
         }
+
         shareVideoLayout = (LinearLayout) findViewById(R.id.share_video_layout);
         imgVideoClose = (ImageView) findViewById(R.id.img_video_close);
         imgVideoShare = (ImageView) findViewById(R.id.img_video_share);
         imgVideoStillUrl = (ImageView) findViewById(R.id.image_video_still);
 
-        bufferProgressBar.setVisibility(View.GONE);
     }
 
     void initData() {
-        getIntentData();
+
         if (videoObject != null) {
             if (VaultDatabaseHelper.getInstance(VideoInfoActivity.this).isFavorite(videoObject.getVideoId()))
                 imgToggleButton.setBackgroundResource(R.drawable.stargold);
             else
                 imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
-            Utils.addImageByCaching(imgVideoStillUrl, videoObject.getVideoStillUrl());
+            if (imgVideoStillUrl != null)
+                Utils.addImageByCaching(imgVideoStillUrl, videoObject.getVideoStillUrl());
             tvVideoName.setText(videoObject.getVideoName().toString());
         }
 
@@ -580,6 +608,9 @@ public class VideoInfoActivity extends PermissionActivity {
         //Set Video to videoview
         if (Utils.isInternetAvailable(this)) {
             String encodedVideoUrl = videoObject.getVideoLongUrl();
+            // http://testingmobile.streaming.mediaservices.windows.net/1093cec3-b555-4184-bd8c-4242fa1e3bee/394.ism/Manifest(format=m3u8-aapl)
+//            http://testingmobile.streaming.mediaservices.windows.net/1093cec3-b555-4184-bd8c-4242fa1e3bee/394.ism/Manifest(format=m3u8-aapl-v3)
+            // https://www.youtube.com/watch?v=EY0vwK7a2yg+"format=m3u8-aapl-v3";
             llVideoLoader.setVisibility(View.VISIBLE);
             encodedVideoUrl = encodedVideoUrl.replace("(format=m3u8-aapl)", "(format=m3u8-aapl-v3)");
             String newTestUrl = "http://ugamedia.streaming.mediaservices.windows.net/f0925f58-1f30-48f3-8c23-13e2864bd8fb/Malcolm%20Mitchell_2011_OleMiss.ism/Manifest(format=m3u8-aapl-v3)";
@@ -637,15 +668,14 @@ public class VideoInfoActivity extends PermissionActivity {
                         videoView.pause();
                     }
                 }
-                System.out.println("VideoInfo onPlay");
             }
 
             @Override
             public void onPause() {
 
-                System.out.println("VideoInfo onPause");
             }
         });
+
 
         videoView.setOnErrorListener(new MediaPlayer.OnErrorListener() {
             @Override
@@ -663,14 +693,27 @@ public class VideoInfoActivity extends PermissionActivity {
             @Override
             public void onPrepared(MediaPlayer mp) {
                 // TODO Auto-generated method stub
-
                 mp.setOnInfoListener(new MediaPlayer.OnInfoListener() {
                     @Override
                     public boolean onInfo(MediaPlayer mp, int what, int extra) {
-                        if (what == MediaPlayer.MEDIA_INFO_BUFFERING_START)
-                            bufferProgressBar.setVisibility(View.VISIBLE);
-                        if (what == MediaPlayer.MEDIA_INFO_BUFFERING_END)
-                            bufferProgressBar.setVisibility(View.GONE);
+                        bufferLinearLayout.setVisibility(View.VISIBLE);
+
+                        switch (what) {
+
+                            case MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START: {
+                                bufferProgressBar.setVisibility(View.GONE);
+                                return true;
+                            }
+                            case MediaPlayer.MEDIA_INFO_BUFFERING_START: {
+                                bufferProgressBar.setVisibility(View.VISIBLE);
+
+                                return true;
+                            }
+                            case MediaPlayer.MEDIA_INFO_BUFFERING_END: {
+                                bufferProgressBar.setVisibility(View.GONE);
+                                return true;
+                            }
+                        }
                         return false;
                     }
                 });
@@ -680,7 +723,6 @@ public class VideoInfoActivity extends PermissionActivity {
                 mController.setLayoutParams(lp);
 
                 mController.setAnchorView(videoView);
-                System.out.println("VideoInfo on pre");
                 mVideoControlHandler.postDelayed(videoRunning, 1000);
 
                 ((ViewGroup) mController.getParent()).removeView(mController);
@@ -702,28 +744,48 @@ public class VideoInfoActivity extends PermissionActivity {
             }
         });
 
+
         videoView.setOnTouchListener(new View.OnTouchListener() {
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 // TODO Auto-generated method stub
-                if (mController != null) {
-                    mController.setVisibility(View.VISIBLE);
-                    new Handler().postDelayed(new Runnable() {
 
-                        @Override
-                        public void run() {
+                try {
+                    if (mController != null) {
+
+                        if (isTouchScreen) {
+                            mController.setVisibility(View.VISIBLE);
+                            isTouchScreen = false;
+                        } else {
                             mController.setVisibility(View.INVISIBLE);
+                            isTouchScreen = true;
                         }
-                    }, 1000);
+                        new Handler().postDelayed(new Runnable() {
 
-                    if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
-                        linearLayout.setVisibility(View.GONE);
+                            @Override
+                            public void run() {
+                                if (mController != null && mController.isShown()) {
+                                    mController.setVisibility(View.INVISIBLE);
+                                }
+                            }
+                        }, 5000);
+
+
+                        if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+                            linearLayout.setVisibility(View.GONE);
+                        }
+
                     }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
                 return false;
             }
         });
+
+
+
 
         videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
 
@@ -772,13 +834,34 @@ public class VideoInfoActivity extends PermissionActivity {
         imgVideoClose.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (MainActivity.mIndicator != null && MainActivity.mPager != null) {
-                    MainActivity.mIndicator.setCurrentItem(GlobalConstants.CURRENT_TAB);
-                    MainActivity.mPager.setCurrentItem(GlobalConstants.CURRENT_TAB);
+
+                try {
+                    if (!VideoInfoActivity.llVideoLoader.isShown()) {
+                        if (MainActivity.mIndicator != null && MainActivity.mPager != null) {
+                            MainActivity.mIndicator.setCurrentItem(GlobalConstants.CURRENT_TAB);
+                            MainActivity.mPager.setCurrentItem(GlobalConstants.CURRENT_TAB);
+                        }
+                        if (mVideoControlHandler != null && videoRunning != null) {
+                            mVideoControlHandler.removeCallbacks(videoRunning);
+
+                            if (videoView != null && mController != null) {
+                                videoView.pause();
+                                videoView.stopPlayback();
+                                mController.removeAllViews();
+
+                                videoView = null;
+                                mController = null;
+                            }
+                            finish();
+                            // showConfirmCloseButton("Do you want stop video?");
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-                mVideoControlHandler.removeCallbacks(videoRunning);
-                finish();
+
             }
+
         });
 
         shareVideoLayout.setOnClickListener(new View.OnClickListener() {
@@ -804,7 +887,6 @@ public class VideoInfoActivity extends PermissionActivity {
 
                 makeShareDialog();
 //                }
-
 
 
             }
@@ -890,43 +972,47 @@ public class VideoInfoActivity extends PermissionActivity {
         @Override
         public void run() {
             // TODO Auto-generated method stub
-            if (Utils.isInternetAvailable(VideoInfoActivity.this)) {
-                isConnectionMessageShown = false;
+            if (videoView != null) {
+                if (Utils.isInternetAvailable(VideoInfoActivity.this)) {
+                    isConnectionMessageShown = false;
 
-                System.out.println("VideoInfo handler");
-                if (llVideoLoader.isShown()
+                    System.out.println("VideoInfo handler");
+                    if (llVideoLoader.isShown()
                         /*&& videoView.getCurrentPosition() > 500*/) {
-                    llVideoLoader.setVisibility(View.GONE);
-                    videoView.requestFocus();
-                    mController.show();
-                } else {
-                    mController.hide();
-                }
-
-                if (videoView.isPlaying()) {
-                    System.out.println("Video Playing and total duration "
-                            + videoView.getDuration());
-                    System.out.println("Video Playing and current duration "
-                            + videoView.getCurrentPosition());
-
-                    if (imgVideoStillUrl.isShown() && videoView.getCurrentPosition() > 500) {
-                        Animation anim = AnimationUtils.loadAnimation(VideoInfoActivity.this, R.anim.fadein);
-                        imgVideoStillUrl.setAnimation(anim);
-                        imgVideoStillUrl.setVisibility(View.GONE);
                         llVideoLoader.setVisibility(View.GONE);
+                        bufferLinearLayout.setVisibility(View.VISIBLE);
                         videoView.requestFocus();
                         mController.show();
                     } else {
                         mController.hide();
                     }
-                    System.out.println("VideoInfo getCurrentPosition "
-                            + videoView.getCurrentPosition());
-                    prevVideoTime = videoView.getCurrentPosition();
-                }
-                if (!videoView.isPlaying()) {
-                    System.out.println("VideoInfo isPlaying ");
-                    videoView.seekTo((int) prevVideoTime);
-                }
+
+                    if (videoView.isPlaying()) {
+                        System.out.println("Video Playing and total duration "
+                                + videoView.getDuration());
+                        System.out.println("Video Playing and current duration "
+                                + videoView.getCurrentPosition());
+
+                        if (imgVideoStillUrl.isShown() && videoView.getCurrentPosition() > 500) {
+                            Animation anim = AnimationUtils.loadAnimation(VideoInfoActivity.this, R.anim.fadein);
+                            imgVideoStillUrl.setAnimation(anim);
+                            imgVideoStillUrl.setVisibility(View.GONE);
+                            llVideoLoader.setVisibility(View.GONE);
+                            videoView.requestFocus();
+                            mController.show();
+                        } else {
+                            mController.hide();
+                        }
+                        System.out.println("VideoInfo getCurrentPosition "
+                                + videoView.getCurrentPosition());
+                        prevVideoTime = videoView.getCurrentPosition();
+                    }
+
+
+
+                    if (!videoView.isPlaying()) {
+                        videoView.seekTo((int) prevVideoTime);
+                    }
 
 //                if (videoView.getCurrentPosition() >= videoView.getDuration() - 10000 && isFirstTime) {
 //
@@ -942,15 +1028,16 @@ public class VideoInfoActivity extends PermissionActivity {
 //                }
 
 
-            } else {
-                if (!isConnectionMessageShown) {
-                    showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
-                    videoView.pause();
+                } else {
+                    if (!isConnectionMessageShown) {
+                        showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
+                        videoView.pause();
+                    }
+                    isConnectionMessageShown = true;
                 }
-                isConnectionMessageShown = true;
-            }
-            mVideoControlHandler.postDelayed(this, 2000);
+                mVideoControlHandler.postDelayed(this, 2000);
 
+            }
         }
     };
 
@@ -1080,19 +1167,24 @@ public class VideoInfoActivity extends PermissionActivity {
     }
 
     public void getIntentData() {
-        Intent intent = getIntent();
-        if (intent != null) {
-            videoObject = (VideoDTO) intent
-                    .getSerializableExtra(GlobalConstants.VIDEO_OBJ);
-            videoCategory = intent
-                    .getStringExtra(GlobalConstants.KEY_CATEGORY);
+        try {
+            Intent intent = getIntent();
+            if (intent != null) {
+                videoObject = (VideoDTO) intent
+                        .getSerializableExtra(GlobalConstants.VIDEO_OBJ);
+                videoCategory = intent
+                        .getStringExtra(GlobalConstants.KEY_CATEGORY);
 
-            if (videoObject != null) {
-                new ShareTwitter().execute();
+                if (videoObject != null) {
+                    new ShareTwitter().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
+    private ProgressDialog pDialog;
     private View view;
     private Uri imageUri = null;
     public static LinearLayout linearLayout;
@@ -1100,10 +1192,28 @@ public class VideoInfoActivity extends PermissionActivity {
     private ImageView twitterShareView;
     private ImageView flatButtonFacebook;
     private ImageView flatButtonTwitter;
+    private String longDescription;
+    private String videoName;
     public void makeShareDialog() {
         boolean installedFbApp = checkIfAppInstalled("com.facebook.katana");
         boolean installedTwitterApp = checkIfAppInstalled("com.twitter.android");
         view = findViewById(R.id.sharinglayout);
+
+        if (videoObject.getVideoLongDescription() != null && videoObject.getVideoName() != null) {
+            longDescription = videoObject.getVideoLongDescription();
+            videoName = videoObject.getVideoName();
+            try {
+                if (longDescription.length() > 40) {
+                    longDescription = longDescription.substring(0, 40);
+                }
+
+                if (videoName.length() > 60) {
+                    longDescription = longDescription.substring(0, 1);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
         linearLayout = (LinearLayout) view.findViewById(R.id.social_sharing_linear_layout);
 
@@ -1145,23 +1255,34 @@ public class VideoInfoActivity extends PermissionActivity {
             @Override
             public void success(Result<TwitterSession> twitterSessionResult) {
                 try {
-                    if (videoObject.getVideoName() != null && videoObject.getVideoLongDescription() != null) {
 
-                        Intent intent = new TweetComposer.Builder(VideoInfoActivity.this)
-                                .text(videoObject.getVideoName() + "\n" + videoObject.getVideoLongDescription() + "\n\n")
-                                .url(new URL(videoObject.getVideoSocialUrl()))
-                                .image(imageUri)
-                                .createIntent();
-                        startActivityForResult(intent, 100);
-                    } else if (videoObject.getVideoName() != null) {
+                    if (imageUri == null) {
+//                        pDialog = new ProgressDialog(VideoInfoActivity.this, R.style.CustomDialogTheme);
+//                        pDialog.show();
+//                        pDialog.setContentView(AppController.getInstance().showRelatedVideoLoader(VideoInfoActivity.this, false));
+//                        pDialog.setCanceledOnTouchOutside(false);
+//                        pDialog.setCancelable(false);
 
-                        Intent intent = new TweetComposer.Builder(VideoInfoActivity.this)
-                                .text(videoObject.getVideoName() + "\n\n")
-                                .url(new URL(videoObject.getVideoSocialUrl()))
-                                .image(imageUri)
-                                .createIntent();
+                    } else {
+                        if (videoObject.getVideoName() != null && videoObject.getVideoLongDescription() != null) {
 
-                        startActivityForResult(intent, 100);
+                            Intent intent = new TweetComposer.Builder(VideoInfoActivity.this)
+                                    .text(videoName + "\n" + longDescription + "\n\n")
+                                    .url(new URL(videoObject.getVideoSocialUrl()))
+                                    .image(imageUri)
+                                    .createIntent();
+                            startActivityForResult(intent, 100);
+                        } else if (videoObject.getVideoName() != null) {
+
+                            Intent intent = new TweetComposer.Builder(VideoInfoActivity.this)
+                                    .text(videoName + "\n" + longDescription + "\n\n")
+                                    .url(new URL(videoObject.getVideoSocialUrl()))
+                                    .image(imageUri)
+                                    .createIntent();
+
+                            startActivityForResult(intent, 100);
+
+                        }
                     }
 
                     if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
@@ -1192,7 +1313,7 @@ public class VideoInfoActivity extends PermissionActivity {
                         }
                     }
                     String facebookPlayStoreUrl = "https://play.google.com/store/apps/details?id=com.facebook.katana&hl=en";
-                    showConfirmSharingDialog("You have not installed Facebook App. Would you like to install now?", facebookPlayStoreUrl);
+                    showConfirmSharingDialog("Facebook app is not installed would you like to install it now?", facebookPlayStoreUrl);
                 }
             });
 
@@ -1239,7 +1360,7 @@ public class VideoInfoActivity extends PermissionActivity {
                         }
                     }
                     String twitterPlayStoreUrl = "https://play.google.com/store/apps/details?id=com.twitter.android&hl=en";
-                    showConfirmSharingDialog("You have not installed Twitter App. Would you like to install now?", twitterPlayStoreUrl);
+                    showConfirmSharingDialog("Twitter app is not installed would you like to install it now?", twitterPlayStoreUrl);
                 }
             });
 
@@ -1263,36 +1384,48 @@ public class VideoInfoActivity extends PermissionActivity {
                             if (videoObject.getVideoSocialUrl().length() == 0) {
                                 showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
                             } else {
+
                                 videoView.pause();
                                 TwitterSession session = Twitter.getSessionManager().getActiveSession();
                                 if (session == null) {
                                     twitterLoginButton.performClick();
                                 } else {
                                     try {
-                                        if (videoObject.getVideoName() != null && videoObject.getVideoLongDescription() != null) {
+                                        if (imageUri == null) {
+                                            pDialog = new ProgressDialog(VideoInfoActivity.this, R.style.CustomDialogTheme);
+                                            pDialog.show();
+                                            pDialog.setContentView(AppController.getInstance().showRelatedVideoLoader(VideoInfoActivity.this, false));
+                                            pDialog.setCanceledOnTouchOutside(false);
+//                                            pDialog.setCancelable(false);
 
-                                            try {
-                                                TweetComposer.Builder builder = new TweetComposer.Builder(context)
-                                                        .text(videoObject.getVideoName() + "\n\n")
-                                                        .url(new URL(videoObject.getVideoSocialUrl()))
-                                                        .image(imageUri);
+                                        } else {
 
-                                                builder.show();
-                                            } catch (Exception e) {
-                                                e.printStackTrace();
-                                            }
+                                            if (videoObject.getVideoName() != null && videoObject.getVideoLongDescription() != null) {
+                                                try {
 
-                                        } else if (videoObject.getVideoName() != null) {
+                                                    TweetComposer.Builder builder = new TweetComposer.Builder(context)
+                                                            .text(videoName + "\n" + longDescription + "\n\n")
+                                                            .url(new URL(videoObject.getVideoSocialUrl()))
+                                                            .image(imageUri);
 
-                                            try {
-                                                TweetComposer.Builder builder = new TweetComposer.Builder(context)
-                                                        .text(videoObject.getVideoName() + "\n\n")
-                                                        .url(new URL(videoObject.getVideoSocialUrl()))
-                                                        .image(imageUri);
+                                                    builder.show();
+                                                } catch (Exception e) {
+                                                    e.printStackTrace();
+                                                }
 
-                                                builder.show();
-                                            } catch (Exception e) {
-                                                e.printStackTrace();
+                                            } else if (videoObject.getVideoName() != null) {
+
+                                                try {
+
+                                                    TweetComposer.Builder builder = new TweetComposer.Builder(context)
+                                                            .text(videoName + "\n" + longDescription + "\n\n")
+                                                            .url(new URL(videoObject.getVideoSocialUrl()))
+                                                            .image(imageUri);
+
+                                                    builder.show();
+                                                } catch (Exception e) {
+                                                    e.printStackTrace();
+                                                }
                                             }
                                         }
                                     } catch (Exception e) {
@@ -1319,14 +1452,33 @@ public class VideoInfoActivity extends PermissionActivity {
     }
 
     public void stopVideoEvents() {
-        mVideoControlHandler.removeCallbacks(videoRunning);
-        videoView.stopPlayback();
-        llVideoLoader.setVisibility(View.GONE);
-        bufferProgressBar.setVisibility(View.GONE);
+        try {
+            videoView.stopPlayback();
+            mVideoControlHandler.removeCallbacks(videoRunning);
+            llVideoLoader.setVisibility(View.GONE);
+            bufferLinearLayout.setVisibility(View.GONE);
+            bufferProgressBar.setVisibility(View.GONE);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
+
 
     public void startRelatedVideo(VideoDTO videoObj) {
         videoObject = videoObj;
+
+//        runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                if (rlVideoNameStrip != null) {
+//                    rlVideoNameStrip.setVisibility(View.GONE);
+//                }
+//            }
+//        });
+
+        if (videoObject != null) {
+            new ShareTwitter().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }
     }
 
     public void setRelatedVideoData(VideoDTO videoObject) {
@@ -1348,8 +1500,8 @@ public class VideoInfoActivity extends PermissionActivity {
             videoView.setMediaController(mController);*/
                 mController.setAnchorView(videoView);
                 videoView.setMediaController(mController);
+                videoView.clearFocus();
                 videoView.setVideoURI(videoUri);
-
                 videoView.requestFocus();
                 videoView.start();
             } else {
@@ -1390,18 +1542,23 @@ public class VideoInfoActivity extends PermissionActivity {
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface arg0, int arg1) {
+                        try {
+                            stopService(new Intent(VideoInfoActivity.this, VideoDataService.class));
 
-                        stopService(new Intent(VideoInfoActivity.this, VideoDataService.class));
+                            VaultDatabaseHelper.getInstance(getApplicationContext()).removeAllRecords();
 
-                        VaultDatabaseHelper.getInstance(getApplicationContext()).removeAllRecords();
-
-                        SharedPreferences prefs = context.getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
-                        prefs.edit().putLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, 0).commit();
+                            SharedPreferences prefs = context.getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
+                            prefs.edit().putLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, 0).commit();
 //                        prefs.edit().putBoolean(GlobalConstants.PREF_PULL_OPTION_HEADER, false).commit();
 
-                        Intent intent = new Intent(context, LoginEmailActivity.class);
-                        context.startActivity(intent);
-                        context.finish();
+                            Intent intent = new Intent(context, LoginEmailActivity.class);
+                            context.startActivity(intent);
+                            context.finish();
+
+                            MainActivity.context.finish();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
                 });
 
@@ -1417,6 +1574,12 @@ public class VideoInfoActivity extends PermissionActivity {
         alertDialog.setCancelable(false);
         alertDialog.setCanceledOnTouchOutside(false);
         alertDialog.show();
+        Button nbutton = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        nbutton.setAllCaps(false);
+        nbutton.setTextColor(getResources().getColor(R.color.apptheme_color));
+        Button pbutton = alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+        pbutton.setTextColor(getResources().getColor(R.color.apptheme_color));
+        pbutton.setAllCaps(false);
     }
 
     public void showConfirmSharingDialog(String message, final String playStoreUrl) {
@@ -1452,6 +1615,48 @@ public class VideoInfoActivity extends PermissionActivity {
         alertDialog.setCancelable(false);
         alertDialog.setCanceledOnTouchOutside(false);
         alertDialog.show();
+        Button nbutton = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        nbutton.setAllCaps(false);
+        nbutton.setTextColor(getResources().getColor(R.color.apptheme_color));
+        Button pbutton = alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+        pbutton.setTextColor(getResources().getColor(R.color.apptheme_color));
+        pbutton.setAllCaps(false);
+    }
+
+
+    public void showConfirmDialogBox(String message) {
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(context);
+        alertDialogBuilder
+                .setMessage(message);
+        alertDialogBuilder.setTitle("Alert");
+        alertDialogBuilder.setPositiveButton("Ok",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface arg0, int arg1) {
+
+                        alertDialog.dismiss();
+
+                    }
+                });
+
+        alertDialogBuilder.setNegativeButton("Cancel",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface arg0, int arg1) {
+                        alertDialog.dismiss();
+                    }
+                });
+
+        alertDialog = alertDialogBuilder.create();
+        alertDialog.setCancelable(false);
+        alertDialog.setCanceledOnTouchOutside(false);
+        alertDialog.show();
+        Button nbutton = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        nbutton.setAllCaps(false);
+        nbutton.setTextColor(getResources().getColor(R.color.apptheme_color));
+        Button pbutton = alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+        pbutton.setTextColor(getResources().getColor(R.color.apptheme_color));
+        pbutton.setAllCaps(false);
     }
 
     public void shareVideoUrlFacebook(final long videoId, String videourl, String imageurl, String description, String name, final Activity context) {
@@ -1663,7 +1868,15 @@ public class VideoInfoActivity extends PermissionActivity {
         protected void onPostExecute(Uri result) {
             try {
                 imageUri = result;
-
+                if (pDialog != null && pDialog.isShowing()) {
+                    pDialog.dismiss();
+                    sharingImageOnTwitter();
+                }
+                System.out.println("imageUri value ");
+//                if (getScreenOrientation() == 1)
+//                    performAnimations();
+//                else
+//                    moveToFullscreen();
             }catch (Exception e){
                 e.printStackTrace();
             }
@@ -1671,4 +1884,72 @@ public class VideoInfoActivity extends PermissionActivity {
     }
 
 
+    private void sharingImageOnTwitter() {
+        if (linearLayout != null && linearLayout.getVisibility() == View.VISIBLE) {
+            linearLayout.setVisibility(View.GONE);
+        }
+        if (AppController.getInstance().getUserId() == GlobalConstants.DEFAULT_USER_ID) {
+            showConfirmLoginDialog(GlobalConstants.SHARE_MESSAGE);
+        } else if (Utils.isInternetAvailable(VideoInfoActivity.this)) {
+            if (videoObject.getVideoSocialUrl() != null) {
+                if (videoObject.getVideoSocialUrl().length() == 0) {
+                    showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
+                } else {
+
+                    videoView.pause();
+                    TwitterSession session = Twitter.getSessionManager().getActiveSession();
+                    if (session == null) {
+                        twitterLoginButton.performClick();
+                    } else {
+                        try {
+                            if (imageUri == null) {
+                                pDialog = new ProgressDialog(VideoInfoActivity.this, R.style.CustomDialogTheme);
+                                pDialog.show();
+                                pDialog.setContentView(AppController.getInstance().showRelatedVideoLoader(VideoInfoActivity.this, false));
+                                pDialog.setCanceledOnTouchOutside(false);
+                                pDialog.setCancelable(false);
+
+                            } else {
+
+                                if (videoObject.getVideoName() != null && videoObject.getVideoLongDescription() != null) {
+                                    try {
+
+                                        TweetComposer.Builder builder = new TweetComposer.Builder(context)
+                                                .text(videoName + "\n" + longDescription + "\n\n")
+                                                .url(new URL(videoObject.getVideoSocialUrl()))
+                                                .image(imageUri);
+
+                                        builder.show();
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+
+                                } else if (videoObject.getVideoName() != null) {
+
+                                    try {
+
+                                        TweetComposer.Builder builder = new TweetComposer.Builder(context)
+                                                .text(videoName + "\n" + longDescription + "\n\n")
+                                                .url(new URL(videoObject.getVideoSocialUrl()))
+                                                .image(imageUri);
+
+                                        builder.show();
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            } else {
+                showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE + " to share");
+            }
+        } else {
+            showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
+        }
+    }
 }
+

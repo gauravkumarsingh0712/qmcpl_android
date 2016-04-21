@@ -126,17 +126,14 @@ public class ChangePasswordActivity extends BaseActivity implements TextWatcher{
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
             w.getDefaultDisplay().getSize(size);
             screenWidth = size.x;
-            // Measuredheight = size.y;
         } else {
             Display d = w.getDefaultDisplay();
-            // Measuredheight = d.getHeight();
             screenWidth = d.getWidth();
         }
         int dimension = (int) (screenWidth*0.45);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dimension, dimension);
         lp.setMargins(0, 20, 0, 0);
         lp.gravity = Gravity.CENTER_HORIZONTAL;
-//        lp.addRule(RelativeLayout.CENTER_HORIZONTAL);
         ll_header_image.setLayoutParams(lp);
     }
 
@@ -149,11 +146,7 @@ public class ChangePasswordActivity extends BaseActivity implements TextWatcher{
         scrollView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                View view = getCurrentFocus();
-                if (view != null) {
-                    InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                    inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
-                }
+
                 return false;
             }
         });
@@ -192,7 +185,6 @@ public class ChangePasswordActivity extends BaseActivity implements TextWatcher{
                             return true;
                         else {
                             if (checkPasswordEquality())
-                                //Toast.makeText(ChangePasswordActivity.this, "New password cannot be same as old password", Toast.LENGTH_LONG).show();
                                 showToastMessage("New and old password cannot be same");
                             else
                                 changePasswordCall();
@@ -239,8 +231,7 @@ public class ChangePasswordActivity extends BaseActivity implements TextWatcher{
                     }else if(!isValidPass(edConfirmPassword.getText().toString(), edConfirmPassword, "Confirm Password")){
                         isAllFieldsChecked = false;
                     }
-                    /*if (!isValidPass(edOldPassword.getText().toString(), edOldPassword) || !isValidPass(edNewPassword.getText().toString(), edNewPassword) || !isValidPass(edConfirmPassword.getText().toString(), edConfirmPassword))
-                        isAllFieldsChecked = false;*/
+
                     else {
                         if (!isVaildNewPassword(edConfirmPassword.getText().toString())) {
                             isAllFieldsChecked = false;
@@ -249,7 +240,6 @@ public class ChangePasswordActivity extends BaseActivity implements TextWatcher{
 
                     if (isAllFieldsChecked) {
                         if (checkPasswordEquality())
-                            //Toast.makeText(ChangePasswordActivity.this, "New password cannot be same as old password", Toast.LENGTH_LONG).show();
                             showToastMessage("New and old password cannot be same");
                         else
                             changePasswordCall();
@@ -294,7 +284,6 @@ public class ChangePasswordActivity extends BaseActivity implements TextWatcher{
 
                             if (isAllFieldsChecked) {
                                 if(checkPasswordEquality())
-                                    //Toast.makeText(ChangePasswordActivity.this, "New password cannot be same as old password", Toast.LENGTH_LONG).show();
                                     showToastMessage("New and old password cannot be same");
                                 else
                                     changePasswordCall();
@@ -325,10 +314,8 @@ public class ChangePasswordActivity extends BaseActivity implements TextWatcher{
             return true;
         } else {
             if (str.length() == 0)
-//                edCheck.setError(fieldName+" should not be empty");
                 showToastMessage(fieldName+" should not be empty");
             else if (str.length() < 6)
-//                edCheck.setError(fieldName+" should have minimum 6 characters!");
                 showToastMessage(fieldName + " should have minimum 6 characters!");
         }
         return false;
@@ -339,7 +326,6 @@ public class ChangePasswordActivity extends BaseActivity implements TextWatcher{
             if (confirmPass.equals(edNewPassword.getText().toString()))
                 return true;
             else {
-//                edConfirmPassword.setError("Password does not match!");
                 showToastMessage("Password does not match");
             }
         }
@@ -401,7 +387,6 @@ public class ChangePasswordActivity extends BaseActivity implements TextWatcher{
                                     InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                                     inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
                                 }
-                                //Toast.makeText(ChangePasswordActivity.this, "Password changed successfully", Toast.LENGTH_LONG).show();
                                 showToastMessage("Password changed successfully");
                                 Handler handler = new Handler();
                                 handler.postDelayed(new Runnable(){
@@ -411,7 +396,6 @@ public class ChangePasswordActivity extends BaseActivity implements TextWatcher{
                                     }
                                 }, 2000);
                             } else {
-//                                edOldPassword.setError("Incorrect Password");
                                 showToastMessage("Old Password is incorrect");
                             }
 
@@ -441,9 +425,6 @@ public class ChangePasswordActivity extends BaseActivity implements TextWatcher{
     }
 
     public void showToastMessage(String message){
-       /* LayoutInflater inflater = getLayoutInflater();
-        View layout = inflater.inflate(R.layout.toast_layout,null);*/
-
         View includedLayout = findViewById(R.id.llToast);
 
         final TextView text = (TextView) includedLayout.findViewById(R.id.tv_toast_message);

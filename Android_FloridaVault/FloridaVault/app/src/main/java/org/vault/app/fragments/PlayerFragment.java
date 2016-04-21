@@ -111,6 +111,7 @@ public class PlayerFragment extends BaseFragment {
     public void onResume() {
         // TODO Auto-generated method stub
         super.onResume();
+        try {
         if (videoHeaderListAdapter != null)
             videoHeaderListAdapter.notifyDataSetChanged();
         if (progressBar != null && refreshLayout != null) {
@@ -121,11 +122,16 @@ public class PlayerFragment extends BaseFragment {
         }
 
         if (playersVideoList != null && playersVideoList.size() == 0) {
-            progressBar.setVisibility(View.VISIBLE);
+            if(GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+                progressBar.setVisibility(View.VISIBLE);
+            }
         } else {
             progressBar.setVisibility(View.GONE);
         }
         gethideKeyboard();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -169,7 +175,6 @@ public class PlayerFragment extends BaseFragment {
         // ------registerevents---------
         registerEvents();
         getPlayerDataFromDataBase();
-
 
         return v;
     }
@@ -249,6 +254,7 @@ public class PlayerFragment extends BaseFragment {
         };
 
         mDbTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+
         updateBannerImage();
     }
 
@@ -681,25 +687,16 @@ public class PlayerFragment extends BaseFragment {
         protected ArrayList<VideoDTO> doInBackground(Void... params) {
             final ArrayList<VideoDTO> arrList = new ArrayList<VideoDTO>();
             try {
-                String url = GlobalConstants.PLAYER_API_URL + "userId=" + AppController.getInstance().getUserId();
-                arrList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
-
-
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        System.out.println("player doin background in");
+                        String url = GlobalConstants.PLAYER_API_URL + "userId=" + AppController.getInstance().getUserId();
+                        arrList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
                         if (arrList.size() > 0) {
-                            VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).removeRecordsByTab("OKFPlayer");
+                            VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_PLAYERS);
                             VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).insertVideosInDatabase(arrList);
                         }
-                    }
-                });
 
-                System.out.println("player doin background out");
-                //Update Banner Data
+
                 if (tabBannerDTO != null) {
-                    serverObj = AppController.getInstance().getServiceManager().getVaultService().getTabBannerDataById(tabBannerDTO.getTabBannerId(), tabBannerDTO.getTabKeyword(), tabBannerDTO.getTabId());
+                    TabBannerDTO serverObj = AppController.getInstance().getServiceManager().getVaultService().getTabBannerDataById(tabBannerDTO.getTabBannerId(), tabBannerDTO.getTabKeyword(), tabBannerDTO.getTabId());
                     if (serverObj != null) {
                         if ((tabBannerDTO.getBannerModified() != serverObj.getBannerModified()) || (tabBannerDTO.getBannerCreated() != serverObj.getBannerCreated())) {
                             File imageFile = ImageLoader.getInstance().getDiscCache().get(tabBannerDTO.getBannerURL());
@@ -711,8 +708,9 @@ public class PlayerFragment extends BaseFragment {
                             VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).updateTabBannerData(serverObj);
                             isBannerUpdated = true;
                         }
+                        }
                     }
-                }
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -722,6 +720,8 @@ public class PlayerFragment extends BaseFragment {
         @Override
         protected void onPostExecute(final ArrayList<VideoDTO> result) {
             super.onPostExecute(result);
+
+            try {
             if (result.size() > 0) {
                 playersVideoList.clear();
                 System.out.println("player doin onPostExecute ");
@@ -737,16 +737,20 @@ public class PlayerFragment extends BaseFragment {
                     }
                 });
 
-//                Thread thread = new Thread(){
-//                    @Override
-//                    public void run() {
-//                        if (result.size() > 0) {
-//                            VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).removeRecordsByTab("OKFPlayer");
-//                            VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).insertVideosInDatabase(result);
-//                        }
-//                    }
-//                };
-//                thread.start();
+                try {
+                    Thread thread = new Thread() {
+                        @Override
+                        public void run() {
+                            if (result.size() > 0) {
+                                VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).removeRecordsByTab("OKFPlayer");
+                                VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).insertVideosInDatabase(result);
+                            }
+                        }
+                    };
+                    thread.start();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
                 if (videoHeaderListAdapter != null) {
                     videoHeaderListAdapter.listSearch.clear();
@@ -788,7 +792,13 @@ public class PlayerFragment extends BaseFragment {
             if (stickyListHeadersListView != null) {
                 Utils.setEnabledStickyListHeadersListViewScrolling(stickyListHeadersListView);
             }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
         }
+
     }
 
     public class PlayerResponseReceiver extends BroadcastReceiver {
@@ -822,7 +832,11 @@ public class PlayerFragment extends BaseFragment {
                 stickyListHeadersListView.setAdapter(videoHeaderListAdapter);
                 System.out.println("tabBannerDTO playersVideoList " + playersVideoList.size() + " isServiceRunning " + VideoDataService.isServiceRunning);
                 if (playersVideoList.size() == 0 /*&& VideoDataService.isServiceRunning*/) {
-                    progressBar.setVisibility(View.VISIBLE);
+                    if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+
+                    } else {
+                        progressBar.setVisibility(View.VISIBLE);
+                    }
                 } else {
                     progressBar.setVisibility(View.GONE);
                 }

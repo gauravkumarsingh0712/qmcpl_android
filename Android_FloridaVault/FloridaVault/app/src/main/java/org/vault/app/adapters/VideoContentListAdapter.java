@@ -18,6 +18,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -45,7 +46,7 @@ import java.util.concurrent.TimeUnit;
 
 public class VideoContentListAdapter extends BaseAdapter {
 
-    private ArrayList<VideoDTO> arrayListVideoDTOs;
+    private ArrayList<VideoDTO> arrayListVideoDTOs = new ArrayList<>();
     public ArrayList<VideoDTO> listSearch;
     private Activity context;
     public static DisplayImageOptions options;
@@ -104,7 +105,6 @@ public class VideoContentListAdapter extends BaseAdapter {
     @Override
     public int getCount() {
         // TODO Auto-generated method stub
-        System.out.println("arrayListVideoDTOs.size() : "+arrayListVideoDTOs.size());
         return arrayListVideoDTOs.size();
     }
 
@@ -150,7 +150,7 @@ public class VideoContentListAdapter extends BaseAdapter {
             viewHolder.progressBar = (ProgressBar) convertView.findViewById(R.id.progress_bar);
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
                 viewHolder.progressBar.setIndeterminateDrawable(context.getResources().getDrawable(R.drawable.circle_progress_bar_lower));
-            }else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
+            } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
                 viewHolder.progressBar.setIndeterminateDrawable(ResourcesCompat.getDrawable(context.getResources(), R.drawable.progress_large_material, null));
             }
 
@@ -172,6 +172,7 @@ public class VideoContentListAdapter extends BaseAdapter {
     }
 
     public void initData(final int pos) {
+
         if (arrayListVideoDTOs.get(pos).isVideoIsFavorite())
             viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargold);
         else
@@ -181,7 +182,6 @@ public class VideoContentListAdapter extends BaseAdapter {
             viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargold);
         else
             viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
-
 
         videoThumbnailURL = arrayListVideoDTOs.get(pos).getVideoStillUrl();
         videoName = arrayListVideoDTOs.get(pos).getVideoName();
@@ -235,7 +235,6 @@ public class VideoContentListAdapter extends BaseAdapter {
             viewHolder.tvVideoDuration
                     .setText(convertSecondsToHMmSs(videoDuration));
         }
-
     }
 
     public void initListener(final int pos) {
@@ -272,6 +271,7 @@ public class VideoContentListAdapter extends BaseAdapter {
                 viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
                 showConfirmLoginDialog(GlobalConstants.LOGIN_MESSAGE);
             } else {
+                System.out.println("favorite position : " + pos);
                 if (arrayListVideoDTOs.get(pos).isVideoIsFavorite()) {
                     isFavoriteChecked = false;
                     VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(0, arrayListVideoDTOs.get(pos).getVideoId());
@@ -282,6 +282,7 @@ public class VideoContentListAdapter extends BaseAdapter {
                     VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(1, arrayListVideoDTOs.get(pos).getVideoId());
                     arrayListVideoDTOs.get(pos).setVideoIsFavorite(true);
                     viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargold);
+
                 }
 
                 mPostTask = new AsyncTask<Void, Void, Void>() {
@@ -302,11 +303,15 @@ public class VideoContentListAdapter extends BaseAdapter {
 
                     @Override
                     protected void onPostExecute(Void result) {
-                        System.out.println("Result of POST request : " + postResult);
-                        if (isFavoriteChecked)
-                            VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(1, arrayListVideoDTOs.get(pos).getVideoId());
-                        else
-                            VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(0, arrayListVideoDTOs.get(pos).getVideoId());
+                        try {
+                            System.out.println("favorite position 111 : " + pos);
+                            if (isFavoriteChecked)
+                                VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(1, arrayListVideoDTOs.get(pos).getVideoId());
+                            else
+                                VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(0, arrayListVideoDTOs.get(pos).getVideoId());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
                 };
 
@@ -356,6 +361,12 @@ public class VideoContentListAdapter extends BaseAdapter {
         alertDialog.setCancelable(false);
         alertDialog.setCanceledOnTouchOutside(false);
         alertDialog.show();
+        Button nbutton = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        nbutton.setAllCaps(false);
+        nbutton.setTextColor(context.getResources().getColor(R.color.apptheme_color));
+        Button pbutton = alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+        pbutton.setTextColor(context.getResources().getColor(R.color.apptheme_color));
+        pbutton.setAllCaps(false);
     }
 
     public String convertSecondsToHMmSs(long millis) {
@@ -384,6 +395,7 @@ public class VideoContentListAdapter extends BaseAdapter {
         TextView tvVideoName, tvVideoDuration, tvVideoDescription;
         FrameLayout frmVideoItem;
         ProgressBar progressBar;
+        int position;
     }
 
     /**

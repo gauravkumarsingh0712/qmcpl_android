@@ -26,6 +26,7 @@ import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.util.Log;
@@ -63,8 +64,6 @@ import com.facebook.share.Sharer;
 import com.facebook.share.model.ShareLinkContent;
 import com.facebook.share.widget.ShareDialog;
 import com.flurry.android.FlurryAgent;
-import com.ncsavault.floridavault.LoginEmailActivity;
-import com.ncsavault.floridavault.R;
 import com.nostra13.universalimageloader.cache.disc.impl.UnlimitedDiscCache;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
@@ -80,6 +79,8 @@ import com.twitter.sdk.android.core.TwitterSession;
 import com.twitter.sdk.android.core.identity.TwitterLoginButton;
 import com.twitter.sdk.android.tweetcomposer.TweetComposer;
 import com.twitter.sdk.android.tweetui.TweetUi;
+import com.ncsavault.floridavault.LoginEmailActivity;
+import com.ncsavault.floridavault.R;
 import com.viewpagerindicator.TitlePageIndicator;
 
 import net.hockeyapp.android.CrashManager;
@@ -106,6 +107,7 @@ import java.io.Serializable;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -125,7 +127,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
     public static ViewPager mPager;
     public static TitlePageIndicator mIndicator;
     private ActionBar actionBar;
-    private Activity context;
+    public static Activity context;
     private String gryColor = "#999999";
     public static List<Fragment> fragments;
 
@@ -166,7 +168,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
         super.onCreate(arg0);
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setContentView(R.layout.main_activity);
-
+        System.out.println("push notification MainActivity");
         context = MainActivity.this;
 
         Bundle bundle = getIntent().getExtras();
@@ -269,7 +271,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
                 GlobalConstants.CURRENT_TAB = position;
                 android.support.v4.app.Fragment fragment = ((FragmentStatePagerAdapter) mPager.getAdapter()).getItem(position);
                 fragment.onAttach(MainActivity.this);
-                /*if(fragment instanceof FavoritesFragment)
+                   /*if(fragment instanceof FavoritesFragment)
                     fragment.onResume();*/
                 fragment.onResume();
             }
@@ -836,8 +838,8 @@ public class MainActivity extends FragmentActivity implements Serializable {
 
                     String videoIdData = String.valueOf(videoId);
 
-                    shareInfoTask = new shareInfoTask();
-                    shareInfoTask.execute(videoIdData);
+//                    shareInfoTask = new shareInfoTask();
+//                    shareInfoTask.execute(videoIdData);
 
                     /*************** share post data *******************/
                     /**************execute asan task**********/
@@ -947,8 +949,8 @@ public class MainActivity extends FragmentActivity implements Serializable {
         super.onResume();
         CrashManager.execute(this, null);
         AppEventsLogger.activateApp(this);
-       // System.out.println("onResume gethideKeyboard");
-       // gethideKeyboard();
+        // System.out.println("onResume gethideKeyboard");
+        // gethideKeyboard();
     }
 
     /**
@@ -994,8 +996,15 @@ public class MainActivity extends FragmentActivity implements Serializable {
         mPager = (ViewPager) findViewById(R.id.pager);
         // auto_refresh_progress_bar = (ProgressBar) findViewById(R.id.auto_refresh_progress_bar);
         mIndicator = (TitlePageIndicator) findViewById(R.id.indicator);
+
         View autoRefreshView = findViewById(R.id.auto_refresh_progress_main);
         autoRefreshProgressBar = (ProgressBar) autoRefreshView.findViewById(R.id.auto_refresh_progress_bar);
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            autoRefreshProgressBar.setIndeterminateDrawable(context.getResources().getDrawable(R.drawable.circle_progress_bar_lower));
+        } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
+            autoRefreshProgressBar.setIndeterminateDrawable(ResourcesCompat.getDrawable(context.getResources(), R.drawable.progress_large_material, null));
+        }
 
         actionBar = getActionBar();
         actionBar.setBackgroundDrawable(new ColorDrawable(Color
@@ -1069,6 +1078,22 @@ public class MainActivity extends FragmentActivity implements Serializable {
         searchView.setIconified(true);
         searchView.clearFocus();
 
+        searchView.setOnSearchClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getActionBar().setDisplayUseLogoEnabled(false);
+                getActionBar().setIcon(R.drawable.actionbaricon);
+            }
+        });
+
+        searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+                getActionBar().setDisplayUseLogoEnabled(true);
+                return false;
+            }
+        });
+
         int searchPlateId = searchView.getContext().getResources().getIdentifier("android:id/search_plate", null, null);
 //        int searchSubmitId = searchView.getContext().getResources().getIdentifier("android:id/search_button", null, null);
         // Getting the 'search_plate' LinearLayout.
@@ -1103,6 +1128,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
                 Utils.getInstance().showNotificationToggleSetting(MainActivity.this);
                 break;
             case R.id.action_profile:
+                GlobalConstants.SEARCH_VIEW_QUERY = "";
                 Intent intentProfile = new Intent(MainActivity.this, UserProfileActivity.class);
                 startActivity(intentProfile);
                 return true;
@@ -1158,7 +1184,7 @@ public class MainActivity extends FragmentActivity implements Serializable {
                 }
                 break;
             case 1001:
-
+                GlobalConstants.SEARCH_VIEW_QUERY = "";
                 stopService(new Intent(MainActivity.this, VideoDataService.class));
 //                VideoDataFetchingService.isServiceRunning = false;
 
@@ -1260,38 +1286,66 @@ public class MainActivity extends FragmentActivity implements Serializable {
     }
 
     CountDownTimer countDownTimer;
+    Handler autoRefreshHandler = new Handler();
     public void autoRefresh() {
-        countDownTimer = new CountDownTimer(GlobalConstants.AUTO_REFRESH_INTERVAL, GlobalConstants.AUTO_REFRESH_INTERVAL) {
+//        countDownTimer = new CountDownTimer(GlobalConstants.AUTO_REFRESH_INTERVAL, GlobalConstants.AUTO_REFRESH_INTERVAL) {
+//
+//            public void onTick(long millisUntilFinished) {
+//                loadAutoRefreshData();
+//            }
+//
+//
+//            public void onFinish() {
+//                if (countDownTimer != null) {
+//                    countDownTimer.start();
+//                }
+//
+//                loadAutoRefreshData();
+//            }
+//
+//        }.start();
+        autoRefreshHandler.postDelayed(autoRefreshRunnable, GlobalConstants.AUTO_REFRESH_INTERVAL);
 
-            public void onTick(long millisUntilFinished) {
-                loadBannerData();
-            }
-
-
-            public void onFinish() {
-                if (countDownTimer != null) {
-                    countDownTimer.start();
-                }
-
-                loadBannerData();
-            }
-
-        }.start();
     }
+
+
+    private Runnable autoRefreshRunnable = new Runnable() {
+        @Override
+        public void run() {
+
+            System.out.println("auto refresh time : "+ Calendar.getInstance().getTime());
+            loadAutoRefreshData();
+        }
+    };
 
 
 
     private AsyncTask<Void, Void, ArrayList<TabBannerDTO>> mBannerTask;
 
-    public void loadBannerData() {
-        System.out.println("loadBannerData");
+    public void loadAutoRefreshData() {
+
         mBannerTask = new AsyncTask<Void, Void, ArrayList<TabBannerDTO>>() {
 
             @Override
             protected void onPreExecute() {
                 super.onPreExecute();
                 if (autoRefreshProgressBar != null) {
+
+                    if (autoRefreshProgressBar.isShown()) {
+
+                        return;
+                    }
+
                     autoRefreshProgressBar.setVisibility(View.VISIBLE);
+                }
+
+                try {
+                    if (VideoDataService.isServiceRunning) {
+                        VideoDataService.isServiceRunning = false;
+                        stopService(new Intent(MainActivity.this, VideoDataService.class));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
             }
@@ -1299,23 +1353,22 @@ public class MainActivity extends FragmentActivity implements Serializable {
             @Override
             protected ArrayList<TabBannerDTO> doInBackground(Void... params) {
 
-
                 ArrayList<TabBannerDTO> arrayListBanner = new ArrayList<TabBannerDTO>();
                 Intent broadCastIntent = new Intent();
                 try {
                     arrayListBanner.addAll(AppController.getInstance().getServiceManager().getVaultService().getAllTabBannerData());
 
-                ArrayList<String> lstUrls = new ArrayList<>();
+                    ArrayList<String> lstUrls = new ArrayList<>();
 
-                File imageFile;
-                for (TabBannerDTO bDTO : arrayListBanner) {
-                    TabBannerDTO localBannerData = VaultDatabaseHelper.getInstance(getApplicationContext()).getLocalTabBannerDataByTabId(bDTO.getTabId());
-                    if (localBannerData != null) {
-                        if ((localBannerData.getBannerModified() != bDTO.getBannerModified()) || (localBannerData.getBannerCreated() != bDTO.getBannerCreated()))
-                        {
-                            VaultDatabaseHelper.getInstance(getApplicationContext()).updateBannerData(bDTO);
-                        }
-                        if (localBannerData.getTabDataModified() != bDTO.getTabDataModified()) {
+                    File imageFile;
+                    for (TabBannerDTO bDTO : arrayListBanner) {
+                        TabBannerDTO localBannerData = VaultDatabaseHelper.getInstance(getApplicationContext()).getLocalTabBannerDataByTabId(bDTO.getTabId());
+                        if (localBannerData != null) {
+                            if ((localBannerData.getBannerModified() != bDTO.getBannerModified()) || (localBannerData.getBannerCreated() != bDTO.getBannerCreated()))
+                            {
+                                VaultDatabaseHelper.getInstance(getApplicationContext()).updateBannerData(bDTO);
+                            }
+                            // if (localBannerData.getTabDataModified() != bDTO.getTabDataModified()) {
                             VaultDatabaseHelper.getInstance(getApplicationContext()).updateTabData(bDTO);
                             if (localBannerData.getTabName().toLowerCase().contains((GlobalConstants.FEATURED).toLowerCase())) {
                                 VaultDatabaseHelper.getInstance(getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_FEATURED);
@@ -1382,24 +1435,23 @@ public class MainActivity extends FragmentActivity implements Serializable {
                             broadCastIntent.addCategory(Intent.CATEGORY_DEFAULT);
                             sendBroadcast(broadCastIntent);
                             arrayListVideos.clear();
+                            //}
+                        } else {
+                            VaultDatabaseHelper.getInstance(getApplicationContext()).insertTabBannerData(bDTO);
                         }
-                    } else {
-                        VaultDatabaseHelper.getInstance(getApplicationContext()).insertTabBannerData(bDTO);
-                    }
 
-
-                }
-                if (lstUrls.size() == 0) {
-                    int count = VaultDatabaseHelper.getInstance(getApplicationContext()).getTabBannerCount();
-                    if (count > 0) {
-                        lstUrls.add(GlobalConstants.FEATURED_API_URL);
-                        lstUrls.add(GlobalConstants.GAMES_API_URL);
-                        lstUrls.add(GlobalConstants.PLAYER_API_URL);
-                        lstUrls.add(GlobalConstants.OPPONENT_API_URL);
-                        lstUrls.add(GlobalConstants.COACH_API_URL);
                     }
-                }
-                AppController.getInstance().setAPI_URLS(lstUrls);
+                    if (lstUrls.size() == 0) {
+                        int count = VaultDatabaseHelper.getInstance(getApplicationContext()).getTabBannerCount();
+                        if (count > 0) {
+                            lstUrls.add(GlobalConstants.FEATURED_API_URL);
+                            lstUrls.add(GlobalConstants.GAMES_API_URL);
+                            lstUrls.add(GlobalConstants.PLAYER_API_URL);
+                            lstUrls.add(GlobalConstants.OPPONENT_API_URL);
+                            lstUrls.add(GlobalConstants.COACH_API_URL);
+                        }
+                    }
+                    AppController.getInstance().setAPI_URLS(lstUrls);
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -1412,15 +1464,11 @@ public class MainActivity extends FragmentActivity implements Serializable {
                 super.onPostExecute(bannerDTOs);
 
                 try {
-                    VideoDataService.isServiceRunning = false;
-                    stopService(new Intent(MainActivity.this, VideoDataService.class));
-                    System.out.println("tabBannerDTO MainActivity ");
-                    // new startAutoRefresh().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-                    //  startService(new Intent(MainActivity.this, VideoDataService.class));
 
-                            if (autoRefreshProgressBar != null) {
-                                autoRefreshProgressBar.setVisibility(View.GONE);
-                            }
+                    if (autoRefreshProgressBar != null) {
+                        autoRefreshProgressBar.setVisibility(View.GONE);
+                    }
+                    autoRefreshHandler.postDelayed(autoRefreshRunnable, GlobalConstants.AUTO_REFRESH_INTERVAL);
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -1433,5 +1481,6 @@ public class MainActivity extends FragmentActivity implements Serializable {
 
 
     ArrayList<VideoDTO> arrayListVideos = new ArrayList<VideoDTO>();
+
 
 }

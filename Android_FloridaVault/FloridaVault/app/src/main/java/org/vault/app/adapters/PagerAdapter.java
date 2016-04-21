@@ -62,4 +62,8 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
 //        return PagerAdapter.CONTENT[position].toUpperCase();
 //        return GlobalConstants.tabsList[position].toUpperCase();
     }
+
+
+
+
 }

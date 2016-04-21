@@ -10,6 +10,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -31,6 +32,7 @@ import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -379,6 +381,11 @@ public class UserProfileActivity extends BaseActivity implements TextWatcher {
         tvLogout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Twitter.logOut();
+
+                stopService(new Intent(UserProfileActivity.this, VideoDataService.class));
+//                VideoDataFetchingService.isServiceRunning = false;
+                // VaultDatabaseHelper.getInstance(getApplicationContext()).removeAllRecords();
                 if (LoginManager.getInstance() != null)
                     LoginManager.getInstance().logOut();
                 SharedPreferences pref = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
@@ -392,12 +399,6 @@ public class UserProfileActivity extends BaseActivity implements TextWatcher {
                 startActivity(intent);
                 finish();
 
-                Twitter.logOut();
-
-                stopService(new Intent(UserProfileActivity.this, VideoDataService.class));
-//                VideoDataFetchingService.isServiceRunning = false;
-
-                VaultDatabaseHelper.getInstance(getApplicationContext()).removeAllRecords();
             }
         });
 
@@ -426,6 +427,7 @@ public class UserProfileActivity extends BaseActivity implements TextWatcher {
                             showToastMessage("Last Name should have minimum 3 characters");
                         }
 
+
                         if (isValidFields) {
                             //make a server call for updating the data along with video
                             hideKeyborad();
@@ -433,7 +435,9 @@ public class UserProfileActivity extends BaseActivity implements TextWatcher {
 
                             tvFirstName.setText(edFirstName.getText().toString());
                             tvLastName.setText(edLastName.getText().toString());
-                            tvBio.setText(edBio.getText().toString());
+                            tvBio.setHint("bio");
+                            tvBio.setHintTextColor(Color.WHITE);
+                            tvBio.setText(edBio.getText().toString().trim());
 
                             edFirstName.setVisibility(View.GONE);
                             edLastName.setVisibility(View.GONE);
@@ -584,6 +588,12 @@ public class UserProfileActivity extends BaseActivity implements TextWatcher {
         alertDialog.setCancelable(false);
         alertDialog.setCanceledOnTouchOutside(false);
         alertDialog.show();
+        Button nbutton = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        nbutton.setAllCaps(false);
+        nbutton.setTextColor(getResources().getColor(R.color.apptheme_color));
+        Button pbutton = alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+        pbutton.setTextColor(getResources().getColor(R.color.apptheme_color));
+        pbutton.setAllCaps(false);
     }
 
     public void hideKeyborad() {

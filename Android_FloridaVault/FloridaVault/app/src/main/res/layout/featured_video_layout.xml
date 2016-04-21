@@ -22,8 +22,7 @@
                 android:id="@+id/img_featured_banner"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:adjustViewBounds="true"
-                android:scaleType="fitXY" />
+                 />
         </LinearLayout>
 
         <ProgressBar
@@ -35,14 +34,13 @@
             android:visibility="gone" />
 
 
-
-
     </FrameLayout>
 
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/banner_frame_layout">
+        android:layout_below="@+id/banner_frame_layout"
+        android:layout_marginTop="2dp">
 
         <com.baoyz.widget.PullRefreshLayout
             android:id="@+id/refresh_layout"

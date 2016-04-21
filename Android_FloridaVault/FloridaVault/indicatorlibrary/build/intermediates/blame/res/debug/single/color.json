@@ -4,7 +4,31 @@
         "source": "D:\\Company_project\\Project\\Gaurav Project\\Android_FloridaVault\\FloridaVault\\indicatorlibrary\\src\\main\\res\\color\\vpi__light_theme.xml"
     },
     {
+        "merged": "D:\\Company_project\\Project\\Gaurav\\Android_FloridaVault\\FloridaVault\\indicatorlibrary\\build\\intermediates\\res\\merged\\debug\\color\\vpi__light_theme.xml",
+        "source": "D:\\Company_project\\Project\\Gaurav\\Android_FloridaVault\\FloridaVault\\indicatorlibrary\\src\\main\\res\\color\\vpi__light_theme.xml"
+    },
+    {
+        "merged": "D:\\Android Studio Project\\Android_FloridaVault\\FloridaVault\\indicatorlibrary\\build\\intermediates\\res\\merged\\debug\\color\\vpi__light_theme.xml",
+        "source": "D:\\Android Studio Project\\Android_FloridaVault\\FloridaVault\\indicatorlibrary\\src\\main\\res\\color\\vpi__light_theme.xml"
+    },
+    {
+        "merged": "D:\\Android Studio Project\\Florida Vault Latest\\Android_FloridaVault\\FloridaVault\\indicatorlibrary\\build\\intermediates\\res\\merged\\debug\\color\\vpi__dark_theme.xml",
+        "source": "D:\\Android Studio Project\\Florida Vault Latest\\Android_FloridaVault\\FloridaVault\\indicatorlibrary\\src\\main\\res\\color\\vpi__dark_theme.xml"
+    },
+    {
+        "merged": "D:\\Android Studio Project\\Florida Vault Latest\\Android_FloridaVault\\FloridaVault\\indicatorlibrary\\build\\intermediates\\res\\merged\\debug\\color\\vpi__light_theme.xml",
+        "source": "D:\\Android Studio Project\\Florida Vault Latest\\Android_FloridaVault\\FloridaVault\\indicatorlibrary\\src\\main\\res\\color\\vpi__light_theme.xml"
+    },
+    {
+        "merged": "D:\\Android Studio Project\\Android_FloridaVault\\FloridaVault\\indicatorlibrary\\build\\intermediates\\res\\merged\\debug\\color\\vpi__dark_theme.xml",
+        "source": "D:\\Android Studio Project\\Android_FloridaVault\\FloridaVault\\indicatorlibrary\\src\\main\\res\\color\\vpi__dark_theme.xml"
+    },
+    {
         "merged": "D:\\Company_project\\Project\\Gaurav Project\\Android_FloridaVault\\FloridaVault\\indicatorlibrary\\build\\intermediates\\res\\merged\\debug\\color\\vpi__dark_theme.xml",
         "source": "D:\\Company_project\\Project\\Gaurav Project\\Android_FloridaVault\\FloridaVault\\indicatorlibrary\\src\\main\\res\\color\\vpi__dark_theme.xml"
+    },
+    {
+        "merged": "D:\\Company_project\\Project\\Gaurav\\Android_FloridaVault\\FloridaVault\\indicatorlibrary\\build\\intermediates\\res\\merged\\debug\\color\\vpi__dark_theme.xml",
+        "source": "D:\\Company_project\\Project\\Gaurav\\Android_FloridaVault\\FloridaVault\\indicatorlibrary\\src\\main\\res\\color\\vpi__dark_theme.xml"
     }
 ]

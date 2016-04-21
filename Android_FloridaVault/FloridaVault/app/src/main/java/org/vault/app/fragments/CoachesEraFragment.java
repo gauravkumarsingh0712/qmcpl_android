@@ -130,25 +130,31 @@ public class CoachesEraFragment extends BaseFragment {
     public void onResume() {
         // TODO Auto-generated method stub
         super.onResume();
-        if (coachesVideoList != null)
-            System.out.println("Size : " + coachesVideoList.size());
+        try {
+            if (coachesVideoList != null)
+                System.out.println("Size : " + coachesVideoList.size());
 
-        if (videoHeaderListAdapter != null) {
-            videoHeaderListAdapter.notifyDataSetChanged();
-        }
-        if (progressBar != null && refreshLayout != null) {
-            if (progressBar.getVisibility() == View.GONE || progressBar.getVisibility() == View.INVISIBLE) {
-                refreshLayout.setEnabled(true);
-                refreshLayout.setOnRefreshListener(refreshListener);
+            if (videoHeaderListAdapter != null) {
+                videoHeaderListAdapter.notifyDataSetChanged();
             }
-        }
+            if (progressBar != null && refreshLayout != null) {
+                if (progressBar.getVisibility() == View.GONE || progressBar.getVisibility() == View.INVISIBLE) {
+                    refreshLayout.setEnabled(true);
+                    refreshLayout.setOnRefreshListener(refreshListener);
+                }
+            }
 
-        if (coachesVideoList != null && coachesVideoList.size() == 0) {
-            progressBar.setVisibility(View.VISIBLE);
-        } else {
-            progressBar.setVisibility(View.GONE);
+            if (coachesVideoList != null && coachesVideoList.size() == 0) {
+                if (GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+                    progressBar.setVisibility(View.VISIBLE);
+                }
+            } else {
+                progressBar.setVisibility(View.GONE);
+            }
+            gethideKeyboard();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        gethideKeyboard();
 
     }
 
@@ -194,8 +200,7 @@ public class CoachesEraFragment extends BaseFragment {
         return v;
     }
 
-    private void getEraCoachesDataFromDataBase()
-    {
+    private void getEraCoachesDataFromDataBase() {
         AsyncTask<Void, Void, Void> mDbTask = new AsyncTask<Void, Void, Void>() {
 
             @Override
@@ -262,7 +267,7 @@ public class CoachesEraFragment extends BaseFragment {
                 }
 
                 //visibility of scroll bar set dynamically list height
-                Utils.setVisibilityOfScrollBarHeightForHeader(GlobalConstants.SEARCH_VIEW_QUERY,stickyListHeadersListView);
+                Utils.setVisibilityOfScrollBarHeightForHeader(GlobalConstants.SEARCH_VIEW_QUERY, stickyListHeadersListView);
 
             }
         };
@@ -318,7 +323,6 @@ public class CoachesEraFragment extends BaseFragment {
                     pullRefreshTask = new PullRefreshTask();
                     pullRefreshTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
                 }
-
 
 
             } else {
@@ -694,22 +698,15 @@ public class CoachesEraFragment extends BaseFragment {
         protected ArrayList<VideoDTO> doInBackground(Void... params) {
             final ArrayList<VideoDTO> arrList = new ArrayList<VideoDTO>();
             try {
+
                 String url = GlobalConstants.COACH_API_URL + "userId=" + AppController.getInstance().getUserId();
                 arrList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
+                if (arrList.size() > 0) {
+                    VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_COACH);
+                    VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).insertVideosInDatabase(arrList);
+                }
 
 
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        System.out.println("player doin background in");
-                        if (arrList.size() > 0) {
-                            VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).removeRecordsByTab("OKFCoach");
-                            VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).insertVideosInDatabase(arrList);
-                        }
-                    }
-                });
-
-                //Update Banner Data
                 if (tabBannerDTO != null) {
                     TabBannerDTO serverObj = AppController.getInstance().getServiceManager().getVaultService().getTabBannerDataById(tabBannerDTO.getTabBannerId(), tabBannerDTO.getTabKeyword(), tabBannerDTO.getTabId());
                     if (serverObj != null) {
@@ -725,6 +722,7 @@ public class CoachesEraFragment extends BaseFragment {
                         }
                     }
                 }
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -735,9 +733,91 @@ public class CoachesEraFragment extends BaseFragment {
         @Override
         protected void onPostExecute(final ArrayList<VideoDTO> result) {
             super.onPostExecute(result);
-            if (result.size() > 0) {
+            try {
+                if (result.size() > 0) {
+                    coachesVideoList.clear();
+                    coachesVideoList.addAll(result);
+
+                    Collections.sort(coachesVideoList, new Comparator<VideoDTO>() {
+
+                        @Override
+                        public int compare(VideoDTO lhs, VideoDTO rhs) {
+                            // TODO Auto-generated method stub
+                            return lhs.getPlaylistName().toLowerCase()
+                                    .compareTo(rhs.getPlaylistName().toLowerCase());
+                        }
+                    });
+
+
+                    try {
+                        Thread thread = new Thread() {
+                            @Override
+                            public void run() {
+                                if (result.size() > 0) {
+                                    VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).removeRecordsByTab("OKFCoach");
+                                    VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).insertVideosInDatabase(result);
+                                }
+                            }
+                        };
+                        thread.start();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    if (videoHeaderListAdapter != null) {
+                        videoHeaderListAdapter.notifyDataSetChanged();
+                        videoHeaderListAdapter.updateIndexer();
+                    } else {
+                        videoHeaderListAdapter = new VideoContentHeaderListAdapter(coachesVideoList, mActivity, 2, true, false);
+                        stickyListHeadersListView.setAdapter(videoHeaderListAdapter);
+                    }
+
+                    if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+                        videoHeaderListAdapter.filter(GlobalConstants.SEARCH_VIEW_QUERY.toLowerCase(Locale
+                                .getDefault()));
+                        videoHeaderListAdapter.notifyDataSetChanged();
+                    }
+                    if (videoHeaderListAdapter.getCount() == 0) {
+                        tvsearchRecordsNotAvailable.setText("No Records Found");
+                        tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
+                        progressBar.setVisibility(View.GONE);
+                        stickyListHeadersListView.setFastScrollAlwaysVisible(false);
+                    }
+                }
+                if (coachesVideoList.size() == 0) {
+                    tvsearchRecordsNotAvailable.setText("No Records Found");
+                    tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
+                    progressBar.setVisibility(View.GONE);
+                    stickyListHeadersListView.setFastScrollAlwaysVisible(false);
+                }
+                if (isBannerUpdated)
+                    if (tabBannerDTO != null) {
+                        tabBannerDTO = VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getLocalTabBannerDataByTabId(tabBannerDTO.getTabId());
+                        if (tabBannerDTO != null)
+                            Utils.addBannerImagePullToRefresh(bannerCacheableImageView, bannerLayout, tabBannerDTO, mActivity, mBannerProgressBar);
+                    }
+                videoHeaderListAdapter.isPullRefreshInProgress = false;
+                refreshLayout.setRefreshing(false);
+
+                Utils.setEnabledStickyListHeadersListViewScrolling(stickyListHeadersListView);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public class CoachesResponseReceiver extends BroadcastReceiver {
+
+        public static final String ACTION_RESP =
+                "Message Processed";
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            try {
                 coachesVideoList.clear();
-                coachesVideoList.addAll(result);
+                coachesVideoList.addAll(VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getVideoList(GlobalConstants.OKF_COACH));
 
                 Collections.sort(coachesVideoList, new Comparator<VideoDTO>() {
 
@@ -750,97 +830,43 @@ public class CoachesEraFragment extends BaseFragment {
                 });
 
 
-                if (videoHeaderListAdapter != null) {
-                    videoHeaderListAdapter.notifyDataSetChanged();
-                    videoHeaderListAdapter.updateIndexer();
-                } else {
-                    videoHeaderListAdapter = new VideoContentHeaderListAdapter(coachesVideoList, mActivity, 2, true, false);
-                    stickyListHeadersListView.setAdapter(videoHeaderListAdapter);
-                }
-
+                videoHeaderListAdapter = new VideoContentHeaderListAdapter(coachesVideoList, mActivity, 2, true, false);
                 if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
                     videoHeaderListAdapter.filter(GlobalConstants.SEARCH_VIEW_QUERY.toLowerCase(Locale
                             .getDefault()));
-                    videoHeaderListAdapter.notifyDataSetChanged();
                 }
-                if (videoHeaderListAdapter.getCount() == 0) {
-                    tvsearchRecordsNotAvailable.setText("No Records Found");
-                    tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
+                stickyListHeadersListView.setAdapter(videoHeaderListAdapter);
+                System.out.println("tabBannerDTO coachesVideoList " + coachesVideoList.size() + " isServiceRunning " + VideoDataService.isServiceRunning);
+                if (coachesVideoList.size() == 0 /*&& VideoDataService.isServiceRunning*/) {
+                    if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+
+                    } else {
+                        progressBar.setVisibility(View.VISIBLE);
+                    }
+                } else {
                     progressBar.setVisibility(View.GONE);
-                    stickyListHeadersListView.setFastScrollAlwaysVisible(false);
                 }
-            }
-            if (coachesVideoList.size() == 0) {
-                tvsearchRecordsNotAvailable.setText("No Records Found");
-                tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
-                progressBar.setVisibility(View.GONE);
-                stickyListHeadersListView.setFastScrollAlwaysVisible(false);
-            }
-            if (isBannerUpdated)
+
+                if (progressBar != null) {
+                    if (progressBar.getVisibility() == View.GONE || progressBar.getVisibility() == View.INVISIBLE) {
+                        refreshLayout.setEnabled(true);
+                        refreshLayout.setOnRefreshListener(refreshListener);
+                    }
+                }
+
+                tabBannerDTO = VaultDatabaseHelper.getInstance(getActivity()).getLocalTabBannerDataByTabId(Long.valueOf(tabId));
+                System.out.println("tabBannerDTO Coches " + tabBannerDTO);
                 if (tabBannerDTO != null) {
                     tabBannerDTO = VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getLocalTabBannerDataByTabId(tabBannerDTO.getTabId());
                     if (tabBannerDTO != null)
                         Utils.addBannerImagePullToRefresh(bannerCacheableImageView, bannerLayout, tabBannerDTO, mActivity, mBannerProgressBar);
                 }
-            videoHeaderListAdapter.isPullRefreshInProgress = false;
-            refreshLayout.setRefreshing(false);
-
-            Utils.setEnabledStickyListHeadersListViewScrolling(stickyListHeadersListView);
-        }
-    }
-
-    public class CoachesResponseReceiver extends BroadcastReceiver {
-
-        public static final String ACTION_RESP =
-                "Message Processed";
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            coachesVideoList.clear();
-            coachesVideoList.addAll(VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getVideoList(GlobalConstants.OKF_COACH));
-
-            Collections.sort(coachesVideoList, new Comparator<VideoDTO>() {
-
-                @Override
-                public int compare(VideoDTO lhs, VideoDTO rhs) {
-                    // TODO Auto-generated method stub
-                    return lhs.getPlaylistName().toLowerCase()
-                            .compareTo(rhs.getPlaylistName().toLowerCase());
-                }
-            });
-
-
-            videoHeaderListAdapter = new VideoContentHeaderListAdapter(coachesVideoList, mActivity, 2, true, false);
-            if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
-                videoHeaderListAdapter.filter(GlobalConstants.SEARCH_VIEW_QUERY.toLowerCase(Locale
-                        .getDefault()));
-            }
-            stickyListHeadersListView.setAdapter(videoHeaderListAdapter);
-            System.out.println("tabBannerDTO coachesVideoList " + coachesVideoList.size() + " isServiceRunning " + VideoDataService.isServiceRunning);
-            if (coachesVideoList.size() == 0 /*&& VideoDataService.isServiceRunning*/) {
-                progressBar.setVisibility(View.VISIBLE);
-            } else {
-                progressBar.setVisibility(View.GONE);
-            }
-
-            if (progressBar != null) {
-                if (progressBar.getVisibility() == View.GONE || progressBar.getVisibility() == View.INVISIBLE) {
-                    refreshLayout.setEnabled(true);
-                    refreshLayout.setOnRefreshListener(refreshListener);
-                }
-            }
-
-            tabBannerDTO = VaultDatabaseHelper.getInstance(getActivity()).getLocalTabBannerDataByTabId(Long.valueOf(tabId));
-            System.out.println("tabBannerDTO Coches " + tabBannerDTO);
-            if (tabBannerDTO != null) {
-                tabBannerDTO = VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getLocalTabBannerDataByTabId(tabBannerDTO.getTabId());
-                if (tabBannerDTO != null)
-                    Utils.addBannerImagePullToRefresh(bannerCacheableImageView, bannerLayout, tabBannerDTO, mActivity, mBannerProgressBar);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
+
     }
-
-
 
 
     private void updateBannerImage() {

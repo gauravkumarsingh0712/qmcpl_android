@@ -7,11 +7,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Handler;
 import android.support.v4.content.res.ResourcesCompat;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -81,6 +83,7 @@ public class FeaturedFragment extends BaseFragment {
     private LinearLayout bannerLayout;
     private String tabId;
     private CountDownTimer countDownTimer;
+
     public FeaturedFragment() {
 
     }
@@ -96,7 +99,6 @@ public class FeaturedFragment extends BaseFragment {
         super.onAttach(activity);
         mActivity = activity;
 
-
     }
 
     @Override
@@ -105,11 +107,15 @@ public class FeaturedFragment extends BaseFragment {
         Bundle bundle = getArguments();
         tabId = bundle.getString("tabId");
         String videoUrl = bundle.getString("videoUrl");
+        String videoId = LocalModel.getInstance().getVideoId();
 
         // tabBannerDTO = (TabBannerDTO) bundle.getSerializable("tabObject");
         tabBannerDTO = VaultDatabaseHelper.getInstance(getActivity()).getLocalTabBannerDataByTabId(Long.valueOf(tabId));
 
-        if (videoUrl != null) {
+        if (videoUrl != null || videoId != null) {
+            if (videoUrl == null) {
+                videoUrl = videoId;
+            }
             playFacbookVideo(videoUrl);
         }
 
@@ -136,6 +142,7 @@ public class FeaturedFragment extends BaseFragment {
 
         setHasOptionsMenu(true);
 
+
         getFeatureDataFromDataBase();
 
       //  autoRefresh();
@@ -149,10 +156,12 @@ public class FeaturedFragment extends BaseFragment {
             @Override
             protected void onPreExecute() {
                 super.onPreExecute();
-                if (featuredVideoList.size() == 0) {
-                    progressBar.setVisibility(View.VISIBLE);
-                } else {
-                    progressBar.setVisibility(View.GONE);
+                if (progressBar != null) {
+                    if (featuredVideoList.size() == 0) {
+                        progressBar.setVisibility(View.VISIBLE);
+                    } else {
+                        progressBar.setVisibility(View.GONE);
+                    }
                 }
             }
 
@@ -166,7 +175,7 @@ public class FeaturedFragment extends BaseFragment {
 
                     featuredVideoList.clear();
                     featuredVideoList.addAll(VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getVideoList(GlobalConstants.OKF_FEATURED));
-                    System.out.println("arrayListVideoDTOs.size() doInBackground : "+featuredVideoList.size());
+
                     Collections.sort(featuredVideoList, new Comparator<VideoDTO>() {
 
                         @Override
@@ -192,10 +201,12 @@ public class FeaturedFragment extends BaseFragment {
             protected void onPostExecute(Void aVoid) {
                 super.onPostExecute(aVoid);
                 listViewFeaturedVideo.setAdapter(videoListAdapter);
-                if (featuredVideoList.size() == 0 && VideoDataService.isServiceRunning) {
-                    progressBar.setVisibility(View.VISIBLE);
-                } else {
-                    progressBar.setVisibility(View.GONE);
+                if (progressBar != null) {
+                    if (featuredVideoList.size() == 0 && VideoDataService.isServiceRunning) {
+                        progressBar.setVisibility(View.VISIBLE);
+                    } else {
+                        progressBar.setVisibility(View.GONE);
+                    }
                 }
                 // ------- addBannerImage---------------------
                 /*Utils.addVolleyBanner(bannerCacheableImageView,
@@ -311,6 +322,7 @@ public class FeaturedFragment extends BaseFragment {
     @Override
     public void onResume() {
         super.onResume();
+        try{
         if (videoListAdapter != null) {
             videoListAdapter.notifyDataSetChanged();
         }
@@ -325,12 +337,18 @@ public class FeaturedFragment extends BaseFragment {
 
 
         if (featuredVideoList != null && featuredVideoList.size() == 0) {
-            progressBar.setVisibility(View.VISIBLE);
+            System.out.println("progress bar vbisible on resume");
+            if(GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+                progressBar.setVisibility(View.VISIBLE);
+            }
         } else {
             progressBar.setVisibility(View.GONE);
         }
 
         gethideKeyboard();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -391,6 +409,7 @@ public class FeaturedFragment extends BaseFragment {
         listViewFeaturedVideo.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view1, int pos, long id) {
+                System.out.println("position : " + pos);
                 View view = mActivity.getCurrentFocus();
                 if (view != null) {
                     InputMethodManager inputManager = (InputMethodManager) mActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -432,6 +451,8 @@ public class FeaturedFragment extends BaseFragment {
                 if (((MainActivity) mActivity).progressDialog != null)
                     if (((MainActivity) mActivity).progressDialog.isShowing())
                         ((MainActivity) mActivity).progressDialog.dismiss();
+
+
             }
         });
 
@@ -452,27 +473,35 @@ public class FeaturedFragment extends BaseFragment {
             @Override
             public boolean onTouch(final View v, MotionEvent event) {
 
-                countDownTimer = new CountDownTimer(4000, 3000) {
-
-
+                new Handler().postDelayed(new Runnable() {
                     @Override
-                    public void onTick(long millisUntilFinished) {
-
-
+                    public void run() {
                         if (listViewFeaturedVideo != null) {
                             listViewFeaturedVideo.setFastScrollAlwaysVisible(false);
                         }
                     }
-
-                    @Override
-                    public void onFinish() {
-
-                        if (countDownTimer != null) {
-                            countDownTimer.cancel();
-                        }
-
-                    }
-                }.start();
+                }, 2000);
+//                countDownTimer = new CountDownTimer(4000, 3000) {
+//
+//
+//                    @Override
+//                    public void onTick(long millisUntilFinished) {
+//
+//
+//                        if (listViewFeaturedVideo != null) {
+//                            listViewFeaturedVideo.setFastScrollAlwaysVisible(false);
+//                        }
+//                    }
+//
+//                    @Override
+//                    public void onFinish() {
+//
+//                        if (countDownTimer != null) {
+//                            countDownTimer.cancel();
+//                        }
+//
+//                    }
+//                }.start();
 
                 return false;
             }
@@ -589,11 +618,13 @@ public class FeaturedFragment extends BaseFragment {
         searchView.setIconified(true);
         searchView.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
 
+
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
 
             @Override
             public boolean onQueryTextSubmit(String query) {
                 // TODO Auto-generated method stub
+
                 return false;
             }
 
@@ -627,6 +658,7 @@ public class FeaturedFragment extends BaseFragment {
                                     .compareTo(Integer.valueOf(rhs.getVideoIndex()));
                         }
                     });
+
                     videoListAdapter.notifyDataSetChanged();
                 }
                 //set Visibility of scroll bar runtime
@@ -656,17 +688,22 @@ public class FeaturedFragment extends BaseFragment {
                 }
                 return false;
             }
+
+
         });
+
     }
+
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
-//        switch (item.getItemId()) {
-//            case R.id.miActionProgress: {
-//                item.setActionView(R.layout.action_view_progress);
-//            }
-//        }
+        switch (item.getItemId()) {
+            case R.id.action_search: {
+                System.out.println("dfdfnhfndknldn");
+            }
+        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -699,7 +736,6 @@ public class FeaturedFragment extends BaseFragment {
         if (isVisibleToUser) {
 
 
-
             /*if (bannerCacheableImageView != null && mActivity != null) {
                 // ---- addBannerImage--------
                 *//*Utils.addVolleyBanner(bannerCacheableImageView,
@@ -710,6 +746,7 @@ public class FeaturedFragment extends BaseFragment {
             FlurryAgent.onEvent(GlobalConstants.FEATURED);
             if(progressBar != null) {
                 if (featuredVideoList != null && featuredVideoList.size() == 0) {
+                    System.out.println("progress bar vbisible on setUser");
                     progressBar.setVisibility(View.VISIBLE);
                 } else {
                     progressBar.setVisibility(View.GONE);
@@ -794,18 +831,19 @@ public class FeaturedFragment extends BaseFragment {
         protected ArrayList<VideoDTO> doInBackground(Void... params) {
             ArrayList<VideoDTO> arrList = new ArrayList<VideoDTO>();
             try {
-                String url = GlobalConstants.FEATURED_API_URL + "userId=" + AppController.getInstance().getUserId();
-                arrList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
-                if (arrList.size() > 0) {
-                    VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).removeRecordsByTab("OKFFeatured");
-                    VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).insertVideosInDatabase(arrList);
-                }
+                        String url = GlobalConstants.FEATURED_API_URL + "userId=" + AppController.getInstance().getUserId();
+                        arrList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
+                        if (arrList.size() > 0) {
+                            VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_FEATURED);
+                            VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).insertVideosInDatabase(arrList);
+                        }
+
 
                 //Update Banner Data
-                if (tabBannerDTO != null) {
+                if(tabBannerDTO != null) {
                     TabBannerDTO serverObj = AppController.getInstance().getServiceManager().getVaultService().getTabBannerDataById(tabBannerDTO.getTabBannerId(), tabBannerDTO.getTabKeyword(), tabBannerDTO.getTabId());
-                    if (serverObj != null) {
-                        if ((tabBannerDTO.getBannerModified() != serverObj.getBannerModified()) || (tabBannerDTO.getBannerCreated() != serverObj.getBannerCreated())) {
+                    if(serverObj != null){
+                        if((tabBannerDTO.getBannerModified() != serverObj.getBannerModified()) || (tabBannerDTO.getBannerCreated() != serverObj.getBannerCreated())) {
                             File imageFile = ImageLoader.getInstance().getDiscCache().get(tabBannerDTO.getBannerURL());
                             if (imageFile.exists()) {
                                 imageFile.delete();
@@ -817,6 +855,7 @@ public class FeaturedFragment extends BaseFragment {
                         }
                     }
                 }
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -827,59 +866,64 @@ public class FeaturedFragment extends BaseFragment {
         @Override
         protected void onPostExecute(final ArrayList<VideoDTO> result) {
             super.onPostExecute(result);
-            if (result.size() > 0) {
-                featuredVideoList.clear();
-                featuredVideoList.addAll(result);
+            try {
+                if (result.size() > 0) {
+                    featuredVideoList.clear();
+                    featuredVideoList.addAll(result);
 
-                Collections.sort(featuredVideoList, new Comparator<VideoDTO>() {
+                    Collections.sort(featuredVideoList, new Comparator<VideoDTO>() {
 
-                    @Override
-                    public int compare(VideoDTO lhs, VideoDTO rhs) {
-                        // TODO Auto-generated method stub
-                        return Integer.valueOf(lhs.getVideoIndex())
-                                .compareTo(Integer.valueOf(rhs.getVideoIndex()));
+                        @Override
+                        public int compare(VideoDTO lhs, VideoDTO rhs) {
+                            // TODO Auto-generated method stub
+                            return Integer.valueOf(lhs.getVideoIndex())
+                                    .compareTo(Integer.valueOf(rhs.getVideoIndex()));
+                        }
+                    });
+
+                    if (videoListAdapter != null) {
+                        videoListAdapter.listSearch.clear();
+                        videoListAdapter.listSearch.addAll(result);
+                        videoListAdapter.notifyDataSetChanged();
+                    } else {
+                        videoListAdapter = new VideoContentListAdapter(featuredVideoList, mActivity, 1, false);
+                        listViewFeaturedVideo.setAdapter(videoListAdapter);
                     }
-                });
-
-                if (videoListAdapter != null) {
-                    videoListAdapter.listSearch.clear();
-                    videoListAdapter.listSearch.addAll(result);
-                    videoListAdapter.notifyDataSetChanged();
-                } else {
-                    videoListAdapter = new VideoContentListAdapter(featuredVideoList, mActivity, 1, false);
-                    listViewFeaturedVideo.setAdapter(videoListAdapter);
+                    if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+                        videoListAdapter.filter(GlobalConstants.SEARCH_VIEW_QUERY.toLowerCase(Locale
+                                .getDefault()));
+                        videoListAdapter.notifyDataSetChanged();
+                    }
+                    if (videoListAdapter.getCount() == 0) {
+                        tvsearchRecordsNotAvailable.setText("No Records Found");
+                        tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
+                        progressBar.setVisibility(View.GONE);
+                        listViewFeaturedVideo.setFastScrollAlwaysVisible(false);
+                    }
                 }
-                if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
-                    videoListAdapter.filter(GlobalConstants.SEARCH_VIEW_QUERY.toLowerCase(Locale
-                            .getDefault()));
-                    videoListAdapter.notifyDataSetChanged();
-                }
-                if (videoListAdapter.getCount() == 0) {
+                if (featuredVideoList.size() == 0) {
                     tvsearchRecordsNotAvailable.setText("No Records Found");
                     tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
                     progressBar.setVisibility(View.GONE);
                     listViewFeaturedVideo.setFastScrollAlwaysVisible(false);
                 }
-            }
-            if (featuredVideoList.size() == 0) {
-                tvsearchRecordsNotAvailable.setText("No Records Found");
-                tvsearchRecordsNotAvailable.setVisibility(View.VISIBLE);
-                progressBar.setVisibility(View.GONE);
-                listViewFeaturedVideo.setFastScrollAlwaysVisible(false);
-            }
-            videoListAdapter.isPullRefreshInProgress = false;
-            if (isBannerUpdated)
-                if (tabBannerDTO != null) {
-                    tabBannerDTO = VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getLocalTabBannerDataByTabId(tabBannerDTO.getTabId());
-                    if (tabBannerDTO != null)
-                        Utils.addBannerImagePullToRefresh(bannerCacheableImageView, bannerLayout, tabBannerDTO, mActivity, mBannerProgressBar);
+                videoListAdapter.isPullRefreshInProgress = false;
+                if (isBannerUpdated)
+                    if (tabBannerDTO != null) {
+                        tabBannerDTO = VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getLocalTabBannerDataByTabId(tabBannerDTO.getTabId());
+                        if (tabBannerDTO != null)
+                            Utils.addBannerImagePullToRefresh(bannerCacheableImageView, bannerLayout, tabBannerDTO, mActivity, mBannerProgressBar);
+                    }
+                refreshLayout.setRefreshing(false);
+                if (listViewFeaturedVideo != null) {
+                    listViewFeaturedVideo.setEnabled(true);
+                    listViewFeaturedVideo.setFastScrollAlwaysVisible(true);
+                    listViewFeaturedVideo.setVerticalScrollBarEnabled(true);
+                    listViewFeaturedVideo.setFastScrollEnabled(true);
                 }
-            refreshLayout.setRefreshing(false);
-            if (listViewFeaturedVideo != null) {
-                listViewFeaturedVideo.setEnabled(true);
-                listViewFeaturedVideo.setFastScrollAlwaysVisible(true);
-                listViewFeaturedVideo.setVerticalScrollBarEnabled(true);
-                listViewFeaturedVideo.setFastScrollEnabled(true);
+
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
@@ -892,10 +936,10 @@ public class FeaturedFragment extends BaseFragment {
         @Override
         public void onReceive(Context context, Intent intent) {
 
-
+            try {
             featuredVideoList.clear();
             featuredVideoList.addAll(VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getVideoList(GlobalConstants.OKF_FEATURED));
-            System.out.println("arrayListVideoDTOs.size()onReceive : "+featuredVideoList.size());
+
             Collections.sort(featuredVideoList, new Comparator<VideoDTO>() {
 
                 @Override
@@ -915,7 +959,12 @@ public class FeaturedFragment extends BaseFragment {
             listViewFeaturedVideo.setAdapter(videoListAdapter);
 
             if (featuredVideoList.size() == 0 /*&& VideoDataService.isServiceRunning*/) {
-                progressBar.setVisibility(View.VISIBLE);
+                if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+
+                } else {
+                    progressBar.setVisibility(View.VISIBLE);
+                }
+
             } else {
                 progressBar.setVisibility(View.GONE);
             }
@@ -934,6 +983,9 @@ public class FeaturedFragment extends BaseFragment {
                 if (tabBannerDTO != null)
                     Utils.addBannerImagePullToRefresh(bannerCacheableImageView, bannerLayout, tabBannerDTO, mActivity, mBannerProgressBar);
             }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -941,24 +993,95 @@ public class FeaturedFragment extends BaseFragment {
 
 
     private void playFacbookVideo(String videoId) {
-        VideoDTO videoDTO = VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getVideoDataByVideoId(videoId);
-        if (Utils.isInternetAvailable(mActivity))
-        {
-            if (videoDTO != null) {
-                if (videoDTO.getVideoLongUrl() != null) {
-                    //  if (videoDTO.getVideoLongUrl().length() > 0 && !videoDTO.getVideoLongUrl().toLowerCase().equals("none")) {
-                    String videoCategory = GlobalConstants.FEATURED;
-                    Intent intent = new Intent(mActivity,
-                            VideoInfoActivity.class);
-                    intent.putExtra(GlobalConstants.KEY_CATEGORY, videoCategory);
-                    intent.putExtra(GlobalConstants.PLAYLIST_REF_ID, videoDTO.getPlaylistReferenceId());
-                    intent.putExtra(GlobalConstants.VIDEO_OBJ, videoDTO);
-                    startActivity(intent);
-                    mActivity.overridePendingTransition(R.anim.slide_up_video_info, R.anim.nochange);
+
+        if (VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).isVideoAvailableInDB(videoId)) {
+            VideoDTO videoDTO = VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getVideoDataByVideoId(videoId);
+            LocalModel.getInstance().setVideoId(null);
+            if (Utils.isInternetAvailable(mActivity)) {
+                if (videoDTO != null) {
+                    if (videoDTO.getVideoLongUrl() != null) {
+                        //  if (videoDTO.getVideoLongUrl().length() > 0 && !videoDTO.getVideoLongUrl().toLowerCase().equals("none")) {
+                        String videoCategory = GlobalConstants.FEATURED;
+                        Intent intent = new Intent(mActivity,
+                                VideoInfoActivity.class);
+                        intent.putExtra(GlobalConstants.KEY_CATEGORY, videoCategory);
+                        intent.putExtra(GlobalConstants.PLAYLIST_REF_ID, videoDTO.getPlaylistReferenceId());
+                        intent.putExtra(GlobalConstants.VIDEO_OBJ, videoDTO);
+                        startActivity(intent);
+                        mActivity.overridePendingTransition(R.anim.slide_up_video_info, R.anim.nochange);
+                    }
+                } else {
+                    ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
                 }
+            }
+        } else
+        {
+            System.out.println("isvideo available: "+VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).isVideoAvailableInDB(videoId));
+            try {
+                VideoPlayTask videoPlayTask = new VideoPlayTask();
+                videoPlayTask.execute(videoId);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        LocalModel.getInstance().setVideoId(null);
+    }
+
+
+    public class VideoPlayTask extends AsyncTask<String, Void, VideoDTO> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            pDialog = new ProgressDialog(mActivity, R.style.CustomDialogTheme);
+            pDialog.show();
+            pDialog.setContentView(AppController.getInstance().setViewToProgressDialog(mActivity));
+            pDialog.setCanceledOnTouchOutside(false);
+            pDialog.setCancelable(false);
+        }
+
+        @Override
+        protected VideoDTO doInBackground(String... params) {
+
+            SharedPreferences pref = AppController.getInstance().getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
+            long userId = pref.getLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, 0);
+            VideoDTO videoData = AppController.getInstance().getServiceManager().getVaultService().getVideosDataFromServer(GlobalConstants.GET_VIDEO_DATA + "?videoid=" + params[0] + "&userid=" + userId);
+            return videoData;
+        }
+
+
+        @Override
+        protected void onPostExecute(VideoDTO videoDTOs) {
+            super.onPostExecute(videoDTOs);
+            if (videoDTOs != null) {
+                ArrayList<VideoDTO> videoDTOArrayList = new ArrayList<>();
+                videoDTOArrayList.add(videoDTOs);
+                VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).insertVideosInDatabase(videoDTOArrayList);
+                if (Utils.isInternetAvailable(mActivity)) {
+                    if (videoDTOs.getVideoLongUrl() != null) {
+                        if (videoDTOs.getVideoLongUrl().length() > 0 && !videoDTOs.getVideoLongUrl().toLowerCase().equals("none")) {
+                            String videoCategory = GlobalConstants.FEATURED;
+                            Intent intent = new Intent(mActivity,
+                                    VideoInfoActivity.class);
+                            intent.putExtra(GlobalConstants.KEY_CATEGORY, videoCategory);
+                            intent.putExtra(GlobalConstants.PLAYLIST_REF_ID, videoDTOs.getPlaylistReferenceId());
+                            intent.putExtra(GlobalConstants.VIDEO_OBJ, videoDTOs);
+                            startActivity(intent);
+                            mActivity.overridePendingTransition(R.anim.slide_up_video_info, R.anim.nochange);
+                        } else {
+                            ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
+                        }
+                    } else {
+                        ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
+                    }
+                } else {
+                    ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
+                }
+
             } else {
                 ((MainActivity) mActivity).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
             }
+            pDialog.dismiss();
         }
     }
 }

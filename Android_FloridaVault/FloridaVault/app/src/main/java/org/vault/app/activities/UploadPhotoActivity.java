@@ -183,9 +183,9 @@ public class UploadPhotoActivity extends BaseActivity {
             public void onClick(View v) {
                 //upload the image on server
                 if (Utils.isInternetAvailable(UploadPhotoActivity.this)) {
-
-                    mFirstName = LocalModel.getInstance().getFirstName();//AppController.getInstance().getFirstName().toString();
-                    mLastName = LocalModel.getInstance().getLastName();//AppController.getInstance().getLastName().toString();
+                    //String upperString = myString.substring(0,1).toUpperCase() + myString.substring(1);
+                    mFirstName = LocalModel.getInstance().getFirstName().substring(0, 1).toUpperCase() + LocalModel.getInstance().getFirstName().substring(1);//AppController.getInstance().getFirstName().toString();
+                    mLastName = LocalModel.getInstance().getLastName().substring(0, 1).toUpperCase() + LocalModel.getInstance().getLastName().substring(1);//AppController.getInstance().getLastName().toString();
                     mEmailId = LocalModel.getInstance().getEmailId();//AppController.getInstance().getEmailAddress().toString();
                     showConfirmLoginDialog(GlobalConstants.DO_YOU_WANT_TO_JOIN_OUR_MAILING_LIST, mFirstName, mLastName, mEmailId);
 
@@ -608,12 +608,10 @@ public class UploadPhotoActivity extends BaseActivity {
         alertDialog.setCanceledOnTouchOutside(false);
         alertDialog.show();
         Button nbutton = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
-        nbutton.setPadding(0, 0, 30, 0);
         nbutton.setAllCaps(false);
         nbutton.setTextColor(Color.GRAY);
         Button pbutton = alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE);
         pbutton.setTextColor(getResources().getColor(R.color.apptheme_color));
-        pbutton.setPadding(0,0,180,0);
         pbutton.setAllCaps(false);
     }
 
@@ -628,7 +626,7 @@ public class UploadPhotoActivity extends BaseActivity {
         }
         mergeFields.addField("FNAME", firstName);
         mergeFields.addField("LNAME", lastName);
-        mergeFields.addField("PLATEFORM", GlobalConstants.DEVICE_TYPE);
+        mergeFields.addField("PLATFORM", GlobalConstants.DEVICE_TYPE);
         mergeFields.addField("SCHOOL", GlobalConstants.APP_SCHOOL_NAME);
 
         // ListMethods listMethods = new ListMethods(getResources().getText(R.string.mc_api_key));

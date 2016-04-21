@@ -91,7 +91,6 @@ public class VideoInfoPagerFragment extends BaseFragment {
             progressBar.setIndeterminateDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.progress_large_material, null));
         }
         tvRecordsStatus = (TextView) view.findViewById(R.id.tv_records_status);
-
     }
 
     public void initData(){
@@ -108,40 +107,51 @@ public class VideoInfoPagerFragment extends BaseFragment {
         }
     }
 
-    public void initListener(){
+    public void initListener() {
 
         relatedVideoListview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view,final int pos, long id) {
+            public void onItemClick(AdapterView<?> parent, View view, final int pos, long id) {
                 View keyboardView = getActivity().getCurrentFocus();
                 if (keyboardView != null) {
                     InputMethodManager inputManager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
                     inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
                 }
                 if (Utils.isInternetAvailable(getActivity())) {
-                    if (relatedVideoArrayList.get(pos).getVideoLongUrl() != null) {
-                        if (relatedVideoArrayList.get(pos).getVideoLongUrl().length() > 0 && !relatedVideoArrayList.get(pos).getVideoLongUrl().toLowerCase().equals("none")) {
-                            ((VideoInfoActivity) getActivity()).stopVideoEvents();
-                            progressBar.setVisibility(View.GONE);
-                            mStartRelatedVideoTask = new StartRelatedVideos();
-                            mStartRelatedVideoTask.execute(relatedVideoArrayList.get(pos));
+//                    if (VideoInfoActivity.llVideoLoader.isShown()) {
+//
+//                        ((VideoInfoActivity) getActivity()).showConfirmDialogBox("Please Wait till video is loading");
+//
+//                    } else if (!VideoInfoActivity.llVideoLoader.isShown()) {
+                    try {
+                        if (relatedVideoArrayList.get(pos).getVideoLongUrl() != null) {
+                            if (relatedVideoArrayList.get(pos).getVideoLongUrl().length() > 0 && !relatedVideoArrayList.get(pos).getVideoLongUrl().toLowerCase().equals("none")) {
+                                ((VideoInfoActivity) getActivity()).stopVideoEvents();
+                                progressBar.setVisibility(View.GONE);
+                                mStartRelatedVideoTask = new StartRelatedVideos();
+                                mStartRelatedVideoTask.execute(relatedVideoArrayList.get(pos));
 
+                            } else {
+                                ((VideoInfoActivity) getActivity()).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
+                            }
                         } else {
                             ((VideoInfoActivity) getActivity()).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
                         }
-                    } else {
-                        ((VideoInfoActivity) getActivity()).showToastMessage(GlobalConstants.MSG_NO_INFO_AVAILABLE);
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                } else {
+                    //    }
+                    } else {
                     ((VideoInfoActivity) getActivity()).showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
-                }
+                    }
 
                 if (VideoInfoActivity.linearLayout != null) {
                     VideoInfoActivity.linearLayout.setVisibility(View.GONE);
                 }
-            }
+                }
 
         });
+
 
         scrollView.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -183,6 +193,9 @@ public class VideoInfoPagerFragment extends BaseFragment {
             pDialog.setContentView(AppController.getInstance().showRelatedVideoLoader(getActivity(), false));
             pDialog.setCanceledOnTouchOutside(false);
             pDialog.setCancelable(false);
+            if(tvRecordsStatus.isShown()) {
+                tvRecordsStatus.setVisibility(View.INVISIBLE);
+            }
         }
 
         @Override
@@ -190,13 +203,15 @@ public class VideoInfoPagerFragment extends BaseFragment {
             try {
                 Thread.currentThread();
                 Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+
             if(params[0] != null) {
                 videoDTO = params[0];
                 ((VideoInfoActivity) getActivity()).startRelatedVideo(params[0]);
+            }
+
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
             return null;
         }
@@ -207,6 +222,9 @@ public class VideoInfoPagerFragment extends BaseFragment {
             if(videoDTO != null)
                 ((VideoInfoActivity)getActivity()).setRelatedVideoData(videoDTO);
             pDialog.dismiss();
+            if(tvRecordsStatus.isShown()) {
+                tvRecordsStatus.setVisibility(View.INVISIBLE);
+            }
             relatedVideosTask = new FetchRelatedRecords();
             relatedVideosTask.execute(videoDTO);
         }
@@ -220,6 +238,9 @@ public class VideoInfoPagerFragment extends BaseFragment {
             if(relatedVideoAdapter != null)
                 relatedVideoAdapter.notifyDataSetChanged();
             progressBar.setVisibility(View.VISIBLE);
+            if(tvRecordsStatus.isShown()) {
+                tvRecordsStatus.setVisibility(View.INVISIBLE);
+            }
         }
 
         @Override
@@ -233,6 +254,8 @@ public class VideoInfoPagerFragment extends BaseFragment {
             super.onPostExecute(aVoid);
             progressBar.setVisibility(View.GONE);
             if(relatedVideoArrayList.size() > 0) {
+                tvRecordsStatus.setVisibility(View.INVISIBLE);
+                tvRelatedTitle.setVisibility(View.VISIBLE);
                 relatedVideoAdapter = new RelatedVideoListAdapter(relatedVideoArrayList, getActivity());
                 relatedVideoListview.setAdapter(relatedVideoAdapter);
             }else{

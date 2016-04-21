@@ -121,6 +121,7 @@ public class OpponentsFragment extends BaseFragment {
     public void onResume() {
         // TODO Auto-generated method stub
         super.onResume();
+        try {
         if (videoHeaderListAdapter != null)
             videoHeaderListAdapter.notifyDataSetChanged();
         if (progressBar != null && refreshLayout != null) {
@@ -131,14 +132,18 @@ public class OpponentsFragment extends BaseFragment {
         }
 
         if (opponentsVideoList != null && opponentsVideoList.size() == 0) {
-            progressBar.setVisibility(View.VISIBLE);
+            if(GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+                progressBar.setVisibility(View.VISIBLE);
+            }
         } else {
             progressBar.setVisibility(View.GONE);
         }
 
 
         gethideKeyboard();
-
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -694,14 +699,15 @@ public class OpponentsFragment extends BaseFragment {
         protected ArrayList<VideoDTO> doInBackground(Void... params) {
             ArrayList<VideoDTO> arrList = new ArrayList<VideoDTO>();
             try {
-                String url = GlobalConstants.OPPONENT_API_URL + "userId=" + AppController.getInstance().getUserId();
-                arrList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
-                if (arrList.size() > 0) {
-                    VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).removeRecordsByTab("OKFOpponent");
-                    VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).insertVideosInDatabase(arrList);
-                }
 
-                //Update Banner Data
+                        String url = GlobalConstants.OPPONENT_API_URL + "userId=" + AppController.getInstance().getUserId();
+                        arrList.addAll(AppController.getInstance().getServiceManager().getVaultService().getVideosListFromServer(url));
+                        if (arrList.size() > 0) {
+                            VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).removeRecordsByTab(GlobalConstants.OKF_OPPONENT);
+                            VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).insertVideosInDatabase(arrList);
+                        }
+
+
                 if (tabBannerDTO != null) {
                     TabBannerDTO serverObj = AppController.getInstance().getServiceManager().getVaultService().getTabBannerDataById(tabBannerDTO.getTabBannerId(), tabBannerDTO.getTabKeyword(), tabBannerDTO.getTabId());
                     if (serverObj != null) {
@@ -714,9 +720,11 @@ public class OpponentsFragment extends BaseFragment {
 
                             VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).updateTabBannerData(serverObj);
                             isBannerUpdated = true;
+                            }
                         }
                     }
-                }
+
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -726,6 +734,7 @@ public class OpponentsFragment extends BaseFragment {
         @Override
         protected void onPostExecute(final ArrayList<VideoDTO> result) {
             super.onPostExecute(result);
+            try {
             if (result.size() > 0) {
                 opponentsVideoList.clear();
                 opponentsVideoList.addAll(VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getVideoList(GlobalConstants.OKF_OPPONENT));
@@ -778,6 +787,10 @@ public class OpponentsFragment extends BaseFragment {
             if (stickyListHeadersListView != null) {
                 Utils.setEnabledStickyListHeadersListViewScrolling(stickyListHeadersListView);
             }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -788,6 +801,8 @@ public class OpponentsFragment extends BaseFragment {
 
         @Override
         public void onReceive(Context context, Intent intent) {
+
+            try {
             opponentsVideoList.clear();
             opponentsVideoList.addAll(VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getVideoList(GlobalConstants.OKF_OPPONENT));
 
@@ -810,7 +825,11 @@ public class OpponentsFragment extends BaseFragment {
             stickyListHeadersListView.setAdapter(videoHeaderListAdapter);
             System.out.println("tabBannerDTO opponentsVideoList " + opponentsVideoList.size() + " isServiceRunning " + VideoDataService.isServiceRunning);
             if (opponentsVideoList.size() == 0 /*&& VideoDataService.isServiceRunning*/) {
-                progressBar.setVisibility(View.VISIBLE);
+                if (!GlobalConstants.SEARCH_VIEW_QUERY.isEmpty()) {
+
+                } else {
+                    progressBar.setVisibility(View.VISIBLE);
+                }
             } else {
                 progressBar.setVisibility(View.GONE);
             }
@@ -828,6 +847,10 @@ public class OpponentsFragment extends BaseFragment {
                 tabBannerDTO = VaultDatabaseHelper.getInstance(mActivity.getApplicationContext()).getLocalTabBannerDataByTabId(tabBannerDTO.getTabId());
                 if (tabBannerDTO != null)
                     Utils.addBannerImagePullToRefresh(bannerCacheableImageView, bannerLayout, tabBannerDTO, mActivity, mBannerProgressBar);
+            }
+
+            } catch (Exception e) {
+                e.printStackTrace();
             }
 
         }

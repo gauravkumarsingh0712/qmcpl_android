@@ -36,7 +36,7 @@
         <activity
             android:name="org.vault.app.activities.MainActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
-            android:label="FLORIDA VAULT"
+            android:label=""
             android:launchMode="singleTask"
             android:logo="@drawable/actionbar_icon_text_padding"
             android:screenOrientation="portrait"
@@ -70,8 +70,9 @@
             android:name="org.vault.app.activities.ChangePasswordActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:screenOrientation="portrait"
-            android:theme="@style/VaultTheme"
-            android:windowSoftInputMode="adjustPan"></activity>
+            android:theme="@style/VaultTheme">
+
+        </activity>
         <activity
             android:name="org.vault.app.activities.ContactActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
@@ -142,14 +143,14 @@
 
         <meta-data
             android:name="com.facebook.sdk.ApplicationId"
-            android:value="@string/facebook_test_app_id" />
+            android:value="@string/app_id" />
         <meta-data
             android:name="com.facebook.sdk.ApplicationName"
             android:value="Florida Vault" />
 
         <provider
             android:name="com.facebook.FacebookContentProvider"
-            android:authorities="com.facebook.app.FacebookContentProvider1695717030674630"
+            android:authorities="com.facebook.app.FacebookContentProvider1510709295909401"
             android:exported="true" />
 
         <receiver android:name="org.vault.app.receivers.VaultFacebookBroadcastReceiver">

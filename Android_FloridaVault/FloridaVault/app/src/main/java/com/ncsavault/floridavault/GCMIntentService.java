@@ -23,6 +23,7 @@ import com.google.android.gcm.GCMRegistrar;
 import org.vault.app.activities.MainActivity;
 import org.vault.app.appcontroller.AppController;
 import org.vault.app.globalconstants.GlobalConstants;
+import org.vault.app.model.LocalModel;
 
 import java.util.Calendar;
 
@@ -110,6 +111,8 @@ public class GCMIntentService extends GCMBaseIntentService {
         // read message and take appropreate data from it
         String message = intent.getExtras().getString("message");
         String title = intent.getExtras().getString("title");
+        String videoId = intent.getExtras().getString("tickerText");
+        LocalModel.getInstance().setVideoId(videoId);
         // notifies user
         generateNotificationCustomView(context, message, title);
     }
@@ -152,7 +155,7 @@ public class GCMIntentService extends GCMBaseIntentService {
             Bitmap remote_picture = BitmapFactory.decodeResource(
                     context.getResources(), R.drawable.logo);
             // Setup an explicit intent for an ResultActivity to receive.
-            Intent resultIntent = new Intent(context, LoginEmailActivity.class);
+            Intent resultIntent = new Intent(context, SplashActivity.class);
 
             // TaskStackBuilder ensures that the back button follows the recommended
             // convention for the back key.
@@ -203,7 +206,7 @@ public class GCMIntentService extends GCMBaseIntentService {
             else
                 currTime += c.get(Calendar.MINUTE);
 
-            Intent resultIntent = new Intent(context, LoginEmailActivity.class);
+            Intent resultIntent = new Intent(context, SplashActivity.class);
             TaskStackBuilder stackBuilder = TaskStackBuilder.create(context);
             stackBuilder.addParentStack(MainActivity.class);
             stackBuilder.addNextIntent(resultIntent);

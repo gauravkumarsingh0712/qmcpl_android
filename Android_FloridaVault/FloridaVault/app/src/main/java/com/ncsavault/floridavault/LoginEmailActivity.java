@@ -22,6 +22,7 @@ import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -53,6 +54,7 @@ import org.vault.app.database.VaultDatabaseHelper;
 import org.vault.app.dto.APIResponse;
 import org.vault.app.dto.User;
 import org.vault.app.globalconstants.GlobalConstants;
+import org.vault.app.model.LocalModel;
 import org.vault.app.service.VideoDataService;
 import org.vault.app.utils.Utils;
 
@@ -87,6 +89,7 @@ public class LoginEmailActivity extends BaseActivity {
     ProgressDialog pDialog;
     private Animation animation;
     private SharedPreferences prefs;
+    String videoUrl;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -142,6 +145,10 @@ public class LoginEmailActivity extends BaseActivity {
             setContentView(R.layout.login_email_activity);
 
             initViews();
+            initData();
+            Bundle bundle = getIntent().getExtras();
+            String videoId = LocalModel.getInstance().getVideoId();
+
 
             prefs = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
 
@@ -161,15 +168,28 @@ public class LoginEmailActivity extends BaseActivity {
             SharedPreferences pref = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
             long userId = pref.getLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, 0);
 
-            if (fbProfile != null || userId > 0) {
-                Intent intent = new Intent(this, MainActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
-                finish();
+            if (videoUrl == null || videoId == null) {
+                if (fbProfile != null || userId > 0) {
+                    Intent intent = new Intent(this, MainActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                    finish();
+                }
             }
+                if (bundle != null) {
+                    videoUrl = bundle.getString("videoUrl");
+                    if (videoUrl != null) {
+                        skipLogin();
+                    }
+                }
 
-            initData();
-            initListener();
+                if (videoId != null) {
+                    skipLogin();
+                }
+
+                initListener();
+
+
         }catch(Exception e){
             e.printStackTrace();
         }
@@ -226,14 +246,13 @@ public class LoginEmailActivity extends BaseActivity {
                     InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                     inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
                 }
-                if(Utils.isInternetAvailable(LoginEmailActivity.this)) {
+                if (Utils.isInternetAvailable(LoginEmailActivity.this)) {
                     SharedPreferences prefs = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
                     prefs.edit().putLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, GlobalConstants.DEFAULT_USER_ID).apply();
                     prefs.edit().putBoolean(GlobalConstants.PREF_VAULT_SKIP_LOGIN, true).apply();
 
                     fetchInitialRecordsForAll();
-                }
-                else{
+                } else {
                     showToastMessage(GlobalConstants.MSG_NO_CONNECTION);
                 }
                 /*else {
@@ -570,6 +589,8 @@ public class LoginEmailActivity extends BaseActivity {
             protected void onPostExecute(Boolean isAllFetched) {
                 super.onPostExecute(isAllFetched);
                 try{
+                    if (!VideoDataService.isServiceRunning)
+                        startService(new Intent(LoginEmailActivity.this, VideoDataService.class));
                     if (isAllFetched) {
                         Profile fbProfile = Profile.getCurrentProfile();
                         SharedPreferences pref = AppController.getInstance().getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
@@ -578,11 +599,14 @@ public class LoginEmailActivity extends BaseActivity {
                         if (fbProfile != null || userId > 0) {
                             Intent intent = new Intent(LoginEmailActivity.this, MainActivity.class);
                             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                            if (videoUrl != null) {
+                                System.out.println("videoUrl is not null");
+                                intent.putExtra("videoUrl", videoUrl);
+                            }
                             startActivity(intent);
                             overridePendingTransition(R.anim.slideup, R.anim.nochange);
                             finish();
-                            if(!VideoDataService.isServiceRunning)
-                                startService(new Intent(LoginEmailActivity.this, VideoDataService.class));
+
                         }
                     }
                     pDialog.dismiss();
@@ -621,6 +645,7 @@ public class LoginEmailActivity extends BaseActivity {
                             pDialog.setCanceledOnTouchOutside(false);
                             pDialog.setCancelable(false);
                             email = edEmailBox.getText().toString();
+                            LocalModel.getInstance().setEmailId(email);
                         }
 
                         @Override
@@ -747,9 +772,9 @@ public class LoginEmailActivity extends BaseActivity {
         text.setVisibility(View.VISIBLE);
 
         Handler handler = new Handler();
-        handler.postDelayed(new Runnable(){
+        handler.postDelayed(new Runnable() {
             @Override
-            public void run(){
+            public void run() {
                 animation = AnimationUtils.loadAnimation(LoginEmailActivity.this,
                         R.anim.abc_fade_out);
 
@@ -789,6 +814,20 @@ public class LoginEmailActivity extends BaseActivity {
         alertDialog.setCancelable(false);
         alertDialog.setCanceledOnTouchOutside(false);
         alertDialog.show();
+        Button nbutton = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        nbutton.setAllCaps(false);
+        nbutton.setTextColor(getResources().getColor(R.color.apptheme_color));
+        Button pbutton = alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+        pbutton.setTextColor(getResources().getColor(R.color.apptheme_color));
+        pbutton.setAllCaps(false);
+    }
+
+    private void skipLogin() {
+        SharedPreferences prefs = getSharedPreferences(GlobalConstants.PREF_PACKAGE_NAME, Context.MODE_PRIVATE);
+        prefs.edit().putLong(GlobalConstants.PREF_VAULT_USER_ID_LONG, GlobalConstants.DEFAULT_USER_ID).apply();
+        prefs.edit().putBoolean(GlobalConstants.PREF_VAULT_SKIP_LOGIN, true).apply();
+
+        fetchInitialRecordsForAll();
     }
 
 

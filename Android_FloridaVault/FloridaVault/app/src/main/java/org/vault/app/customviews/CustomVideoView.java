@@ -58,6 +58,7 @@ public class CustomVideoView extends VideoView {
         }
     }
 
+
     public static interface PlayPauseListener {
         void onPlay();
         void onPause();

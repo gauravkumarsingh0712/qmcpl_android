@@ -18,6 +18,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -51,7 +52,7 @@ import se.emilsjolander.stickylistheaders.StickyListHeadersAdapter;
 public class VideoContentHeaderListAdapter extends BaseAdapter implements
         StickyListHeadersAdapter, SectionIndexer {
 
-    private ArrayList<VideoDTO> arrayListVideoDTOs;
+    private ArrayList<VideoDTO> arrayListVideoDTOs = new ArrayList<>();
     public ArrayList<VideoDTO> listSearch;
     private Activity context;
     public static DisplayImageOptions options;
@@ -182,11 +183,10 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
             viewHolder = (ViewHolder) convertView.getTag();
         }
 
-        if(isPullRefreshInProgress)
+        if (isPullRefreshInProgress)
             viewHolder.imgToggleButton.setEnabled(false);
         else
             viewHolder.imgToggleButton.setEnabled(true);
-
         initData(pos);
         initListener(pos);
 
@@ -196,7 +196,7 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
     @Override
     public int getPositionForSection(int section) {
         // TODO Auto-generated method stub
-        if(showLetters) {
+        if (showLetters) {
             if (mSectionIndices.length == 0) {
                 return 0;
             }
@@ -232,7 +232,7 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
     @Override
     public Object[] getSections() {
         // TODO Auto-generated method stub
-        if(showLetters)
+        if (showLetters)
             return mSectionLetters;
         return null;
     }
@@ -260,20 +260,20 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
     }
 
 
+    public void initData(final int pos) {
 
-    public void initData(final int pos){
-        if(arrayListVideoDTOs.get(pos).isVideoIsFavorite())
+        if (arrayListVideoDTOs.get(pos).isVideoIsFavorite())
             viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargold);
         else
             viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
 
-        if(VaultDatabaseHelper.getInstance(context.getApplicationContext()).isFavorite(arrayListVideoDTOs.get(pos).getVideoId()))
+        if (VaultDatabaseHelper.getInstance(context.getApplicationContext()).isFavorite(arrayListVideoDTOs.get(pos).getVideoId()))
             viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargold);
         else
             viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
 
 //        videoImageURL = arrayListVideoDTOs.get(pos).getVideoStillUrl();
-        if(isGames)
+        if (isGames)
             videoImageURL = arrayListVideoDTOs.get(pos).getVideoCoverUrl();
         else
             videoImageURL = arrayListVideoDTOs.get(pos).getVideoStillUrl();
@@ -304,12 +304,12 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
                     }
                 });
 
-        if(viewType == 1){
+        if (viewType == 1) {
             int aspectHeight;    //Edge To Edge view for tab
-            if(!isGames) {
+            if (!isGames) {
                 aspectHeight = (Measuredwidth * 9) / 16;    //Edge To Edge view for tab
 
-            }else {
+            } else {
                 aspectHeight = (int) ((Measuredwidth * 4.5) / 16);    //Wide Still View specially for Games tab which does not show section indexer letters
                 viewHolder.imgToggleButton.setVisibility(View.GONE);
                 RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
@@ -320,7 +320,7 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
 
             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, aspectHeight);
             viewHolder.thumbnailImageView.setLayoutParams(lp);
-        }else if(viewType == 2) {
+        } else if (viewType == 2) {
             if (videoDescription != null)
                 viewHolder.tvVideoDescription.setText(videoDescription);
             else
@@ -363,7 +363,7 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
 
     }
 
-    public void markFavoriteStatus(final int pos){
+    public void markFavoriteStatus(final int pos) {
         if (Utils.isInternetAvailable(context)) {
             if (AppController.getInstance().getUserId() == GlobalConstants.DEFAULT_USER_ID) {
                 viewHolder.imgToggleButton.setBackgroundResource(R.drawable.stargreyicon);
@@ -399,11 +399,14 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
 
                     @Override
                     protected void onPostExecute(Void result) {
-                        System.out.println("Result of POST request : " + postResult);
-                        if (isFavoriteChecked)
-                            VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(1, arrayListVideoDTOs.get(pos).getVideoId());
-                        else
-                            VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(0, arrayListVideoDTOs.get(pos).getVideoId());
+                        try {
+                            if (isFavoriteChecked)
+                                VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(1, arrayListVideoDTOs.get(pos).getVideoId());
+                            else
+                                VaultDatabaseHelper.getInstance(context.getApplicationContext()).setFavoriteFlag(0, arrayListVideoDTOs.get(pos).getVideoId());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
                 };
 
@@ -454,6 +457,12 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
         alertDialog.setCancelable(false);
         alertDialog.setCanceledOnTouchOutside(false);
         alertDialog.show();
+        Button nbutton = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        nbutton.setAllCaps(false);
+        nbutton.setTextColor(context.getResources().getColor(R.color.apptheme_color));
+        Button pbutton = alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+        pbutton.setTextColor(context.getResources().getColor(R.color.apptheme_color));
+        pbutton.setAllCaps(false);
     }
 
     public String convertSecondsToHMmSs(long millis) {
@@ -547,7 +556,7 @@ public class VideoContentHeaderListAdapter extends BaseAdapter implements
             @Override
             public int compare(VideoDTO lhs, VideoDTO rhs) {
                 // TODO Auto-generated method stub
-                if(isGames)
+                if (isGames)
                     return rhs.getPlaylistName().toLowerCase()
                             .compareTo(lhs.getPlaylistName().toLowerCase());
                 else

@@ -2,7 +2,7 @@
 <resources>
 
     <!--<string name="app_id">1643922295861554</string>-->
-    <!--<string name="app_id">1510709295909401</string>-->
+    <string name="app_id">1510709295909401</string>
     <string name="facebook_test_app_id">1695717030674630</string>
     <string name="app_name">Florida Vault</string>
     <string name="action_settings">Settings</string>
@@ -52,6 +52,6 @@
     <string name="title_activity_base">BaseActivity</string>
 
     <!--  SETTINGS FOR ACCESSING YOUR ACCOUNT -->
-    <string name="mc_api_key">297de1306cfcfc857f795c416220301a-us12</string>
-    <string name="mc_list_id">d29c4e46b0</string>
+    <string name="mc_api_key">e9bbd18dd1436459e53920c2e186fa39-us5</string>
+    <string name="mc_list_id">2ed38ce990</string>
 </resources>

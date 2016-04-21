@@ -13,6 +13,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
@@ -22,8 +23,6 @@ import org.apache.http.protocol.HTTP;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.vault.app.appcontroller.AppController;
-import org.vault.app.database.VaultDatabaseHelper;
 import org.vault.app.dto.APIResponse;
 import org.vault.app.dto.AssigneeDto;
 import org.vault.app.dto.FavoritePostData;
@@ -45,6 +44,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
+import java.net.SocketTimeoutException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -76,7 +76,7 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
     //Parameters that are returned from server in form of JSON
     private static final String KEY_PLAYLIST_ID = "playlistId";
     private static final String KEY_PLAYLIST_NAME = "playlistName";
-    //    private static final String KEY_PLAYLIST_TYPE = "playlistType";
+    //private static final String KEY_PLAYLIST_TYPE = "playlistType";
     private static final String KEY_PLAYLIST_REFERENCEID = "playlistReferenceId";
     private static final String KEY_PLAYLIST_THUMBNAIL_URL = "playlistThumbnailUrl";
     private static final String KEY_PLAYLIST_SHORT_DESCRIPTION = "playlistShortDescription";
@@ -117,8 +117,8 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
         String result = doGet(url);
 //        System.out.println("Response of url : "+result);
         if (result != null) {
-            if (result.contains("timeout"))
-                return null;
+//            if (result.contains("timeout"))
+//                return null;
         }
         ArrayList<VideoDTO> videoList = new ArrayList<>();
 
@@ -154,12 +154,13 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
                 vidObj.setVideoSocialUrl(!obj.isNull(KEY_VIDEO_SOCIAL_URL) ? obj.getString(KEY_VIDEO_SOCIAL_URL) : "");
 
                 vidObj.setVideoIsFavorite(!obj.isNull(KEY_VIDEO_IS_FAVORITE) && obj.getBoolean(KEY_VIDEO_IS_FAVORITE));
-                if (VaultDatabaseHelper.getInstance(AppController.getInstance().getApplicationContext()).isVideoAvailableInDB(vidObj.getVideoId(), vidObj.getPlaylistReferenceId())) {
-                    if (VaultDatabaseHelper.getInstance(AppController.getInstance().getApplicationContext()).isFavorite(vidObj.getVideoId()))
-                        vidObj.setVideoIsFavorite(true);
-                    else
-                        vidObj.setVideoIsFavorite(false);
-                }
+                // if (VaultDatabaseHelper.getInstance(AppController.getInstance().getApplicationContext()).isVideoAvailableInDB(vidObj.getVideoId(), vidObj.getPlaylistReferenceId())) {
+                // if (VaultDatabaseHelper.getInstance(AppController.getInstance().getApplicationContext()).isFavorite(vidObj.getVideoId()))
+                if (vidObj.isVideoIsFavorite())
+                    vidObj.setVideoIsFavorite(true);
+                else
+                    vidObj.setVideoIsFavorite(false);
+                //  }
                 videoList.add(vidObj);
             }
         } catch (Exception e) {
@@ -184,6 +185,65 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
         }
         System.out.println("Updated Size of video list : " + videoList.size());
         return videoList;
+    }
+
+    @Override
+    public VideoDTO getVideosDataFromServer(String url) throws BusinessException {
+        try {
+            String result = doGet(url);
+            if (result != null) {
+//                if (result.contains("timeout"))
+//                    return null;
+            }
+            System.out.println("Response of video Data : " + result);
+            // JSONArray jsonArray = new JSONArray(result);
+            VideoDTO vidObj = null;
+            //  for (int i = 0; i < jsonArray.length(); i++) {
+            JSONObject obj = new JSONObject(result);
+
+            vidObj = new VideoDTO();
+
+            vidObj.setVideoDuration(!obj.isNull(KEY_VIDEO_DURATION) ? obj.getLong(KEY_VIDEO_DURATION) : 0);
+            vidObj.setPlaylistId(!obj.isNull(KEY_PLAYLIST_ID) ? obj.getLong(KEY_PLAYLIST_ID) : 0);
+            vidObj.setPlaylistName(!obj.isNull(KEY_PLAYLIST_NAME) ? obj.getString(KEY_PLAYLIST_NAME) : "");
+            vidObj.setVideoShortDescription(!obj.isNull(KEY_VIDEO_SHORT_DESCRIPTION) ? obj.getString(KEY_VIDEO_SHORT_DESCRIPTION) : "");
+            vidObj.setVideoId(!obj.isNull(KEY_VIDEO_ID) ? obj.getLong(KEY_VIDEO_ID) : 0);
+            vidObj.setVideoName(!obj.isNull(KEY_VIDEO_NAME) ? obj.getString(KEY_VIDEO_NAME) : "");
+            vidObj.setVideoStillUrl(!obj.isNull(KEY_VIDEO_STILL_URL) ? obj.getString(KEY_VIDEO_STILL_URL) : "");
+            vidObj.setVideoCoverUrl(!obj.isNull(KEY_VIDEO_COVER_URL) ? obj.getString(KEY_VIDEO_COVER_URL) : "");
+            vidObj.setVideoWideStillUrl(!obj.isNull(KEY_VIDEO_WIDE_STILL_URL) ? obj.getString(KEY_VIDEO_WIDE_STILL_URL) : "");
+            vidObj.setVideoBadgeUrl(!obj.isNull(KEY_VIDEO_BADGE_URL) ? obj.getString(KEY_VIDEO_BADGE_URL) : "");
+            vidObj.setVideoThumbnailUrl(!obj.isNull(KEY_VIDEO_THUMBNAIL_URL) ? obj.getString(KEY_VIDEO_THUMBNAIL_URL) : "");
+            vidObj.setVideoLongUrl(!obj.isNull(KEY_VIDEO_LONG_URL) ? obj.getString(KEY_VIDEO_LONG_URL) : "");
+            vidObj.setVideoShortUrl(!obj.isNull(KEY_VIDEO_SHORT_URL) ? obj.getString(KEY_VIDEO_SHORT_URL) : "");
+            vidObj.setVideoIndex(!obj.isNull(KEY_VIDEO_INDEX) ? obj.getInt(KEY_VIDEO_INDEX) : 0);
+            vidObj.setPlaylistReferenceId(!obj.isNull(KEY_PLAYLIST_REFERENCEID) ? obj.getString(KEY_PLAYLIST_REFERENCEID) : "");
+
+            vidObj.setVideoTags(!obj.isNull(KEY_VIDEO_TAGS) ? obj.getString(KEY_VIDEO_TAGS) : "");
+            vidObj.setVideoLongDescription(!obj.isNull(KEY_VIDEO_LONG_DESCRIPTION) ? obj.getString(KEY_VIDEO_LONG_DESCRIPTION) : "");
+            vidObj.setPlaylistTags(!obj.isNull(KEY_PLAYLIST_TAGS) ? obj.getString(KEY_PLAYLIST_TAGS) : "");
+            vidObj.setPlaylistThumbnailUrl(!obj.isNull(KEY_PLAYLIST_THUMBNAIL_URL) ? obj.getString(KEY_PLAYLIST_THUMBNAIL_URL) : "");
+            vidObj.setPlaylistLongDescription(!obj.isNull(KEY_PLAYLIST_LONG_DESCRIPTION) ? obj.getString(KEY_PLAYLIST_LONG_DESCRIPTION) : "");
+            vidObj.setPlaylistShortDescription(!obj.isNull(KEY_PLAYLIST_SHORT_DESCRIPTION) ? obj.getString(KEY_PLAYLIST_SHORT_DESCRIPTION) : "");
+            vidObj.setVideoSocialUrl(!obj.isNull(KEY_VIDEO_SOCIAL_URL) ? obj.getString(KEY_VIDEO_SOCIAL_URL) : "");
+
+            vidObj.setVideoIsFavorite(!obj.isNull(KEY_VIDEO_IS_FAVORITE) && obj.getBoolean(KEY_VIDEO_IS_FAVORITE));
+            //if (VaultDatabaseHelper.getInstance(AppController.getInstance().getApplicationContext()).isVideoAvailableInDB(vidObj.getVideoId(), vidObj.getPlaylistReferenceId())) {
+            if (vidObj.isVideoIsFavorite())
+                vidObj.setVideoIsFavorite(true);
+            else
+                vidObj.setVideoIsFavorite(false);
+            // }
+            //    }
+
+            return vidObj;
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
 
@@ -368,7 +428,7 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
             String url = GlobalConstants.GET_USER_DATA_URL + "?emailID=" + URLEncoder.encode(emailId, "UTF-8") + "&userID=" + URLEncoder.encode(String.valueOf(userId), "UTF-8");
             url = url.replaceAll(" ", "%20");
             String result = doGet(url);
-            System.out.println("Response of getUserData : "+result);
+            System.out.println("Response of getUserData : " + result);
             return result;
         } catch (Exception e) {
             e.printStackTrace();
@@ -569,7 +629,6 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
     }
 
 
-
     /**
      * API call with GET request having parameters in QueryString
      *
@@ -616,7 +675,7 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
             if (postObj != null) {
                 postStr = new Gson().toJson(postObj);
                 StringEntity stringEntity = new StringEntity(postStr);
-                System.out.println("Json String For Notification Registration : "+postStr);
+                System.out.println("Json String For Notification Registration : " + postStr);
                 httpPost.setEntity(new StringEntity(postStr, HTTP.UTF_8));
             }
             HttpResponse httpResponse = httpClient.execute(httpPost);
@@ -658,15 +717,13 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
             assigneeDto.setName(GlobalConstants.SUPPORT_ASSIGNEE_NAME);
         }*/
 
-        if(tagId.equalsIgnoreCase(GlobalConstants.FEEDBACK_TAG_ID)) {
+        if (tagId.equalsIgnoreCase(GlobalConstants.FEEDBACK_TAG_ID)) {
             assigneeDto.setId(Long.parseLong(GlobalConstants.FEEDBACK_ASSIGNEE_ID));
             assigneeDto.setName(GlobalConstants.FEEDBACK_ASSIGNEE_NAME);
-        }
-        else if(tagId.equalsIgnoreCase(GlobalConstants.CLIP_REQUEST_TAG_ID)) {
+        } else if (tagId.equalsIgnoreCase(GlobalConstants.CLIP_REQUEST_TAG_ID)) {
             assigneeDto.setId(Long.parseLong(GlobalConstants.CLIP_REQUEST_ASSIGNEE_ID));
             assigneeDto.setName(GlobalConstants.CLIP_REQUEST_ASSIGNEE_NAME);
-        }
-        else if(tagId.equalsIgnoreCase(GlobalConstants.SUPPORT_TAG_ID) || tagId.equalsIgnoreCase(GlobalConstants.NO_LOGIN_TAG_ID)) {
+        } else if (tagId.equalsIgnoreCase(GlobalConstants.SUPPORT_TAG_ID) || tagId.equalsIgnoreCase(GlobalConstants.NO_LOGIN_TAG_ID)) {
             assigneeDto.setId(Long.parseLong(GlobalConstants.SUPPORT_ASSIGNEE_ID));
             assigneeDto.setName(GlobalConstants.SUPPORT_ASSIGNEE_NAME);
         }
@@ -691,7 +748,7 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
 
         //API key for workspace along with : which represents password which is empty
         String base64EncodedCredentials = "Basic " + Base64.encodeToString(
-                (GlobalConstants.ASANA_WORKSPACE_API_KEY+":").getBytes(),
+                (GlobalConstants.ASANA_WORKSPACE_API_KEY + ":").getBytes(),
                 Base64.NO_WRAP);
 
         System.out.println("Authorization : " + base64EncodedCredentials);
@@ -704,10 +761,10 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
         try {
             if (postObj != null) {
                 postStr = new Gson().toJson(postObj);
-                String data = "{\"data\":"+postStr+"}";
+                String data = "{\"data\":" + postStr + "}";
 
                 StringEntity stringEntity = new StringEntity(data);
-                System.out.println("Json String For Task Creation : "+data);
+                System.out.println("Json String For Task Creation : " + data);
                 httpPost.setEntity(stringEntity);
             }
 
@@ -727,7 +784,7 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
         if (inputStream != null) {
             try {
                 String result = getStringFromInputStream(inputStream);
-                System.out.println("$$$$$$$$$$ Response from Asana for Task creation : "+result);
+                System.out.println("$$$$$$$$$$ Response from Asana for Task creation : " + result);
                 return result;
             } catch (IOException e) {
                 e.printStackTrace();
@@ -753,11 +810,11 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
         HttpClient httpClient = new DefaultHttpClient(httpParameters);
         InputStream inputStream = null;
 
-        HttpPost httpPost = new HttpPost(GlobalConstants.ASANA_TAG_API_URL+taskId+"/addTag");
+        HttpPost httpPost = new HttpPost(GlobalConstants.ASANA_TAG_API_URL + taskId + "/addTag");
 
         //API key for workspace along with : which represents password which is empty
         String base64EncodedCredentials = "Basic " + Base64.encodeToString(
-                (GlobalConstants.ASANA_WORKSPACE_API_KEY+":").getBytes(),
+                (GlobalConstants.ASANA_WORKSPACE_API_KEY + ":").getBytes(),
                 Base64.NO_WRAP);
 
         System.out.println("Authorization : " + base64EncodedCredentials);
@@ -779,7 +836,7 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
         if (inputStream != null) {
             try {
                 String result = getStringFromInputStream(inputStream);
-                System.out.println("$$$$$$$$$$ Response from Asana for Tag creation : "+result);
+                System.out.println("$$$$$$$$$$ Response from Asana for Tag creation : " + result);
                 return result;
             } catch (IOException e) {
                 e.printStackTrace();
@@ -788,6 +845,7 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
 
         return null;
     }
+
     //Tab Columns
     public static final String KEY_TAB_ID = "tabId";
     public static final String KEY_TAB_NAME = "tabName";
@@ -801,7 +859,7 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
 
     //Banner Columns
     public static final String KEY_BANNER_ID = "tabBannerId";
-    public static  final String KEY_BANNER_NAME = "tabBannerName";
+    public static final String KEY_BANNER_NAME = "tabBannerName";
     public static final String KEY_BANNER_URL = "bannerURL";
     public static final String KEY_IS_BANNER_ACTIVATED = "isBannerActive";
     public static final String KEY_IS_HYPER_LINK_AVAILABLE = "isHyperlinkActive";
@@ -815,11 +873,11 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
         try {
             String result = doGet(GlobalConstants.GET_ALL_TAB_BANNER_DATA_URL);
             if (result != null) {
-                if (result.contains("timeout"))
-                    return null;
+//                if (result.contains("timeout"))
+//                    return null;
             }
 
-            System.out.println("Response for Banner Tab Data : "+result);
+            System.out.println("Response for Banner Tab Data : " + result);
 
             JSONArray jsonArray = new JSONArray(result);
             TabBannerDTO tabBannerDTO;
@@ -841,7 +899,7 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
                 tabBannerDTO.setTabBannerName(!obj.isNull(KEY_BANNER_NAME) ? obj.getString(KEY_BANNER_NAME) : "");
 
                 tabBannerDTO.setBannerURL(!obj.isNull(KEY_BANNER_URL) ? obj.getString(KEY_BANNER_URL) : "");
-                tabBannerDTO.setBannerURL(tabBannerDTO.getBannerURL().replace(" ","%20"));
+                tabBannerDTO.setBannerURL(tabBannerDTO.getBannerURL().replace(" ", "%20"));
 
                 tabBannerDTO.setIsBannerActive(!obj.isNull(KEY_IS_BANNER_ACTIVATED) ? obj.getBoolean(KEY_IS_BANNER_ACTIVATED) : false);
                 tabBannerDTO.setIsHyperlinkActive(!obj.isNull(KEY_IS_HYPER_LINK_AVAILABLE) ? obj.getBoolean(KEY_IS_HYPER_LINK_AVAILABLE) : false);
@@ -850,7 +908,7 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
                 tabBannerDTO.setBannerModified(!obj.isNull(KEY_BANNER_MODIFIED) ? Long.parseLong(obj.getString(KEY_BANNER_MODIFIED)) : 0);
                 listTabBannerData.add(tabBannerDTO);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return listTabBannerData;
@@ -859,16 +917,16 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
     @Override
     public TabBannerDTO getTabBannerDataById(long bannerId, String tabKeyword, long tabId) throws BusinessException {
         try {
-            String result = doGet(GlobalConstants.GET_TAB_BANNER_DATA_URL + "?tab_id=" + tabId + "&tab_keyword="+tabKeyword);
+            String result = doGet(GlobalConstants.GET_TAB_BANNER_DATA_URL + "?tab_id=" + tabId + "&tab_keyword=" + tabKeyword);
             if (result != null) {
-                if (result.contains("timeout"))
-                    return null;
+//                if (result.contains("timeout"))
+//                    return null;
             }
-            System.out.println("Response of Tab Banner Data : "+result);
+            System.out.println("Response of Tab Banner Data : " + result);
             JSONArray jsonArray = new JSONArray(result);
             TabBannerDTO tabBannerDTO = null;
-            if(jsonArray != null) {
-                if(jsonArray.length() == 1)
+            if (jsonArray != null) {
+                if (jsonArray.length() == 1)
                     for (int i = 0; i < jsonArray.length(); i++) {
                         JSONObject obj = jsonArray.getJSONObject(i);
                         tabBannerDTO = new TabBannerDTO();
@@ -887,7 +945,7 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
                         tabBannerDTO.setTabBannerName(!obj.isNull(KEY_BANNER_NAME) ? obj.getString(KEY_BANNER_NAME) : "");
 
                         tabBannerDTO.setBannerURL(!obj.isNull(KEY_BANNER_URL) ? obj.getString(KEY_BANNER_URL) : "");
-                        tabBannerDTO.setBannerURL(tabBannerDTO.getBannerURL().replace(" ","%20"));
+                        tabBannerDTO.setBannerURL(tabBannerDTO.getBannerURL().replace(" ", "%20"));
 
                         tabBannerDTO.setIsBannerActive(!obj.isNull(KEY_IS_BANNER_ACTIVATED) ? obj.getBoolean(KEY_IS_BANNER_ACTIVATED) : false);
                         tabBannerDTO.setIsHyperlinkActive(!obj.isNull(KEY_IS_HYPER_LINK_AVAILABLE) ? obj.getBoolean(KEY_IS_HYPER_LINK_AVAILABLE) : false);
@@ -900,7 +958,7 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
         } catch (JSONException e) {
             e.printStackTrace();
             return null;
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -938,38 +996,49 @@ public class VaultApiCallImpl extends VaultService implements VaultApiInterface 
     }
 
     public String doGet(String url) {
-        Log.d("URL", url);
-        BasicHttpParams httpParameters = new BasicHttpParams();
-        HttpConnectionParams.setConnectionTimeout(httpParameters, 600000);
-        HttpConnectionParams.setSoTimeout(httpParameters, 600000);
 
-        // create HttpClient
-        HttpClient httpClient = new DefaultHttpClient(httpParameters);
-        InputStream inputStream = null;
-        // make GET request to the given URL
-        HttpGet httpget = new HttpGet(url);
-        httpget.setHeader("Accept", "application/json"); // or
-        // application/jsonrequest
-        httpget.setHeader("Content-Type", "application/json");
-        httpget.setHeader("appID", String.valueOf(GlobalConstants.APP_ID));
-        httpget.setHeader("appVersion", GlobalConstants.APP_VERSION);
-        httpget.setHeader("deviceType", GlobalConstants.DEVICE_TYPE);
         try {
-            HttpResponse httpResponse = httpClient.execute(httpget);
-            // receive response as inputStream
-            inputStream = httpResponse.getEntity().getContent();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        // convert inputstream to string
-        if (inputStream != null) {
+
+            Log.d("URL", url);
+            BasicHttpParams httpParameters = new BasicHttpParams();
+            HttpConnectionParams.setConnectionTimeout(httpParameters, 600000);
+            HttpConnectionParams.setSoTimeout(httpParameters, 600000);
+
+            // create HttpClient
+            HttpClient httpClient = new DefaultHttpClient(httpParameters);
+            InputStream inputStream = null;
+            // make GET request to the given URL
+            HttpGet httpget = new HttpGet(url);
+            httpget.setHeader("Accept", "application/json"); // or
+            // application/jsonrequest
+            httpget.setHeader("Content-Type", "application/json");
+            httpget.setHeader("appID", String.valueOf(GlobalConstants.APP_ID));
+            httpget.setHeader("appVersion", GlobalConstants.APP_VERSION);
+            httpget.setHeader("deviceType", GlobalConstants.DEVICE_TYPE);
             try {
-                String result = getStringFromInputStream(inputStream);
-                return result;
+                HttpResponse httpResponse = httpClient.execute(httpget);
+                // receive response as inputStream
+                inputStream = httpResponse.getEntity().getContent();
+            } catch (SocketTimeoutException e) {
+                e.printStackTrace();
+            } catch (ConnectTimeoutException e) {
+                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            // convert inputstream to string
+            if (inputStream != null) {
+                try {
+                    String result = getStringFromInputStream(inputStream);
+                    return result;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return null;
     }
 }
+
